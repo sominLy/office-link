@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { ArrowLeft, Calendar, Target, CheckCircle2, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getWeekStart, kstStartOfWeekISO } from '@/lib/dates';
+import BottomNav from '@/components/BottomNav';
 
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -113,7 +114,7 @@ export default function Report() {
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 py-6 space-y-4">
+      <main className="max-w-lg mx-auto px-4 py-6 pb-24 space-y-4">
         {/* Summary Cards */}
         <div className="grid grid-cols-2 gap-3">
           <Card className="p-4 border-amber-100/50">
@@ -174,6 +175,7 @@ export default function Report() {
           </p>
         )}
       </main>
+      <BottomNav />
     </div>
   );
 }

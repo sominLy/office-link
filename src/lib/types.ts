@@ -84,4 +84,6 @@ export interface MemberStatus {
   current_status: StatusPreset;
   status_started_at: string;
   is_working: boolean;
+  focus_task_title: string | null; // 지금 집중 중인 업무 제목 (자유 집중이면 null)
+  is_focusing: boolean;
 }

@@ -13,6 +13,7 @@ import { ArrowLeft, Camera, Trash2, X, BellRing } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { defaultAvatar } from '@/lib/avatar';
+import BottomNav from '@/components/BottomNav';
 
 export default function Profile() {
   const { user, profile, refreshProfile, signOut } = useAuth();
@@ -122,7 +123,7 @@ export default function Profile() {
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 py-6 space-y-4">
+      <main className="max-w-lg mx-auto px-4 py-6 pb-24 space-y-4">
         <Card className="border-amber-100/50">
           <CardHeader>
             <CardTitle className="text-base">프로필</CardTitle>
@@ -237,6 +238,7 @@ export default function Profile() {
           </CardContent>
         </Card>
       </main>
+      <BottomNav />
     </div>
   );
 }

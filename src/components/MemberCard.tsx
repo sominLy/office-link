@@ -67,6 +67,11 @@ export default function MemberCard({ member }: { member: MemberStatus }) {
               <span className="text-xs text-gray-400">{elapsed}</span>
             )}
           </div>
+          {member.is_focusing && (
+            <p className="text-xs text-red-500 mt-1 truncate">
+              🎯 {member.focus_task_title || '자유 집중'} 집중 중
+            </p>
+          )}
         </div>
       </div>
     </Card>

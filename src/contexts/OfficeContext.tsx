@@ -68,37 +68,45 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
 
     if (!memberList) return;
 
-    const memberStatuses: MemberStatus[] = [];
-    for (const member of memberList) {
+    // 멤버별 반복 쿼리 대신 오피스 단위로 한 번에 조회 (N+1 제거)
+    const [{ data: openStatuses }, { data: openWorks }, { data: openFocuses }] = await Promise.all([
+      supabase.from('status_sessions')
+        .select('user_id, status, started_at')
+        .eq('office_id', office.id)
+        .is('ended_at', null)
+        .order('started_at', { ascending: false }),
+      supabase.from('work_sessions')
+        .select('user_id')
+        .eq('office_id', office.id)
+        .is('ended_at', null),
+      supabase.from('focus_sessions')
+        .select('user_id, tasks(title)')
+        .eq('office_id', office.id)
+        .is('ended_at', null),
+    ]);
+
+    const statusMap = new Map<string, { status: string; started_at: string }>();
+    (openStatuses || []).forEach(s => { if (!statusMap.has(s.user_id)) statusMap.set(s.user_id, s); });
+    const workingSet = new Set((openWorks || []).map(w => w.user_id));
+    const focusMap = new Map<string, string | null>();
+    (openFocuses || []).forEach(f => {
+      focusMap.set(f.user_id, (f.tasks as unknown as { title: string } | null)?.title || null);
+    });
+
+    const memberStatuses: MemberStatus[] = memberList.map(member => {
       const profile = member.profiles as unknown as { id: string; nickname: string; avatar_url: string | null };
-      const { data: statusData } = await supabase
-        .from('status_sessions')
-        .select('*')
-        .eq('user_id', member.user_id)
-        .eq('office_id', office.id)
-        .is('ended_at', null)
-        .order('started_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      const { data: workData } = await supabase
-        .from('work_sessions')
-        .select('*')
-        .eq('user_id', member.user_id)
-        .eq('office_id', office.id)
-        .is('ended_at', null)
-        .limit(1)
-        .single();
-
-      memberStatuses.push({
+      const st = statusMap.get(member.user_id);
+      return {
         user_id: member.user_id,
         nickname: profile?.nickname || '알 수 없음',
         avatar_url: profile?.avatar_url || null,
-        current_status: statusData?.status || '퇴근',
-        status_started_at: statusData?.started_at || new Date().toISOString(),
-        is_working: !!workData,
-      });
-    }
+        current_status: (st?.status as MemberStatus['current_status']) || '퇴근',
+        status_started_at: st?.started_at || new Date().toISOString(),
+        is_working: workingSet.has(member.user_id),
+        is_focusing: focusMap.has(member.user_id),
+        focus_task_title: focusMap.get(member.user_id) ?? null,
+      };
+    });
     setMembers(memberStatuses);
   }, [office]);
 
@@ -168,6 +176,15 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
         }
         fetchMembers();
         fetchMySession();
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'focus_sessions',
+        filter: `office_id=eq.${office.id}`,
+      }, () => {
+        // 집중 시작/종료 시 멤버 카드의 "집중 중인 업무" 갱신
+        fetchMembers();
       })
       .subscribe();
 

@@ -15,6 +15,7 @@ import { Plus, ArrowLeft, Trash2, CheckCircle2, Circle, GripVertical, Pencil, Fo
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { getWeekStart } from '@/lib/dates';
+import BottomNav from '@/components/BottomNav';
 
 const priorityLabels = { high: '높음', normal: '보통', low: '낮음' };
 const priorityColors = {
@@ -237,7 +238,7 @@ export default function Tasks() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-6">
+      <main className="max-w-5xl mx-auto px-4 py-6 pb-24">
         <Tabs defaultValue="list">
           <TabsList className="mb-4">
             <TabsTrigger value="list">리스트</TabsTrigger>
@@ -334,6 +335,7 @@ export default function Tasks() {
           </div>
         </DialogContent>
       </Dialog>
+      <BottomNav />
     </div>
   );
 }
