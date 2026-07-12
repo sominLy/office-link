@@ -210,6 +210,10 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
     await changeStatus('출근');
     await fetchMySession();
     await fetchMembers();
+    // 브라우저를 닫아둔 멤버에게도 웹푸시로 출근 소식 전송 (실패해도 무시)
+    supabase.functions.invoke('push-notify', {
+      body: { action: 'clock_in', office_id: office.id, actor_id: user.id },
+    }).catch(() => {});
   };
 
   const clockOut = async () => {

@@ -16,6 +16,7 @@ import { MemberStatus } from '@/lib/types';
 import MemberStatsDialog from '@/components/MemberStatsDialog';
 import BottomNav from '@/components/BottomNav';
 import { notificationsEnabled, requestNotificationPermission, notify } from '@/lib/notify';
+import { subscribePush } from '@/lib/push';
 import { kstToday } from '@/lib/dates';
 
 const STATUS_OPTIONS: StatusPreset[] = ['출근', '집중 중', '업무 중', '휴식 중', '자리 비움', '스터디/회의 중'];
@@ -31,7 +32,7 @@ const statusColors: Record<StatusPreset, string> = {
 };
 
 export default function Home() {
-  const { profile, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const { office, members, myWorkSession, myStatusSession, clockIn, clockOut, changeStatus } = useOffice();
   const navigate = useNavigate();
   const [selectedMember, setSelectedMember] = useState<MemberStatus | null>(null);
@@ -44,12 +45,20 @@ export default function Home() {
     const granted = await requestNotificationPermission();
     setNotifOn(granted);
     if (granted) {
-      toast.success('알림이 켜졌어요! 멤버 출근 소식과 근무 시간 알림을 보내드릴게요');
+      const pushed = user ? await subscribePush(user.id) : false;
+      toast.success(pushed
+        ? '알림이 켜졌어요! 브라우저를 닫아도 출근 소식과 근무 알림이 와요 🔔'
+        : '알림이 켜졌어요! (이 브라우저는 사이트가 열려 있을 때만 알림이 와요)');
       notify('연결오피스 알림 켜짐 🔔', '이렇게 알림이 도착해요');
     } else {
       toast.error('브라우저에서 알림이 차단되어 있어요. 주소창 왼쪽 자물쇠에서 허용해 주세요');
     }
   };
+
+  // 이미 알림을 허용한 기기는 접속할 때 푸시 구독을 자동 갱신
+  useEffect(() => {
+    if (user && notificationsEnabled()) subscribePush(user.id);
+  }, [user]);
 
   // 근무 시작 시간이 지났는데 출근 안 했으면 하루 한 번 알림
   useEffect(() => {
