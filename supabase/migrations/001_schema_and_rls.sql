@@ -23,7 +23,8 @@ alter table public.offices add column if not exists created_by uuid references a
 create table if not exists public.office_members (
   id uuid primary key default gen_random_uuid(),
   office_id uuid not null references public.offices(id) on delete cascade,
-  user_id uuid not null references auth.users(id) on delete cascade,
+  -- profiles를 참조해야 PostgREST가 office_members→profiles 조인(embed)을 해석할 수 있다
+  user_id uuid not null references public.profiles(id) on delete cascade,
   role text not null default 'member' check (role in ('admin','member')),
   joined_at timestamptz not null default now(),
   unique (office_id, user_id)
