@@ -11,10 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, ArrowLeft, Trash2, CheckCircle2, Circle, GripVertical, Pencil, FolderOpen } from 'lucide-react';
+import { Plus, ArrowLeft, Trash2, CheckCircle2, Circle, GripVertical, Pencil, FolderOpen, CalendarDays } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { getWeekStart } from '@/lib/dates';
+import { getWeekStart, kstToday } from '@/lib/dates';
 import BottomNav from '@/components/BottomNav';
 
 const priorityLabels = { high: '높음', normal: '보통', low: '낮음' };
@@ -25,17 +25,27 @@ const priorityColors = {
 };
 const statusLabels = { todo: '할 일', in_progress: '진행 중', done: '완료' };
 
+// 마감일 D-day 라벨과 색상
+function dueBadge(due: string, today: string): { label: string; cls: string } {
+  const diff = Math.round((new Date(due).getTime() - new Date(today).getTime()) / 86400000);
+  if (diff < 0) return { label: `${-diff}일 지남`, cls: 'bg-red-100 text-red-600 border-red-200' };
+  if (diff === 0) return { label: '오늘까지', cls: 'bg-orange-100 text-orange-600 border-orange-200' };
+  return { label: `D-${diff}`, cls: 'bg-blue-50 text-blue-600 border-blue-200' };
+}
+
 export default function Tasks() {
   const { user } = useAuth();
   const { office } = useOffice();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTitle, setNewTitle] = useState('');
   const [newCategory, setNewCategory] = useState('');
+  const [newDueDate, setNewDueDate] = useState('');
   const [newPriority, setNewPriority] = useState<'low' | 'normal' | 'high'>('normal');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTask, setEditTask] = useState<Task | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editCategory, setEditCategory] = useState('');
+  const [editDueDate, setEditDueDate] = useState('');
   const [editPriority, setEditPriority] = useState<'low' | 'normal' | 'high'>('normal');
   const navigate = useNavigate();
 
@@ -68,6 +78,7 @@ export default function Tasks() {
       user_id: user.id,
       title: newTitle.trim(),
       category: newCategory.trim() || null,
+      due_date: newDueDate || null,
       status: 'todo',
       priority: newPriority,
       week_start: weekStart,
@@ -79,6 +90,7 @@ export default function Tasks() {
     }
     setNewTitle('');
     setNewCategory('');
+    setNewDueDate('');
     setNewPriority('normal');
     setDialogOpen(false);
     fetchTasks();
@@ -89,6 +101,7 @@ export default function Tasks() {
     setEditTask(task);
     setEditTitle(task.title);
     setEditCategory(task.category || '');
+    setEditDueDate(task.due_date || '');
     setEditPriority(task.priority);
   };
 
@@ -99,6 +112,7 @@ export default function Tasks() {
       .update({
         title: editTitle.trim(),
         category: editCategory.trim() || null,
+        due_date: editDueDate || null,
         priority: editPriority,
       })
       .eq('id', editTask.id);
@@ -143,6 +157,14 @@ export default function Tasks() {
       <span className={`text-sm flex-1 ${task.status === 'done' ? 'line-through text-gray-400' : 'text-gray-700'}`}>
         {task.title}
       </span>
+      {task.due_date && task.status !== 'done' && (() => {
+        const b = dueBadge(task.due_date, kstToday());
+        return (
+          <Badge variant="outline" className={`text-xs ${b.cls}`}>
+            <CalendarDays className="w-3 h-3 mr-0.5" />{b.label}
+          </Badge>
+        );
+      })()}
       <Badge variant="outline" className={`text-xs ${priorityColors[task.priority]}`}>
         {priorityLabels[task.priority]}
       </Badge>
@@ -217,6 +239,10 @@ export default function Tasks() {
                       ))}
                     </div>
                   )}
+                </div>
+                <div className="space-y-2">
+                  <Label>마감일 (선택)</Label>
+                  <Input type="date" value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>우선순위</Label>
@@ -326,6 +352,10 @@ export default function Tasks() {
                   ))}
                 </div>
               )}
+            </div>
+            <div className="space-y-2">
+              <Label>마감일 (선택)</Label>
+              <Input type="date" value={editDueDate} onChange={(e) => setEditDueDate(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label>우선순위</Label>
