@@ -9,7 +9,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { ArrowLeft, Camera, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Camera, Trash2, X, BellRing } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { defaultAvatar } from '@/lib/avatar';
@@ -18,6 +18,8 @@ export default function Profile() {
   const { user, profile, refreshProfile, signOut } = useAuth();
   const navigate = useNavigate();
   const [nickname, setNickname] = useState(profile?.nickname || '');
+  const [workStart, setWorkStart] = useState(profile?.work_start?.slice(0, 5) || '');
+  const [savingTime, setSavingTime] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -78,6 +80,22 @@ export default function Profile() {
       toast.success('닉네임이 변경되었어요');
     }
     setSaving(false);
+  };
+
+  const handleSaveWorkStart = async () => {
+    if (!user) return;
+    setSavingTime(true);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ work_start: workStart || null })
+      .eq('id', user.id);
+    if (error) {
+      toast.error('저장에 실패했어요');
+    } else {
+      await refreshProfile();
+      toast.success(workStart ? `${workStart}까지 출근 안 하면 알려드릴게요` : '근무 시간 알림을 껐어요');
+    }
+    setSavingTime(false);
   };
 
   const handleDeleteAccount = async () => {
@@ -161,6 +179,27 @@ export default function Profile() {
                 </Button>
               </div>
             </form>
+          </CardContent>
+        </Card>
+
+        {/* 근무 시간 알림 */}
+        <Card className="border-amber-100/50">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <BellRing className="w-4 h-4 text-amber-600" />
+              근무 시간 알림
+            </CardTitle>
+            <CardDescription>
+              설정한 시간이 지나도 출근 안 하면 "오늘 일 안 하나요? 👀" 알림을 보내드려요. 비우고 저장하면 꺼져요.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <Input type="time" value={workStart} onChange={(e) => setWorkStart(e.target.value)} className="flex-1" />
+              <Button onClick={handleSaveWorkStart} disabled={savingTime} className="bg-amber-600 hover:bg-amber-700 text-white">
+                {savingTime ? '저장 중...' : '저장'}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 

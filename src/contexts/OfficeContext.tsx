@@ -1,8 +1,9 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, ReactNode, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useAuth } from './AuthContext';
 import { Office, OfficeMember, StatusSession, WorkSession, MemberStatus, StatusPreset } from '@/lib/types';
+import { notify } from '@/lib/notify';
 
 interface OfficeContextType {
   office: Office | null;
@@ -26,6 +27,12 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
   const [myWorkSession, setMyWorkSession] = useState<WorkSession | null>(null);
   const [myStatusSession, setMyStatusSession] = useState<StatusSession | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // realtime 콜백에서 최신 멤버 목록/내 id를 참조하기 위한 ref
+  const membersRef = useRef<MemberStatus[]>([]);
+  useEffect(() => { membersRef.current = members; }, [members]);
+  const userIdRef = useRef<string | null>(null);
+  useEffect(() => { userIdRef.current = user?.id ?? null; }, [user]);
 
   const fetchOffice = useCallback(async () => {
     // 로그아웃 상태에서도 로딩을 끝내야 로그인 화면이 뜬다
@@ -148,7 +155,17 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
         schema: 'public',
         table: 'work_sessions',
         filter: `office_id=eq.${office.id}`,
-      }, () => {
+      }, (payload) => {
+        // 다른 멤버가 출근하면 브라우저 알림
+        if (payload.eventType === 'INSERT') {
+          const row = payload.new as WorkSession;
+          if (row.user_id !== userIdRef.current && !row.ended_at) {
+            const m = membersRef.current.find(x => x.user_id === row.user_id);
+            const name = m?.nickname || '멤버';
+            notify(`${name}님이 출근했어요 👋`, '오피스에서 함께 달려봐요!');
+            toast(`👋 ${name}님이 출근했어요`);
+          }
+        }
         fetchMembers();
         fetchMySession();
       })

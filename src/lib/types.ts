@@ -11,6 +11,7 @@ export interface Profile {
   id: string;
   nickname: string;
   avatar_url: string | null;
+  work_start: string | null; // 근무 시작 시간 "HH:MM:SS" (미출근 알림용)
   created_at: string;
 }
 

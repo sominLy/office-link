@@ -7,13 +7,15 @@ import MyTasks from '@/components/MyTasks';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { LogOut, ChevronDown, Clock, ListTodo, BarChart3, Copy } from 'lucide-react';
+import { LogOut, ChevronDown, Clock, ListTodo, BarChart3, Copy, Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { defaultAvatar } from '@/lib/avatar';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MemberStatus } from '@/lib/types';
 import MemberStatsDialog from '@/components/MemberStatsDialog';
+import { notificationsEnabled, requestNotificationPermission, notify } from '@/lib/notify';
+import { kstToday } from '@/lib/dates';
 
 const STATUS_OPTIONS: StatusPreset[] = ['출근', '집중 중', '업무 중', '휴식 중', '자리 비움', '스터디/회의 중'];
 
@@ -32,9 +34,40 @@ export default function Home() {
   const { office, members, myWorkSession, myStatusSession, clockIn, clockOut, changeStatus } = useOffice();
   const navigate = useNavigate();
   const [selectedMember, setSelectedMember] = useState<MemberStatus | null>(null);
+  const [notifOn, setNotifOn] = useState(notificationsEnabled());
 
   const currentStatus = myStatusSession?.status || '퇴근';
   const isWorking = !!myWorkSession;
+
+  const enableNotifications = async () => {
+    const granted = await requestNotificationPermission();
+    setNotifOn(granted);
+    if (granted) {
+      toast.success('알림이 켜졌어요! 멤버 출근 소식과 근무 시간 알림을 보내드릴게요');
+      notify('연결오피스 알림 켜짐 🔔', '이렇게 알림이 도착해요');
+    } else {
+      toast.error('브라우저에서 알림이 차단되어 있어요. 주소창 왼쪽 자물쇠에서 허용해 주세요');
+    }
+  };
+
+  // 근무 시작 시간이 지났는데 출근 안 했으면 하루 한 번 알림
+  useEffect(() => {
+    const check = () => {
+      if (!profile?.work_start || myWorkSession) return;
+      const nowHM = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false,
+      }).format(new Date());
+      if (nowHM < profile.work_start.slice(0, 5)) return;
+      const key = `nudge-${kstToday()}`;
+      if (localStorage.getItem(key)) return;
+      localStorage.setItem(key, '1');
+      notify('오늘 일 안 하나요? 👀', `설정한 근무 시작 시간(${profile.work_start.slice(0, 5)})이 지났어요. 출근 버튼이 기다리고 있어요!`);
+      toast('👀 오늘 일 안 하나요? 근무 시작 시간이 지났어요');
+    };
+    check();
+    const t = setInterval(check, 60000);
+    return () => clearInterval(t);
+  }, [profile, myWorkSession]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
@@ -59,6 +92,11 @@ export default function Home() {
             )}
           </div>
           <div className="flex items-center gap-2">
+            {!notifOn && (
+              <Button variant="ghost" size="icon" onClick={enableNotifications} className="text-amber-500" title="알림 켜기">
+                <Bell className="w-4 h-4" />
+              </Button>
+            )}
             <Button variant="ghost" size="sm" onClick={() => navigate('/tasks')} className="text-gray-600">
               <ListTodo className="w-4 h-4 mr-1" />
               <span className="hidden sm:inline">할 일</span>
