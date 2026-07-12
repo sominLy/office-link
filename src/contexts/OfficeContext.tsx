@@ -28,7 +28,12 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const fetchOffice = useCallback(async () => {
-    if (!user) return;
+    // 로그아웃 상태에서도 로딩을 끝내야 로그인 화면이 뜬다
+    if (!user) {
+      setOffice(null);
+      setLoading(false);
+      return;
+    }
     const { data: memberData } = await supabase
       .from('office_members')
       .select('office_id')
