@@ -11,6 +11,9 @@ import { LogOut, ChevronDown, Clock, ListTodo, BarChart3, Copy } from 'lucide-re
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { defaultAvatar } from '@/lib/avatar';
+import { useState } from 'react';
+import { MemberStatus } from '@/lib/types';
+import MemberStatsDialog from '@/components/MemberStatsDialog';
 
 const STATUS_OPTIONS: StatusPreset[] = ['출근', '집중 중', '업무 중', '휴식 중', '자리 비움', '스터디/회의 중'];
 
@@ -28,6 +31,7 @@ export default function Home() {
   const { profile, signOut } = useAuth();
   const { office, members, myWorkSession, myStatusSession, clockIn, clockOut, changeStatus } = useOffice();
   const navigate = useNavigate();
+  const [selectedMember, setSelectedMember] = useState<MemberStatus | null>(null);
 
   const currentStatus = myStatusSession?.status || '퇴근';
   const isWorking = !!myWorkSession;
@@ -133,10 +137,12 @@ export default function Home() {
 
         {/* Office Members */}
         <section>
-          <h2 className="text-sm font-medium text-gray-500 mb-3 px-1">오피스 멤버</h2>
+          <h2 className="text-sm font-medium text-gray-500 mb-3 px-1">오피스 멤버 <span className="text-gray-300">· 카드를 누르면 기록이 보여요</span></h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {members.map((member) => (
-              <MemberCard key={member.user_id} member={member} />
+              <button key={member.user_id} onClick={() => setSelectedMember(member)} className="text-left">
+                <MemberCard member={member} />
+              </button>
             ))}
             {members.length === 0 && (
               <p className="text-gray-400 text-sm col-span-full text-center py-8">
@@ -146,6 +152,14 @@ export default function Home() {
           </div>
         </section>
       </main>
+
+      {office && (
+        <MemberStatsDialog
+          member={selectedMember}
+          officeId={office.id}
+          onClose={() => setSelectedMember(null)}
+        />
+      )}
     </div>
   );
 }
