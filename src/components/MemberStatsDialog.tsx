@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import { MemberStatus, Task } from '@/lib/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -38,8 +39,41 @@ function sumSeconds(rows: { started_at: string; ended_at: string | null }[]): nu
   }, 0);
 }
 
+const CHEER_EMOJIS = ['👍', '🔥', '💪'];
+
+interface Reaction { task_id: string; user_id: string; emoji: string }
+
 export default function MemberStatsDialog({ member, officeId, onClose }: Props) {
+  const { user } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
+  const [reactions, setReactions] = useState<Reaction[]>([]);
+
+  const fetchReactions = async (taskIds: string[]) => {
+    if (taskIds.length === 0) { setReactions([]); return; }
+    const { data } = await supabase
+      .from('task_reactions')
+      .select('task_id, user_id, emoji')
+      .in('task_id', taskIds);
+    setReactions(data || []);
+  };
+
+  const toggleReaction = async (task: Task, emoji: string) => {
+    if (!user || !member) return;
+    const mine = reactions.find(r => r.task_id === task.id && r.user_id === user.id && r.emoji === emoji);
+    if (mine) {
+      await supabase.from('task_reactions').delete()
+        .eq('task_id', task.id).eq('user_id', user.id).eq('emoji', emoji);
+    } else {
+      const { error } = await supabase.from('task_reactions').insert({ task_id: task.id, user_id: user.id, emoji });
+      // 내 할 일이 아닐 때만 상대에게 응원 푸시
+      if (!error && member.user_id !== user.id) {
+        supabase.functions.invoke('push-notify', {
+          body: { action: 'cheer', target_id: member.user_id, actor_id: user.id, emoji, task_title: task.title },
+        }).catch(() => {});
+      }
+    }
+    fetchReactions(stats?.weekTasks.map(t => t.id) || []);
+  };
 
   useEffect(() => {
     if (!member) {
@@ -98,6 +132,7 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
         isFocusingNow: !!activeFocus,
         focusingTaskTitle: (activeFocus?.tasks as unknown as { title: string } | null)?.title || null,
       });
+      fetchReactions((weekTasks || []).map(t => t.id));
     };
     load();
   }, [member, officeId]);
@@ -188,9 +223,9 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
                   {stats.weekTasks.length === 0 ? (
                     <p className="text-sm text-gray-400 text-center py-2">등록된 할 일이 없어요</p>
                   ) : (
-                    <ul className="space-y-1.5 max-h-40 overflow-y-auto">
+                    <ul className="space-y-1.5 max-h-52 overflow-y-auto">
                       {stats.weekTasks.map(task => (
-                        <li key={task.id} className="flex items-center gap-2 text-sm">
+                        <li key={task.id} className="flex items-center gap-2 text-sm flex-wrap">
                           {task.status === 'done' ? (
                             <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
                           ) : (
@@ -207,6 +242,28 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
                           {task.status === 'in_progress' && (
                             <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-600 border-blue-200 flex-shrink-0">진행 중</Badge>
                           )}
+                          {/* 이모지 응원 버튼 */}
+                          <span className="flex items-center gap-1 ml-auto">
+                            {CHEER_EMOJIS.map(emoji => {
+                              const all = reactions.filter(r => r.task_id === task.id && r.emoji === emoji);
+                              const mine = !!user && all.some(r => r.user_id === user.id);
+                              return (
+                                <button
+                                  key={emoji}
+                                  onClick={() => toggleReaction(task, emoji)}
+                                  className={`text-xs rounded-full px-1.5 py-0.5 border transition-colors ${
+                                    mine
+                                      ? 'bg-amber-100 border-amber-300'
+                                      : all.length > 0
+                                        ? 'bg-amber-50 border-amber-200 hover:bg-amber-100'
+                                        : 'bg-white border-gray-150 opacity-40 hover:opacity-100 hover:border-amber-200'
+                                  }`}
+                                >
+                                  {emoji}{all.length > 0 && <span className="ml-0.5 text-[10px] text-gray-500">{all.length}</span>}
+                                </button>
+                              );
+                            })}
+                          </span>
                         </li>
                       ))}
                     </ul>

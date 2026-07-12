@@ -61,6 +61,18 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: cors });
   }
 
+  if (payload.action === 'cheer') {
+    const { target_id, actor_id, emoji, task_title } = payload;
+    if (!target_id || !actor_id || target_id === actor_id) return new Response('ok', { headers: cors });
+    const { data: actor } = await supabase.from('profiles').select('nickname').eq('id', actor_id).single();
+    await sendTo(
+      [target_id],
+      `${actor?.nickname || '멤버'}님이 ${emoji || '👍'} 응원을 보냈어요!`,
+      task_title ? `"${task_title}" 화이팅!` : '오늘도 화이팅!',
+    );
+    return new Response('ok', { headers: cors });
+  }
+
   if (payload.action === 'nudge') {
     const now = new Date();
     const kstHM = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false }).format(now);

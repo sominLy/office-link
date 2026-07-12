@@ -63,6 +63,17 @@ export interface Task {
   week_start: string;
   sort_order: number;
   completed_at: string | null;
+  routine_id: string | null; // 루틴에서 자동 생성된 할 일이면 원본 루틴 id
+  created_at: string;
+}
+
+export interface Routine {
+  id: string;
+  office_id: string;
+  user_id: string;
+  title: string;
+  category: string | null;
+  priority: 'low' | 'normal' | 'high';
   created_at: string;
 }
 

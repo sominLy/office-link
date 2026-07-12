@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
-import { Task } from '@/lib/types';
+import { Task, Routine } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, ArrowLeft, Trash2, CheckCircle2, Circle, GripVertical, Pencil, FolderOpen, CalendarDays } from 'lucide-react';
+import { Plus, ArrowLeft, Trash2, CheckCircle2, Circle, GripVertical, Pencil, FolderOpen, CalendarDays, Repeat } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { getWeekStart, kstToday } from '@/lib/dates';
@@ -47,6 +47,10 @@ export default function Tasks() {
   const [editCategory, setEditCategory] = useState('');
   const [editDueDate, setEditDueDate] = useState('');
   const [editPriority, setEditPriority] = useState<'low' | 'normal' | 'high'>('normal');
+  const [routines, setRoutines] = useState<Routine[]>([]);
+  const [routineDialogOpen, setRoutineDialogOpen] = useState(false);
+  const [routineTitle, setRoutineTitle] = useState('');
+  const [routineCategory, setRoutineCategory] = useState('');
   const navigate = useNavigate();
 
   // 이미 쓰고 있는 카테고리들 (입력할 때 추천으로 보여줌)
@@ -66,9 +70,71 @@ export default function Tasks() {
     setTasks(data || []);
   }, [user, office, weekStart]);
 
+  // 루틴 목록을 불러오고, 이번 주에 아직 생성 안 된 루틴 할 일을 자동 생성
+  const syncRoutines = useCallback(async () => {
+    if (!user || !office) return;
+    const { data: routineList } = await supabase
+      .from('routines')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('office_id', office.id)
+      .order('created_at');
+    setRoutines(routineList || []);
+    if (!routineList || routineList.length === 0) return;
+
+    const { data: existing } = await supabase
+      .from('tasks')
+      .select('routine_id')
+      .eq('user_id', user.id)
+      .eq('week_start', weekStart)
+      .not('routine_id', 'is', null);
+    const existingIds = new Set((existing || []).map(t => t.routine_id));
+    const missing = routineList.filter(r => !existingIds.has(r.id));
+    if (missing.length === 0) return;
+    // unique index(one_task_per_routine_week)가 중복 생성을 막아준다
+    await supabase.from('tasks').insert(missing.map(r => ({
+      office_id: office.id,
+      user_id: user.id,
+      title: r.title,
+      category: r.category,
+      priority: r.priority,
+      status: 'todo',
+      week_start: weekStart,
+      sort_order: 999,
+      routine_id: r.id,
+    })));
+    fetchTasks();
+  }, [user, office, weekStart, fetchTasks]);
+
   useEffect(() => {
     fetchTasks();
-  }, [fetchTasks]);
+    syncRoutines();
+  }, [fetchTasks, syncRoutines]);
+
+  const addRoutine = async () => {
+    if (!user || !office || !routineTitle.trim()) return;
+    const { error } = await supabase.from('routines').insert({
+      office_id: office.id,
+      user_id: user.id,
+      title: routineTitle.trim(),
+      category: routineCategory.trim() || null,
+      priority: 'normal',
+    });
+    if (error) {
+      toast.error('루틴 추가에 실패했어요');
+      return;
+    }
+    setRoutineTitle('');
+    setRoutineCategory('');
+    toast.success('매주 자동으로 추가돼요 🔁');
+    syncRoutines();
+  };
+
+  const deleteRoutine = async (id: string) => {
+    await supabase.from('routines').delete().eq('id', id);
+    toast.success('루틴이 삭제되었어요 (이미 만들어진 할 일은 그대로예요)');
+    syncRoutines();
+  };
 
   const addTask = async () => {
     if (!user || !office || !newTitle.trim()) return;
@@ -156,6 +222,7 @@ export default function Tasks() {
       </button>
       <span className={`text-sm flex-1 ${task.status === 'done' ? 'line-through text-gray-400' : 'text-gray-700'}`}>
         {task.title}
+        {task.routine_id && <Repeat className="w-3 h-3 text-amber-400 inline ml-1" />}
       </span>
       {task.due_date && task.status !== 'done' && (() => {
         const b = dueBadge(task.due_date, kstToday());
@@ -197,6 +264,10 @@ export default function Tasks() {
             </Button>
             <h1 className="font-bold text-gray-800">이번 주 할 일</h1>
           </div>
+          <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" className="border-amber-200 text-amber-700" onClick={() => setRoutineDialogOpen(true)}>
+            <Repeat className="w-4 h-4 mr-1" /> 루틴
+          </Button>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white">
@@ -261,6 +332,7 @@ export default function Tasks() {
               </div>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
       </header>
 
@@ -327,6 +399,41 @@ export default function Tasks() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* 루틴 관리 다이얼로그 */}
+      <Dialog open={routineDialogOpen} onOpenChange={setRoutineDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Repeat className="w-4 h-4 text-amber-600" /> 반복 할 일 (루틴)</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-500 -mt-2">등록하면 매주 이번 주 할 일에 자동으로 추가돼요.</p>
+          <div className="space-y-3 pt-1">
+            {routines.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-3">아직 루틴이 없어요</p>
+            ) : (
+              <ul className="space-y-1.5 max-h-48 overflow-y-auto">
+                {routines.map(r => (
+                  <li key={r.id} className="flex items-center gap-2 text-sm bg-amber-50/50 border border-amber-100 rounded-lg px-3 py-2">
+                    <Repeat className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                    <span className="flex-1 truncate text-gray-700">{r.title}</span>
+                    {r.category && <Badge variant="outline" className="text-[10px] bg-white text-amber-600 border-amber-200">{r.category}</Badge>}
+                    <Button variant="ghost" size="icon" className="w-6 h-6 text-gray-300 hover:text-red-500" onClick={() => deleteRoutine(r.id)}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="space-y-2 border-t pt-3">
+              <Input placeholder="예: 영어 단어 50개 외우기" value={routineTitle} onChange={(e) => setRoutineTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addRoutine()} maxLength={100} />
+              <div className="flex gap-2">
+                <Input placeholder="카테고리 (선택)" value={routineCategory} onChange={(e) => setRoutineCategory(e.target.value)} list="category-suggestions" maxLength={20} className="flex-1" />
+                <Button onClick={addRoutine} className="bg-amber-600 hover:bg-amber-700 text-white">추가</Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* 할 일 수정 다이얼로그 */}
       <Dialog open={!!editTask} onOpenChange={(open) => !open && setEditTask(null)}>
