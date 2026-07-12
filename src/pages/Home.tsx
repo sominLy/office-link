@@ -74,13 +74,17 @@ export default function Home() {
         <section className="bg-white rounded-2xl p-5 shadow-sm border border-amber-100/50">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-lg">
+              <button
+                onClick={() => navigate('/profile')}
+                className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-lg hover:ring-2 hover:ring-amber-300 transition-shadow"
+                title="내 계정 관리"
+              >
                 {profile?.avatar_url ? (
                   <img src={profile.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
                 ) : (
                   '👤'
                 )}
-              </div>
+              </button>
               <div>
                 <p className="font-semibold text-gray-800">{profile?.nickname}</p>
                 <Badge variant="outline" className={`text-xs ${statusColors[currentStatus]}`}>
