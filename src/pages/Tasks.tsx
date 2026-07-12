@@ -262,6 +262,13 @@ export default function Tasks() {
                       <FolderOpen className="w-4 h-4 text-amber-500" />
                       <h3 className="text-sm font-semibold text-gray-700">{cat ?? '기타'}</h3>
                       <Badge variant="secondary" className="text-xs bg-amber-50 text-amber-700">{done}/{group.length}</Badge>
+                      <button
+                        onClick={() => { setNewCategory(cat ?? ''); setDialogOpen(true); }}
+                        className="ml-auto flex items-center gap-0.5 text-xs text-amber-600 hover:bg-amber-50 rounded-full px-2 py-0.5 border border-amber-200"
+                        title={`${cat ?? '기타'}에 할 일 추가`}
+                      >
+                        <Plus className="w-3 h-3" /> 추가
+                      </button>
                     </div>
                     {group.map((task) => <TaskItem key={task.id} task={task} />)}
                   </div>
