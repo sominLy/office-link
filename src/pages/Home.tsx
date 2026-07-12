@@ -7,8 +7,9 @@ import MyTasks from '@/components/MyTasks';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { LogOut, ChevronDown, Clock, ListTodo, BarChart3 } from 'lucide-react';
+import { LogOut, ChevronDown, Clock, ListTodo, BarChart3, Copy } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 const STATUS_OPTIONS: StatusPreset[] = ['출근', '집중 중', '업무 중', '휴식 중', '자리 비움', '스터디/회의 중'];
 
@@ -38,6 +39,19 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <span className="text-xl">🏢</span>
             <h1 className="font-bold text-gray-800">{office?.name || '연결오피스'}</h1>
+            {office && (
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(office.invite_code);
+                  toast.success(`초대 코드 ${office.invite_code} 복사됨! 친구에게 공유하세요`);
+                }}
+                className="flex items-center gap-1 text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-full px-2.5 py-1 transition-colors"
+                title="초대 코드 복사"
+              >
+                <Copy className="w-3 h-3" />
+                {office.invite_code}
+              </button>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => navigate('/tasks')} className="text-gray-600">
