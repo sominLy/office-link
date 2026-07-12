@@ -9,9 +9,10 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { ArrowLeft, Camera, Trash2 } from 'lucide-react';
+import { ArrowLeft, Camera, Trash2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { defaultAvatar } from '@/lib/avatar';
 
 export default function Profile() {
   const { user, profile, refreshProfile, signOut } = useAuth();
@@ -47,6 +48,22 @@ export default function Profile() {
       toast.success('프로필 사진이 변경되었어요');
     }
     setUploading(false);
+  };
+
+  const handleAvatarRemove = async () => {
+    if (!user) return;
+    const { error } = await supabase.from('profiles').update({ avatar_url: null }).eq('id', user.id);
+    if (error) {
+      toast.error('사진 삭제에 실패했어요');
+      return;
+    }
+    // 저장소에 남은 이전 사진 파일도 정리
+    const { data: files } = await supabase.storage.from('avatars').list(user.id);
+    if (files?.length) {
+      await supabase.storage.from('avatars').remove(files.map(f => `${user.id}/${f.name}`));
+    }
+    await refreshProfile();
+    toast.success('기본 이미지로 변경되었어요');
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -101,7 +118,7 @@ export default function Profile() {
                   {profile?.avatar_url ? (
                     <img src={profile.avatar_url} alt="" className="w-20 h-20 object-cover" />
                   ) : (
-                    '👤'
+                    defaultAvatar(profile?.nickname)
                   )}
                 </div>
                 <button
@@ -115,9 +132,17 @@ export default function Profile() {
                 </button>
                 <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
               </div>
-              <p className="text-sm text-gray-500">
-                {uploading ? '업로드 중...' : '카메라 버튼을 눌러 사진을 변경하세요 (5MB 이하)'}
-              </p>
+              <div className="space-y-1.5">
+                <p className="text-sm text-gray-500">
+                  {uploading ? '업로드 중...' : '카메라 버튼을 눌러 사진을 변경하세요 (5MB 이하)'}
+                </p>
+                {profile?.avatar_url && (
+                  <Button type="button" variant="ghost" size="sm" onClick={handleAvatarRemove} className="text-gray-400 hover:text-red-500 h-7 px-2">
+                    <X className="w-3.5 h-3.5 mr-1" />
+                    사진 삭제 (기본 이미지로)
+                  </Button>
+                )}
+              </div>
             </div>
 
             {/* 닉네임 */}

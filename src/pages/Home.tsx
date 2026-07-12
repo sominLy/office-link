@@ -10,6 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { LogOut, ChevronDown, Clock, ListTodo, BarChart3, Copy } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { defaultAvatar } from '@/lib/avatar';
 
 const STATUS_OPTIONS: StatusPreset[] = ['출근', '집중 중', '업무 중', '휴식 중', '자리 비움', '스터디/회의 중'];
 
@@ -82,7 +83,7 @@ export default function Home() {
                 {profile?.avatar_url ? (
                   <img src={profile.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
                 ) : (
-                  '👤'
+                  defaultAvatar(profile?.nickname)
                 )}
               </button>
               <div>

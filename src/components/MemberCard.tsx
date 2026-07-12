@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { MemberStatus, StatusPreset } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { defaultAvatar } from '@/lib/avatar';
 
 const statusColors: Record<StatusPreset, string> = {
   '출근': 'bg-green-100 text-green-700',
@@ -51,7 +52,7 @@ export default function MemberCard({ member }: { member: MemberStatus }) {
             {member.avatar_url ? (
               <img src={member.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
             ) : (
-              <span className="text-amber-600 font-medium text-sm">{member.nickname.charAt(0)}</span>
+              <span className="text-lg">{defaultAvatar(member.nickname)}</span>
             )}
           </div>
           <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${statusDots[member.current_status]}`} />
