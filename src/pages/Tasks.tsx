@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, ArrowLeft, Trash2, CheckCircle2, Circle, GripVertical } from 'lucide-react';
+import { Plus, ArrowLeft, Trash2, CheckCircle2, Circle, GripVertical, Pencil, FolderOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { getWeekStart } from '@/lib/dates';
@@ -29,9 +29,17 @@ export default function Tasks() {
   const { office } = useOffice();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTitle, setNewTitle] = useState('');
+  const [newCategory, setNewCategory] = useState('');
   const [newPriority, setNewPriority] = useState<'low' | 'normal' | 'high'>('normal');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editTask, setEditTask] = useState<Task | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editCategory, setEditCategory] = useState('');
+  const [editPriority, setEditPriority] = useState<'low' | 'normal' | 'high'>('normal');
   const navigate = useNavigate();
+
+  // 이미 쓰고 있는 카테고리들 (입력할 때 추천으로 보여줌)
+  const categories = [...new Set(tasks.map(t => t.category).filter(Boolean))] as string[];
 
   const weekStart = getWeekStart();
 
@@ -54,20 +62,52 @@ export default function Tasks() {
   const addTask = async () => {
     if (!user || !office || !newTitle.trim()) return;
     const sortOrder = tasks.length;
-    await supabase.from('tasks').insert({
+    const { error } = await supabase.from('tasks').insert({
       office_id: office.id,
       user_id: user.id,
       title: newTitle.trim(),
+      category: newCategory.trim() || null,
       status: 'todo',
       priority: newPriority,
       week_start: weekStart,
       sort_order: sortOrder,
     });
+    if (error) {
+      toast.error('추가에 실패했어요');
+      return;
+    }
     setNewTitle('');
+    setNewCategory('');
     setNewPriority('normal');
     setDialogOpen(false);
     fetchTasks();
     toast.success('할 일이 추가되었습니다');
+  };
+
+  const openEdit = (task: Task) => {
+    setEditTask(task);
+    setEditTitle(task.title);
+    setEditCategory(task.category || '');
+    setEditPriority(task.priority);
+  };
+
+  const saveEdit = async () => {
+    if (!editTask || !editTitle.trim()) return;
+    const { error } = await supabase
+      .from('tasks')
+      .update({
+        title: editTitle.trim(),
+        category: editCategory.trim() || null,
+        priority: editPriority,
+      })
+      .eq('id', editTask.id);
+    if (error) {
+      toast.error('수정에 실패했어요');
+      return;
+    }
+    setEditTask(null);
+    fetchTasks();
+    toast.success('수정되었습니다');
   };
 
   const updateStatus = async (task: Task, status: 'todo' | 'in_progress' | 'done') => {
@@ -115,6 +155,9 @@ export default function Tasks() {
           완료
         </Button>
       )}
+      <Button variant="ghost" size="icon" className="w-7 h-7 text-gray-300 opacity-0 group-hover:opacity-100 hover:text-amber-600" onClick={() => openEdit(task)}>
+        <Pencil className="w-3.5 h-3.5" />
+      </Button>
       <Button variant="ghost" size="icon" className="w-7 h-7 text-gray-300 opacity-0 group-hover:opacity-100 hover:text-red-500" onClick={() => deleteTask(task.id)}>
         <Trash2 className="w-3.5 h-3.5" />
       </Button>
@@ -152,6 +195,29 @@ export default function Tasks() {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label>카테고리 (선택)</Label>
+                  <Input
+                    placeholder="예: 자소서, 코딩테스트, 영어"
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                    list="category-suggestions"
+                    maxLength={20}
+                  />
+                  <datalist id="category-suggestions">
+                    {categories.map((c) => <option key={c} value={c} />)}
+                  </datalist>
+                  {categories.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {categories.map((c) => (
+                        <button key={c} type="button" onClick={() => setNewCategory(c)}
+                          className="text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5">
+                          {c}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2">
                   <Label>우선순위</Label>
                   <Select value={newPriority} onValueChange={(v) => setNewPriority(v as 'low' | 'normal' | 'high')}>
                     <SelectTrigger>
@@ -178,13 +244,28 @@ export default function Tasks() {
             <TabsTrigger value="kanban">칸반</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="list" className="space-y-2">
+          <TabsContent value="list" className="space-y-5">
             {tasks.length === 0 ? (
               <Card className="p-8 text-center border-dashed">
                 <p className="text-gray-400 text-sm">이번 주 할 일을 추가해 보세요</p>
               </Card>
             ) : (
-              tasks.map((task) => <TaskItem key={task.id} task={task} />)
+              // 카테고리별로 묶어서 표시 (카테고리 없는 항목은 맨 아래 '기타')
+              [...categories, null].map((cat) => {
+                const group = tasks.filter(t => (t.category || null) === cat);
+                if (group.length === 0) return null;
+                const done = group.filter(t => t.status === 'done').length;
+                return (
+                  <div key={cat ?? '__none__'} className="space-y-2">
+                    <div className="flex items-center gap-2 px-1">
+                      <FolderOpen className="w-4 h-4 text-amber-500" />
+                      <h3 className="text-sm font-semibold text-gray-700">{cat ?? '기타'}</h3>
+                      <Badge variant="secondary" className="text-xs bg-amber-50 text-amber-700">{done}/{group.length}</Badge>
+                    </div>
+                    {group.map((task) => <TaskItem key={task.id} task={task} />)}
+                  </div>
+                );
+              })
             )}
           </TabsContent>
 
@@ -212,6 +293,47 @@ export default function Tasks() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* 할 일 수정 다이얼로그 */}
+      <Dialog open={!!editTask} onOpenChange={(open) => !open && setEditTask(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>할 일 수정</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label>제목</Label>
+              <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && saveEdit()} />
+            </div>
+            <div className="space-y-2">
+              <Label>카테고리 (선택)</Label>
+              <Input value={editCategory} onChange={(e) => setEditCategory(e.target.value)} list="category-suggestions" maxLength={20} placeholder="예: 자소서, 코딩테스트" />
+              {categories.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {categories.map((c) => (
+                    <button key={c} type="button" onClick={() => setEditCategory(c)}
+                      className="text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5">
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>우선순위</Label>
+              <Select value={editPriority} onValueChange={(v) => setEditPriority(v as 'low' | 'normal' | 'high')}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="high">높음</SelectItem>
+                  <SelectItem value="normal">보통</SelectItem>
+                  <SelectItem value="low">낮음</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={saveEdit} className="w-full bg-amber-600 hover:bg-amber-700 text-white">저장</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

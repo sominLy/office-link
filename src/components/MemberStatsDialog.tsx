@@ -19,6 +19,8 @@ interface Stats {
   weekFocusSeconds: number;
   weekWorkDays: number;
   weekTasks: Task[];
+  focusingTaskTitle: string | null; // 지금 집중 중인 업무 (없으면 null)
+  isFocusingNow: boolean;
 }
 
 function fmt(seconds: number): string {
@@ -62,6 +64,15 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
         .eq('office_id', officeId)
         .gte('started_at', weekISO);
 
+      const { data: activeFocus } = await supabase
+        .from('focus_sessions')
+        .select('task_id, tasks(title)')
+        .eq('user_id', member.user_id)
+        .eq('office_id', officeId)
+        .is('ended_at', null)
+        .limit(1)
+        .maybeSingle();
+
       const { data: weekTasks } = await supabase
         .from('tasks')
         .select('*')
@@ -84,6 +95,8 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
         weekFocusSeconds: sumSeconds(weekFocus || []),
         weekWorkDays: workDays,
         weekTasks: weekTasks || [],
+        isFocusingNow: !!activeFocus,
+        focusingTaskTitle: (activeFocus?.tasks as unknown as { title: string } | null)?.title || null,
       });
     };
     load();
@@ -113,6 +126,19 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
               <p className="text-sm text-gray-400 text-center py-6">불러오는 중...</p>
             ) : (
               <div className="space-y-4">
+                {/* 지금 집중 중 */}
+                {stats.isFocusingNow && (
+                  <div className="bg-red-50 border border-red-100 rounded-lg p-3 flex items-center gap-2">
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                    </span>
+                    <p className="text-sm text-red-700">
+                      지금 <b>{stats.focusingTaskTitle || '자유 집중'}</b>에 집중하고 있어요 🔥
+                    </p>
+                  </div>
+                )}
+
                 {/* 오늘 */}
                 <div>
                   <p className="text-xs font-medium text-gray-400 mb-2">오늘</p>
@@ -173,6 +199,11 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
                           <span className={`truncate ${task.status === 'done' ? 'line-through text-gray-400' : 'text-gray-700'}`}>
                             {task.title}
                           </span>
+                          {task.category && (
+                            <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-600 border-amber-200 flex-shrink-0">
+                              {task.category}
+                            </Badge>
+                          )}
                           {task.status === 'in_progress' && (
                             <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-600 border-blue-200 flex-shrink-0">진행 중</Badge>
                           )}
