@@ -11,6 +11,7 @@ import { ArrowLeft, Send, Trash2, Sun, Moon, Hand, MessageCircleHeart } from 'lu
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { defaultAvatar } from '@/lib/avatar';
+import { displayName } from '@/lib/callsign';
 import BottomNav from '@/components/BottomNav';
 
 function timeAgo(iso: string): string {
@@ -87,20 +88,26 @@ export default function Feed() {
     fetchFeed();
   };
 
+  const nameOf = (userId: string, fallback?: string | null) => {
+    const m = members.find(x => x.user_id === userId);
+    if (m) return displayName(m.nickname, office?.title_mode, m.rank_index);
+    return fallback ? displayName(fallback, office?.title_mode) : '멤버';
+  };
+
   const renderLine = (item: FeedItem) => {
-    const name = item.author?.nickname || '멤버';
+    const name = nameOf(item.user_id, item.author?.nickname);
     switch (item.type) {
       case 'clock_in':
-        return <span><b>{name}</b>님이 출근했습니다 <Sun className="w-3.5 h-3.5 inline text-amber-500" /></span>;
+        return <span><b>{name}</b>이(가) 출근했습니다 <Sun className="w-3.5 h-3.5 inline text-amber-500" /></span>;
       case 'clock_out':
-        return <span><b>{name}</b>님이 퇴근했습니다 <Moon className="w-3.5 h-3.5 inline text-indigo-400" /></span>;
+        return <span><b>{name}</b>이(가) 퇴근했습니다 <Moon className="w-3.5 h-3.5 inline text-indigo-400" /></span>;
       case 'wave':
-        return <span><b>{name}</b>님이 <b>{item.target?.nickname || '멤버'}</b>님에게 반갑다고 인사했어요 {item.emoji || '👋'}</span>;
+        return <span><b>{name}</b>이(가) <b>{item.target_user_id ? nameOf(item.target_user_id, item.target?.nickname) : '멤버'}</b>에게 반갑다고 인사했어요 {item.emoji || '👋'}</span>;
       case 'post':
         return (
           <span>
             <b>{name}</b>
-            {item.target && <> → <b>{item.target.nickname}</b></>}
+            {item.target_user_id && <> → <b>{nameOf(item.target_user_id, item.target?.nickname)}</b></>}
             <span className="text-gray-700"> : {item.content}</span>
           </span>
         );

@@ -10,6 +10,7 @@ import ClockOut from './pages/ClockOut';
 import Report from './pages/Report';
 import Profile from './pages/Profile';
 import Feed from './pages/Feed';
+import OfficeSetup from './pages/OfficeSetup';
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
               <Route path="/report" element={<Report />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/feed" element={<Feed />} />
+              <Route path="/office-setup" element={<OfficeSetup />} />
             </Routes>
           </BrowserRouter>
         </TooltipProvider>

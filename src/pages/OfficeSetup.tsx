@@ -6,9 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 export default function OfficeSetup() {
   const { joinOffice, createOffice } = useOffice();
+  const navigate = useNavigate();
   const [inviteCode, setInviteCode] = useState('');
   const [officeName, setOfficeName] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,7 +20,7 @@ export default function OfficeSetup() {
     setLoading(true);
     const { error } = await joinOffice(inviteCode);
     if (error) toast.error(error);
-    else toast.success('오피스에 가입했습니다!');
+    else { toast.success('오피스에 가입했습니다!'); navigate('/'); }
     setLoading(false);
   };
 
@@ -27,7 +29,7 @@ export default function OfficeSetup() {
     setLoading(true);
     const { error } = await createOffice(officeName);
     if (error) toast.error(error);
-    else toast.success('오피스가 생성되었습니다!');
+    else { toast.success('오피스가 생성되었습니다!'); navigate('/'); }
     setLoading(false);
   };
 

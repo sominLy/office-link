@@ -7,7 +7,7 @@ import MyTasks from '@/components/MyTasks';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { LogOut, ChevronDown, Clock, ListTodo, BarChart3, Copy, Bell } from 'lucide-react';
+import { LogOut, ChevronDown, Clock, ListTodo, BarChart3, Copy, Bell, Building2, Plus, Tag, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { defaultAvatar } from '@/lib/avatar';
@@ -18,6 +18,8 @@ import BottomNav from '@/components/BottomNav';
 import { notificationsEnabled, requestNotificationPermission, notify } from '@/lib/notify';
 import { subscribePush } from '@/lib/push';
 import { kstToday } from '@/lib/dates';
+import { displayName, TITLE_MODES } from '@/lib/callsign';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const STATUS_OPTIONS: StatusPreset[] = ['출근', '집중 중', '업무 중', '휴식 중', '자리 비움', '스터디/회의 중'];
 
@@ -33,10 +35,15 @@ const statusColors: Record<StatusPreset, string> = {
 
 export default function Home() {
   const { user, profile, signOut } = useAuth();
-  const { office, members, myWorkSession, myStatusSession, clockIn, clockOut, changeStatus } = useOffice();
+  const { office, offices, myRole, switchOffice, updateTitleMode, members, myWorkSession, myStatusSession, clockIn, clockOut, changeStatus } = useOffice();
   const navigate = useNavigate();
   const [selectedMember, setSelectedMember] = useState<MemberStatus | null>(null);
   const [notifOn, setNotifOn] = useState(notificationsEnabled());
+  const [titleDialogOpen, setTitleDialogOpen] = useState(false);
+
+  // 내 멤버 정보 (직급 순서 포함) — 호칭 표시용
+  const me = members.find(m => m.user_id === user?.id);
+  const myDisplay = me ? displayName(me.nickname, office?.title_mode, me.rank_index) : profile?.nickname;
 
   const currentStatus = myStatusSession?.status || '퇴근';
   const isWorking = !!myWorkSession;
@@ -86,7 +93,31 @@ export default function Home() {
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xl">🏢</span>
-            <h1 className="font-bold text-gray-800">{office?.name || '연결오피스'}</h1>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-1 font-bold text-gray-800 hover:text-amber-700">
+                  {office?.name || '연결오피스'}
+                  <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                {offices.map(o => (
+                  <DropdownMenuItem key={o.id} onClick={() => switchOffice(o.id)} className="cursor-pointer">
+                    <Building2 className="w-4 h-4 mr-2 text-amber-500" />
+                    {o.name}
+                    {o.id === office?.id && <Check className="w-4 h-4 ml-auto text-amber-600" />}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuItem onClick={() => navigate('/office-setup')} className="cursor-pointer text-amber-600">
+                  <Plus className="w-4 h-4 mr-2" /> 오피스 만들기 / 참여
+                </DropdownMenuItem>
+                {myRole === 'admin' && (
+                  <DropdownMenuItem onClick={() => setTitleDialogOpen(true)} className="cursor-pointer">
+                    <Tag className="w-4 h-4 mr-2 text-gray-400" /> 호칭 설정
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
             {office && (
               <button
                 onClick={() => {
@@ -139,7 +170,7 @@ export default function Home() {
                 )}
               </button>
               <div>
-                <p className="font-semibold text-gray-800">{profile?.nickname}</p>
+                <p className="font-semibold text-gray-800">{myDisplay}</p>
                 <Badge variant="outline" className={`text-xs ${statusColors[currentStatus]}`}>
                   {currentStatus}
                 </Badge>
@@ -200,6 +231,38 @@ export default function Home() {
           </div>
         </section>
       </main>
+
+      {/* 호칭 설정 (방장 전용) */}
+      <Dialog open={titleDialogOpen} onOpenChange={setTitleDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Tag className="w-4 h-4 text-amber-600" /> 오피스 호칭 설정</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-500 -mt-1">멤버들을 어떻게 부를까요? 모든 화면에 적용돼요.</p>
+          <div className="space-y-2">
+            {TITLE_MODES.map(m => (
+              <button
+                key={m.value}
+                onClick={() => { updateTitleMode(m.value); setTitleDialogOpen(false); }}
+                className={`w-full text-left rounded-lg border px-3.5 py-2.5 transition-colors ${
+                  office?.title_mode === m.value
+                    ? 'border-amber-400 bg-amber-50'
+                    : 'border-gray-150 hover:border-amber-200'
+                }`}
+              >
+                <p className="text-sm font-medium text-gray-800 flex items-center">
+                  {m.label}
+                  {office?.title_mode === m.value && <Check className="w-4 h-4 ml-auto text-amber-600" />}
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">예: {m.example}</p>
+              </button>
+            ))}
+          </div>
+          {office?.title_mode === 'rank' && (
+            <p className="text-xs text-amber-600 bg-amber-50 rounded-lg p-2">💡 직급은 오피스에 먼저 들어온 순서대로! 1호 멤버가 사장이에요.</p>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {office && (
         <MemberStatsDialog

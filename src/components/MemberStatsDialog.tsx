@@ -6,6 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { kstStartOfTodayISO, kstStartOfWeekISO, getWeekStart } from '@/lib/dates';
 import { defaultAvatar } from '@/lib/avatar';
+import { displayName } from '@/lib/callsign';
+import { useOffice } from '@/contexts/OfficeContext';
 import { Clock, Target, CheckCircle2, Circle, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -47,6 +49,7 @@ interface Reaction { task_id: string; user_id: string; emoji: string }
 
 export default function MemberStatsDialog({ member, officeId, onClose }: Props) {
   const { user } = useAuth();
+  const { office } = useOffice();
   const [stats, setStats] = useState<Stats | null>(null);
   const [reactions, setReactions] = useState<Reaction[]>([]);
 
@@ -174,7 +177,7 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
                     defaultAvatar(member.nickname)
                   )}
                 </span>
-                {member.nickname}님의 기록
+                {displayName(member.nickname, office?.title_mode, member.rank_index)}의 기록
               </DialogTitle>
             </DialogHeader>
 

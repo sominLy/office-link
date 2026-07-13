@@ -19,6 +19,7 @@ export interface Office {
   id: string;
   name: string;
   invite_code: string;
+  title_mode: 'nim' | 'pro' | 'rank' | 'english';
   created_at: string;
 }
 
@@ -110,4 +111,5 @@ export interface MemberStatus {
   is_working: boolean;
   focus_task_title: string | null; // 지금 집중 중인 업무 제목 (자유 집중이면 null)
   is_focusing: boolean;
+  rank_index: number; // 오피스 가입 순서 (0 = 가장 먼저 = 사장)
 }

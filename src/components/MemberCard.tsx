@@ -3,6 +3,8 @@ import { MemberStatus, StatusPreset } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { defaultAvatar } from '@/lib/avatar';
+import { displayName } from '@/lib/callsign';
+import { useOffice } from '@/contexts/OfficeContext';
 
 const statusColors: Record<StatusPreset, string> = {
   '출근': 'bg-green-100 text-green-700',
@@ -43,6 +45,8 @@ export default function MemberCard({ member }: { member: MemberStatus }) {
   }, [member.status_started_at]);
 
   const isOffline = member.current_status === '퇴근';
+  const { office } = useOffice();
+  const shownName = displayName(member.nickname, office?.title_mode, member.rank_index);
 
   return (
     <Card className={`p-4 border transition-all ${isOffline ? 'opacity-50 border-slate-100' : 'border-amber-100/50 shadow-sm'}`}>
@@ -58,7 +62,7 @@ export default function MemberCard({ member }: { member: MemberStatus }) {
           <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${statusDots[member.current_status]}`} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-gray-800 text-sm truncate">{member.nickname}</p>
+          <p className="font-medium text-gray-800 text-sm truncate">{shownName}</p>
           <div className="flex items-center gap-2 mt-0.5">
             <Badge variant="secondary" className={`text-xs px-1.5 py-0 ${statusColors[member.current_status]}`}>
               {member.current_status}

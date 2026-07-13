@@ -7,6 +7,10 @@ import { notify } from '@/lib/notify';
 
 interface OfficeContextType {
   office: Office | null;
+  offices: Office[];
+  myRole: 'admin' | 'member' | null;
+  switchOffice: (officeId: string) => Promise<void>;
+  updateTitleMode: (mode: Office['title_mode']) => Promise<void>;
   members: MemberStatus[];
   myWorkSession: WorkSession | null;
   myStatusSession: StatusSession | null;
@@ -23,6 +27,8 @@ const OfficeContext = createContext<OfficeContextType | undefined>(undefined);
 export function OfficeProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const [office, setOffice] = useState<Office | null>(null);
+  const [offices, setOffices] = useState<Office[]>([]);
+  const [myRole, setMyRole] = useState<'admin' | 'member' | null>(null);
   const [members, setMembers] = useState<MemberStatus[]>([]);
   const [myWorkSession, setMyWorkSession] = useState<WorkSession | null>(null);
   const [myStatusSession, setMyStatusSession] = useState<StatusSession | null>(null);
@@ -41,32 +47,67 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
-    const { data: memberData } = await supabase
+    // 내가 속한 모든 오피스를 불러오고, 마지막에 보던 오피스(current_office_id)를 현재로 선택
+    const { data: memberships } = await supabase
       .from('office_members')
       .select('office_id')
-      .eq('user_id', user.id)
-      .limit(1)
-      .single();
+      .eq('user_id', user.id);
 
-    if (memberData) {
-      const { data: officeData } = await supabase
-        .from('offices')
-        .select('*')
-        .eq('id', memberData.office_id)
-        .single();
-      setOffice(officeData);
+    if (!memberships || memberships.length === 0) {
+      setOffices([]);
+      setOffice(null);
+      setLoading(false);
+      return;
     }
+
+    const { data: officeList } = await supabase
+      .from('offices')
+      .select('*')
+      .in('id', memberships.map(m => m.office_id))
+      .order('created_at');
+    setOffices(officeList || []);
+
+    const { data: prof } = await supabase
+      .from('profiles')
+      .select('current_office_id')
+      .eq('id', user.id)
+      .single();
+    const current = (officeList || []).find(o => o.id === prof?.current_office_id) || (officeList || [])[0] || null;
+    setOffice(current);
     setLoading(false);
   }, [user]);
+
+  const switchOffice = async (officeId: string) => {
+    if (!user) return;
+    const target = offices.find(o => o.id === officeId);
+    if (!target || target.id === office?.id) return;
+    setOffice(target);
+    setMembers([]);
+    await supabase.from('profiles').update({ current_office_id: officeId }).eq('id', user.id);
+  };
+
+  const updateTitleMode = async (mode: Office['title_mode']) => {
+    if (!office) return;
+    const { error } = await supabase.from('offices').update({ title_mode: mode }).eq('id', office.id);
+    if (error) {
+      toast.error('호칭 변경은 오피스를 만든 사람(방장)만 할 수 있어요');
+      return;
+    }
+    setOffice({ ...office, title_mode: mode });
+    setOffices(offices.map(o => o.id === office.id ? { ...o, title_mode: mode } : o));
+    toast.success('오피스 호칭이 바뀌었어요!');
+  };
 
   const fetchMembers = useCallback(async () => {
     if (!office) return;
     const { data: memberList } = await supabase
       .from('office_members')
-      .select('user_id, profiles(id, nickname, avatar_url)')
-      .eq('office_id', office.id);
+      .select('user_id, role, joined_at, profiles(id, nickname, avatar_url)')
+      .eq('office_id', office.id)
+      .order('joined_at');
 
     if (!memberList) return;
+    setMyRole((memberList.find(m => m.user_id === userIdRef.current)?.role as 'admin' | 'member') || null);
 
     // 멤버별 반복 쿼리 대신 오피스 단위로 한 번에 조회 (N+1 제거)
     const [{ data: openStatuses }, { data: openWorks }, { data: openFocuses }] = await Promise.all([
@@ -93,7 +134,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       focusMap.set(f.user_id, (f.tasks as unknown as { title: string } | null)?.title || null);
     });
 
-    const memberStatuses: MemberStatus[] = memberList.map(member => {
+    const memberStatuses: MemberStatus[] = memberList.map((member, idx) => {
       const profile = member.profiles as unknown as { id: string; nickname: string; avatar_url: string | null };
       const st = statusMap.get(member.user_id);
       return {
@@ -105,6 +146,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
         is_working: workingSet.has(member.user_id),
         is_focusing: focusMap.has(member.user_id),
         focus_task_title: focusMap.get(member.user_id) ?? null,
+        rank_index: idx, // joined_at 순서 = 직급 순서
       };
     });
     setMembers(memberStatuses);
@@ -279,6 +321,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       role: 'member',
     });
     if (error) return { error: '이미 가입된 오피스입니다' };
+    await supabase.from('profiles').update({ current_office_id: officeData.id }).eq('id', user.id);
     await fetchOffice();
     return { error: null };
   };
@@ -308,6 +351,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
         await supabase.from('offices').delete().eq('id', newOffice.id);
         return { error: '오피스 생성에 실패했습니다' };
       }
+      await supabase.from('profiles').update({ current_office_id: newOffice.id }).eq('id', user.id);
       await fetchOffice();
       return { error: null };
     }
@@ -316,7 +360,8 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
 
   return (
     <OfficeContext.Provider value={{
-      office, members, myWorkSession, myStatusSession, loading,
+      office, offices, myRole, switchOffice, updateTitleMode,
+      members, myWorkSession, myStatusSession, loading,
       clockIn, clockOut, changeStatus, joinOffice, createOffice,
     }}>
       {children}
