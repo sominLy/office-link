@@ -41,3 +41,16 @@ export async function subscribePush(userId: string): Promise<boolean> {
     return false;
   }
 }
+
+/** 이 기기의 푸시 구독을 해제하고 서버에서도 삭제 */
+export async function unsubscribePush(): Promise<void> {
+  if (!pushSupported()) return;
+  try {
+    const reg = await navigator.serviceWorker.getRegistration('/sw.js');
+    const sub = await reg?.pushManager.getSubscription();
+    if (sub) {
+      await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+      await sub.unsubscribe();
+    }
+  } catch { /* noop */ }
+}

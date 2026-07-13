@@ -7,7 +7,7 @@ import MyTasks from '@/components/MyTasks';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { LogOut, ChevronDown, Clock, ListTodo, BarChart3, Copy, Bell, Building2, Plus, Tag, Check, UtensilsCrossed, Palmtree } from 'lucide-react';
+import { LogOut, ChevronDown, Clock, ListTodo, BarChart3, Copy, Bell, Building2, Plus, Tag, Check, UtensilsCrossed, Palmtree, BellOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { defaultAvatar } from '@/lib/avatar';
@@ -16,8 +16,8 @@ import { MemberStatus } from '@/lib/types';
 import MemberStatsDialog from '@/components/MemberStatsDialog';
 import MenuPickDialog from '@/components/MenuPickDialog';
 import BottomNav from '@/components/BottomNav';
-import { notificationsEnabled, requestNotificationPermission, notify } from '@/lib/notify';
-import { subscribePush } from '@/lib/push';
+import { notificationsEnabled, requestNotificationPermission, notify, isMuted, setMuted } from '@/lib/notify';
+import { subscribePush, unsubscribePush } from '@/lib/push';
 import { kstToday } from '@/lib/dates';
 import { displayName, TITLE_MODES } from '@/lib/callsign';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -44,7 +44,7 @@ export default function Home() {
   const { office, offices, myRole, switchOffice, updateTitleMode, members, myWorkSession, myStatusSession, clockIn, clockOut, changeStatus } = useOffice();
   const navigate = useNavigate();
   const [selectedMember, setSelectedMember] = useState<MemberStatus | null>(null);
-  const [notifOn, setNotifOn] = useState(notificationsEnabled());
+  const [notifOn, setNotifOn] = useState(notificationsEnabled() && !isMuted());
   const [titleDialogOpen, setTitleDialogOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -56,7 +56,16 @@ export default function Home() {
   const isWorking = !!myWorkSession;
   const onVacation = currentStatus === '연차' || currentStatus === '휴가 중';
 
-  const enableNotifications = async () => {
+  const toggleNotifications = async () => {
+    if (notifOn) {
+      // 끄기: 이 기기의 푸시 구독 해제 + 앱 내 알림 음소거
+      setMuted(true);
+      await unsubscribePush();
+      setNotifOn(false);
+      toast.success('알림을 껐어요. 다시 켜려면 종 버튼을 눌러주세요');
+      return;
+    }
+    setMuted(false);
     const granted = await requestNotificationPermission();
     setNotifOn(granted);
     if (granted) {
@@ -72,7 +81,7 @@ export default function Home() {
 
   // 이미 알림을 허용한 기기는 접속할 때 푸시 구독을 자동 갱신
   useEffect(() => {
-    if (user && notificationsEnabled()) subscribePush(user.id);
+    if (user && notificationsEnabled() && !isMuted()) subscribePush(user.id);
   }, [user]);
 
   // 근무 시작 시간이 지났는데 출근 안 했으면 하루 한 번 알림
@@ -144,11 +153,15 @@ export default function Home() {
             <Button variant="ghost" size="icon" onClick={() => setMenuOpen(true)} className="text-amber-500" title="점메추/저메추">
               <UtensilsCrossed className="w-4 h-4" />
             </Button>
-            {!notifOn && (
-              <Button variant="ghost" size="icon" onClick={enableNotifications} className="text-amber-500" title="알림 켜기">
-                <Bell className="w-4 h-4" />
-              </Button>
-            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleNotifications}
+              className={notifOn ? 'text-amber-500' : 'text-gray-300'}
+              title={notifOn ? '알림 끄기' : '알림 켜기'}
+            >
+              {notifOn ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+            </Button>
             <Button variant="ghost" size="sm" onClick={() => navigate('/tasks')} className="text-gray-600">
               <ListTodo className="w-4 h-4 mr-1" />
               <span className="hidden sm:inline">할 일</span>

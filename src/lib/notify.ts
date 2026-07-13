@@ -15,8 +15,20 @@ export async function requestNotificationPermission(): Promise<boolean> {
   return result === 'granted';
 }
 
+const MUTE_KEY = 'notifications_muted';
+
+/** 사용자가 앱에서 알림을 껐는지 (브라우저 권한과 별개) */
+export function isMuted(): boolean {
+  return localStorage.getItem(MUTE_KEY) === '1';
+}
+
+export function setMuted(muted: boolean) {
+  if (muted) localStorage.setItem(MUTE_KEY, '1');
+  else localStorage.removeItem(MUTE_KEY);
+}
+
 export function notify(title: string, body: string) {
-  if (!notificationsEnabled()) return;
+  if (!notificationsEnabled() || isMuted()) return;
   try {
     new Notification(title, { body, icon: '/favicon.svg' });
   } catch {
