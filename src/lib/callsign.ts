@@ -3,9 +3,9 @@
 export type TitleMode = 'nim' | 'pro' | 'rank' | 'english';
 
 export const TITLE_MODES: { value: TitleMode; label: string; example: string }[] = [
-  { value: 'nim', label: '~님 (기본)', example: '민지님' },
-  { value: 'pro', label: '~프로', example: '민지 프로' },
-  { value: 'rank', label: '직급제 (들어온 순서대로 승진!)', example: '민지 사장 / 소민 본부장' },
+  { value: 'nim', label: '~님 (기본)', example: '소민님' },
+  { value: 'pro', label: '~프로', example: '소민 프로' },
+  { value: 'rank', label: '직급제 (들어온 순서대로 승진!)', example: '소민 사장 / 지은 본부장' },
   { value: 'english', label: '영어 이름 (자동 배정)', example: 'Emma / Noah' },
 ];
 
