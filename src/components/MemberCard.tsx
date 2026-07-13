@@ -13,6 +13,11 @@ const statusColors: Record<StatusPreset, string> = {
   '휴식 중': 'bg-yellow-100 text-yellow-700',
   '자리 비움': 'bg-gray-100 text-gray-600',
   '스터디/회의 중': 'bg-purple-100 text-purple-700',
+  '점심 먹는 중': 'bg-orange-100 text-orange-700',
+  '저녁 먹는 중': 'bg-rose-100 text-rose-700',
+  '야식 먹는 중': 'bg-violet-100 text-violet-700',
+  '연차': 'bg-teal-100 text-teal-700',
+  '휴가 중': 'bg-sky-100 text-sky-700',
   '퇴근': 'bg-slate-100 text-slate-500',
 };
 
@@ -21,6 +26,11 @@ const statusDots: Record<StatusPreset, string> = {
   '집중 중': 'bg-red-400',
   '업무 중': 'bg-blue-400',
   '휴식 중': 'bg-yellow-400',
+  '점심 먹는 중': 'bg-orange-400',
+  '저녁 먹는 중': 'bg-rose-400',
+  '야식 먹는 중': 'bg-violet-400',
+  '연차': 'bg-teal-400',
+  '휴가 중': 'bg-sky-400',
   '자리 비움': 'bg-gray-400',
   '스터디/회의 중': 'bg-purple-400',
   '퇴근': 'bg-slate-300',

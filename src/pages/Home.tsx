@@ -7,13 +7,14 @@ import MyTasks from '@/components/MyTasks';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { LogOut, ChevronDown, Clock, ListTodo, BarChart3, Copy, Bell, Building2, Plus, Tag, Check } from 'lucide-react';
+import { LogOut, ChevronDown, Clock, ListTodo, BarChart3, Copy, Bell, Building2, Plus, Tag, Check, UtensilsCrossed, Palmtree } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { defaultAvatar } from '@/lib/avatar';
 import { useState, useEffect } from 'react';
 import { MemberStatus } from '@/lib/types';
 import MemberStatsDialog from '@/components/MemberStatsDialog';
+import MenuPickDialog from '@/components/MenuPickDialog';
 import BottomNav from '@/components/BottomNav';
 import { notificationsEnabled, requestNotificationPermission, notify } from '@/lib/notify';
 import { subscribePush } from '@/lib/push';
@@ -21,7 +22,7 @@ import { kstToday } from '@/lib/dates';
 import { displayName, TITLE_MODES } from '@/lib/callsign';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
-const STATUS_OPTIONS: StatusPreset[] = ['출근', '집중 중', '업무 중', '휴식 중', '자리 비움', '스터디/회의 중'];
+const STATUS_OPTIONS: StatusPreset[] = ['출근', '집중 중', '업무 중', '휴식 중', '자리 비움', '스터디/회의 중', '점심 먹는 중', '저녁 먹는 중', '야식 먹는 중'];
 
 const statusColors: Record<StatusPreset, string> = {
   '출근': 'bg-green-100 text-green-700 border-green-200',
@@ -30,6 +31,11 @@ const statusColors: Record<StatusPreset, string> = {
   '휴식 중': 'bg-yellow-100 text-yellow-700 border-yellow-200',
   '자리 비움': 'bg-gray-100 text-gray-700 border-gray-200',
   '스터디/회의 중': 'bg-purple-100 text-purple-700 border-purple-200',
+  '점심 먹는 중': 'bg-orange-100 text-orange-700 border-orange-200',
+  '저녁 먹는 중': 'bg-rose-100 text-rose-700 border-rose-200',
+  '야식 먹는 중': 'bg-violet-100 text-violet-700 border-violet-200',
+  '연차': 'bg-teal-100 text-teal-700 border-teal-200',
+  '휴가 중': 'bg-sky-100 text-sky-700 border-sky-200',
   '퇴근': 'bg-slate-100 text-slate-500 border-slate-200',
 };
 
@@ -40,6 +46,7 @@ export default function Home() {
   const [selectedMember, setSelectedMember] = useState<MemberStatus | null>(null);
   const [notifOn, setNotifOn] = useState(notificationsEnabled());
   const [titleDialogOpen, setTitleDialogOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // 내 멤버 정보 (직급 순서 포함) — 호칭 표시용
   const me = members.find(m => m.user_id === user?.id);
@@ -47,6 +54,7 @@ export default function Home() {
 
   const currentStatus = myStatusSession?.status || '퇴근';
   const isWorking = !!myWorkSession;
+  const onVacation = currentStatus === '연차' || currentStatus === '휴가 중';
 
   const enableNotifications = async () => {
     const granted = await requestNotificationPermission();
@@ -133,6 +141,9 @@ export default function Home() {
             )}
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={() => setMenuOpen(true)} className="text-amber-500" title="점메추/저메추">
+              <UtensilsCrossed className="w-4 h-4" />
+            </Button>
             {!notifOn && (
               <Button variant="ghost" size="icon" onClick={enableNotifications} className="text-amber-500" title="알림 켜기">
                 <Bell className="w-4 h-4" />
@@ -178,10 +189,29 @@ export default function Home() {
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
               {!isWorking ? (
+                <>
                 <Button onClick={clockIn} className="bg-green-600 hover:bg-green-700 text-white flex-1 sm:flex-none">
                   <Clock className="w-4 h-4 mr-1" />
                   출근하기
                 </Button>
+                {onVacation ? (
+                  <Button variant="outline" onClick={() => changeStatus('퇴근')} className="border-teal-200 text-teal-700 flex-1 sm:flex-none">
+                    <Palmtree className="w-4 h-4 mr-1" /> 복귀하기
+                  </Button>
+                ) : (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="border-teal-200 text-teal-700 flex-1 sm:flex-none">
+                        <Palmtree className="w-4 h-4 mr-1" /> 연차/휴가 <ChevronDown className="w-3.5 h-3.5 ml-1" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => changeStatus('연차')} className="cursor-pointer">🌴 오늘 연차예요</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => changeStatus('휴가 중')} className="cursor-pointer">✈️ 휴가 중이에요</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                </>
               ) : (
                 <>
                   <DropdownMenu>
@@ -231,6 +261,8 @@ export default function Home() {
           </div>
         </section>
       </main>
+
+      <MenuPickDialog open={menuOpen} onClose={() => setMenuOpen(false)} />
 
       {/* 호칭 설정 (방장 전용) */}
       <Dialog open={titleDialogOpen} onOpenChange={setTitleDialogOpen}>

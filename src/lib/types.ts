@@ -5,6 +5,11 @@ export type StatusPreset =
   | '휴식 중'
   | '자리 비움'
   | '스터디/회의 중'
+  | '점심 먹는 중'
+  | '저녁 먹는 중'
+  | '야식 먹는 중'
+  | '연차'
+  | '휴가 중'
   | '퇴근';
 
 export interface Profile {
