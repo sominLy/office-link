@@ -9,6 +9,7 @@ import Tasks from './pages/Tasks';
 import ClockOut from './pages/ClockOut';
 import Report from './pages/Report';
 import Profile from './pages/Profile';
+import Feed from './pages/Feed';
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ const App = () => (
               <Route path="/clock-out" element={<ClockOut />} />
               <Route path="/report" element={<Report />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/feed" element={<Feed />} />
             </Routes>
           </BrowserRouter>
         </TooltipProvider>

@@ -210,6 +210,8 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
     await changeStatus('출근');
     await fetchMySession();
     await fetchMembers();
+    // 소식 피드에 출근 기록
+    supabase.from('office_feed').insert({ office_id: office.id, user_id: user.id, type: 'clock_in' }).then(() => {});
     // 브라우저를 닫아둔 멤버에게도 웹푸시로 출근 소식 전송 (실패해도 무시)
     supabase.functions.invoke('push-notify', {
       body: { action: 'clock_in', office_id: office.id, actor_id: user.id },
@@ -238,6 +240,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
     await changeStatus('퇴근');
     await fetchMySession();
     await fetchMembers();
+    supabase.from('office_feed').insert({ office_id: office.id, user_id: user.id, type: 'clock_out' }).then(() => {});
   };
 
   const changeStatus = async (status: StatusPreset) => {

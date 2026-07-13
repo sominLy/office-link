@@ -1,9 +1,10 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, ListTodo, BarChart3, User } from 'lucide-react';
+import { Home, ListTodo, MessageCircleHeart, BarChart3, User } from 'lucide-react';
 
 const TABS = [
   { path: '/', label: '홈', icon: Home },
   { path: '/tasks', label: '할 일', icon: ListTodo },
+  { path: '/feed', label: '소식', icon: MessageCircleHeart },
   { path: '/report', label: '리포트', icon: BarChart3 },
   { path: '/profile', label: '내 계정', icon: User },
 ];
@@ -14,7 +15,7 @@ export default function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-20 bg-white/95 backdrop-blur-sm border-t border-amber-100 pb-[env(safe-area-inset-bottom)]">
-      <div className="max-w-5xl mx-auto grid grid-cols-4">
+      <div className="max-w-5xl mx-auto grid grid-cols-5">
         {TABS.map(({ path, label, icon: Icon }) => {
           const active = pathname === path;
           return (

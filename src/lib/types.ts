@@ -67,6 +67,19 @@ export interface Task {
   created_at: string;
 }
 
+export interface FeedItem {
+  id: string;
+  office_id: string;
+  user_id: string;
+  type: 'post' | 'clock_in' | 'clock_out' | 'wave';
+  target_user_id: string | null;
+  content: string | null;
+  emoji: string | null;
+  created_at: string;
+  author?: { nickname: string; avatar_url: string | null };
+  target?: { nickname: string } | null;
+}
+
 export interface Routine {
   id: string;
   office_id: string;

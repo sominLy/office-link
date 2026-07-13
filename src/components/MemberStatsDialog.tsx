@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { kstStartOfTodayISO, kstStartOfWeekISO, getWeekStart } from '@/lib/dates';
 import { defaultAvatar } from '@/lib/avatar';
 import { Clock, Target, CheckCircle2, Circle, CalendarDays } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Props {
   member: MemberStatus | null;
@@ -40,6 +41,7 @@ function sumSeconds(rows: { started_at: string; ended_at: string | null }[]): nu
 }
 
 const CHEER_EMOJIS = ['👍', '🔥', '💪'];
+const WAVE_EMOJIS = ['👋', '🙌', '☕', '💛'];
 
 interface Reaction { task_id: string; user_id: string; emoji: string }
 
@@ -55,6 +57,25 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
       .select('task_id, user_id, emoji')
       .in('task_id', taskIds);
     setReactions(data || []);
+  };
+
+  const sendWave = async (emoji: string) => {
+    if (!user || !member || member.user_id === user.id) return;
+    const { error } = await supabase.from('office_feed').insert({
+      office_id: officeId,
+      user_id: user.id,
+      type: 'wave',
+      target_user_id: member.user_id,
+      emoji,
+    });
+    if (error) {
+      toast.error('인사 전송에 실패했어요');
+      return;
+    }
+    supabase.functions.invoke('push-notify', {
+      body: { action: 'feed', kind: 'wave', office_id: officeId, actor_id: user.id, target_id: member.user_id, emoji },
+    }).catch(() => {});
+    toast.success(`${member.nickname}님에게 ${emoji} 인사를 보냈어요!`);
   };
 
   const toggleReaction = async (task: Task, emoji: string) => {
@@ -156,6 +177,23 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
                 {member.nickname}님의 기록
               </DialogTitle>
             </DialogHeader>
+
+            {/* 인사 보내기 (내 기록이 아닐 때만) */}
+            {user && member.user_id !== user.id && (
+              <div className="flex items-center gap-2 -mt-1">
+                <span className="text-xs text-gray-400">인사 보내기</span>
+                {WAVE_EMOJIS.map(e => (
+                  <button
+                    key={e}
+                    onClick={() => sendWave(e)}
+                    className="text-lg hover:scale-125 transition-transform"
+                    title={`${e} 보내기`}
+                  >
+                    {e}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {!stats ? (
               <p className="text-sm text-gray-400 text-center py-6">불러오는 중...</p>

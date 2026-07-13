@@ -73,6 +73,39 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: cors });
   }
 
+  if (payload.action === 'feed') {
+    // 게시글/인사 푸시: target이 있으면 그 사람에게만, 없으면 오피스 전체(작성자 제외)
+    const { office_id, actor_id, target_id, kind, content, emoji } = payload;
+    if (!office_id || !actor_id) return new Response('bad request', { status: 400, headers: cors });
+    const { data: actor } = await supabase.from('profiles').select('nickname').eq('id', actor_id).single();
+    const name = actor?.nickname || '멤버';
+
+    let title = '';
+    let body = '';
+    if (kind === 'wave') {
+      title = `${name}님이 반갑다고 인사해요 ${emoji || '👋'}`;
+      body = '나도 인사를 돌려줘 볼까요?';
+    } else if (target_id) {
+      title = `${name}님이 나에게 응원을 남겼어요 💌`;
+      body = content ? `"${content}"` : '';
+    } else {
+      title = `${name}님이 게시판에 글을 남겼어요 📌`;
+      body = content ? `"${content}"` : '';
+    }
+
+    let recipients: string[] = [];
+    if (target_id) {
+      recipients = target_id === actor_id ? [] : [target_id];
+    } else {
+      const { data: members } = await supabase
+        .from('office_members').select('user_id')
+        .eq('office_id', office_id).neq('user_id', actor_id);
+      recipients = (members || []).map((m) => m.user_id);
+    }
+    await sendTo(recipients, title, body);
+    return new Response('ok', { headers: cors });
+  }
+
   if (payload.action === 'nudge') {
     const now = new Date();
     const kstHM = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false }).format(now);
