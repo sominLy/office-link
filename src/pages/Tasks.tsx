@@ -15,6 +15,7 @@ import { Plus, ArrowLeft, Trash2, CheckCircle2, Circle, GripVertical, Pencil, Fo
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { getWeekStart, kstToday } from '@/lib/dates';
+import { Calendar } from '@/components/ui/calendar';
 import BottomNav from '@/components/BottomNav';
 
 const priorityLabels = { high: '높음', normal: '보통', low: '낮음' };
@@ -39,7 +40,7 @@ export default function Tasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTitle, setNewTitle] = useState('');
   const [newCategory, setNewCategory] = useState('');
-  const [newDueDate, setNewDueDate] = useState('');
+  const [newDueDate, setNewDueDate] = useState(kstToday());
   const [newPriority, setNewPriority] = useState<'low' | 'normal' | 'high'>('normal');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTask, setEditTask] = useState<Task | null>(null);
@@ -57,6 +58,41 @@ export default function Tasks() {
   const categories = [...new Set(tasks.map(t => t.category).filter(Boolean))] as string[];
 
   const weekStart = getWeekStart();
+
+  // 캘린더 뷰: 선택한 날짜와 그 달의 할 일들
+  const [calDay, setCalDay] = useState<Date>(new Date());
+  const [calMonth, setCalMonth] = useState<Date>(new Date());
+  const [monthTasks, setMonthTasks] = useState<Task[]>([]);
+
+  const fmtDate = (d: Date) => {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  };
+
+  const fetchMonthTasks = useCallback(async () => {
+    if (!user || !office) return;
+    const first = new Date(calMonth.getFullYear(), calMonth.getMonth(), 1);
+    const last = new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 0);
+    const { data } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('office_id', office.id)
+      .gte('due_date', fmtDate(first))
+      .lte('due_date', fmtDate(last))
+      .order('sort_order');
+    setMonthTasks(data || []);
+  }, [user, office, calMonth]);
+
+  useEffect(() => {
+    fetchMonthTasks();
+  }, [fetchMonthTasks]);
+
+  const taskDates = [...new Set(monthTasks.map(t => t.due_date).filter(Boolean))].map(d => {
+    const [y, m, day] = (d as string).split('-').map(Number);
+    return new Date(y, m - 1, day);
+  });
+  const dayTasks = monthTasks.filter(t => t.due_date === fmtDate(calDay));
 
   const fetchTasks = useCallback(async () => {
     if (!user || !office) return;
@@ -156,10 +192,11 @@ export default function Tasks() {
     }
     setNewTitle('');
     setNewCategory('');
-    setNewDueDate('');
+    setNewDueDate(kstToday());
     setNewPriority('normal');
     setDialogOpen(false);
     fetchTasks();
+    fetchMonthTasks();
     toast.success('할 일이 추가되었습니다');
   };
 
@@ -188,6 +225,7 @@ export default function Tasks() {
     }
     setEditTask(null);
     fetchTasks();
+    fetchMonthTasks();
     toast.success('수정되었습니다');
   };
 
@@ -198,11 +236,13 @@ export default function Tasks() {
       .update({ status, completed_at: status === 'done' ? now : null })
       .eq('id', task.id);
     fetchTasks();
+    fetchMonthTasks();
   };
 
   const deleteTask = async (taskId: string) => {
     await supabase.from('tasks').delete().eq('id', taskId);
     fetchTasks();
+    fetchMonthTasks();
     toast.success('삭제되었습니다');
   };
 
@@ -341,6 +381,7 @@ export default function Tasks() {
           <TabsList className="mb-4">
             <TabsTrigger value="list">리스트</TabsTrigger>
             <TabsTrigger value="kanban">칸반</TabsTrigger>
+            <TabsTrigger value="calendar">캘린더</TabsTrigger>
           </TabsList>
 
           <TabsContent value="list" className="space-y-5">
@@ -394,6 +435,45 @@ export default function Tasks() {
                 <div className="space-y-2 min-h-[100px] bg-green-50/30 rounded-lg p-2">
                   {doneTasks.map((task) => <TaskItem key={task.id} task={task} />)}
                 </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="calendar">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card className="p-3 border-amber-100/50 flex justify-center">
+                <Calendar
+                  mode="single"
+                  selected={calDay}
+                  onSelect={(d) => d && setCalDay(d)}
+                  month={calMonth}
+                  onMonthChange={setCalMonth}
+                  modifiers={{ hasTask: taskDates }}
+                  modifiersClassNames={{ hasTask: 'font-bold text-amber-700 underline decoration-amber-400 decoration-2 underline-offset-4' }}
+                />
+              </Card>
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-gray-500 px-1">
+                  {calDay.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })} 할 일
+                  <span className="ml-2 text-gray-300">{dayTasks.filter(t => t.status === 'done').length}/{dayTasks.length}</span>
+                </h3>
+                {dayTasks.length === 0 ? (
+                  <Card className="p-6 text-center border-dashed">
+                    <p className="text-gray-400 text-sm">이 날짜엔 할 일이 없어요</p>
+                    <Button size="sm" variant="outline" className="mt-2 border-amber-200 text-amber-700"
+                      onClick={() => { setNewDueDate(fmtDate(calDay)); setDialogOpen(true); }}>
+                      <Plus className="w-3.5 h-3.5 mr-1" /> 이 날짜에 추가
+                    </Button>
+                  </Card>
+                ) : (
+                  <>
+                    {dayTasks.map((task) => <TaskItem key={task.id} task={task} />)}
+                    <Button size="sm" variant="ghost" className="text-amber-600"
+                      onClick={() => { setNewDueDate(fmtDate(calDay)); setDialogOpen(true); }}>
+                      <Plus className="w-3.5 h-3.5 mr-1" /> 이 날짜에 추가
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </TabsContent>

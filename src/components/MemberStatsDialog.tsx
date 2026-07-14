@@ -49,7 +49,7 @@ interface Reaction { task_id: string; user_id: string; emoji: string }
 
 export default function MemberStatsDialog({ member, officeId, onClose }: Props) {
   const { user } = useAuth();
-  const { office } = useOffice();
+  const { office, myRole } = useOffice();
   const [stats, setStats] = useState<Stats | null>(null);
   const [reactions, setReactions] = useState<Reaction[]>([]);
 
@@ -79,6 +79,24 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
       body: { action: 'feed', kind: 'wave', office_id: officeId, actor_id: user.id, target_id: member.user_id, emoji },
     }).catch(() => {});
     toast.success(`${member.nickname}님에게 ${emoji} 인사를 보냈어요!`);
+  };
+
+  const forceClockOut = async () => {
+    if (!member) return;
+    const now = new Date().toISOString();
+    // 열린 집중/근무/상태 세션을 모두 닫는다 (방장 권한 RLS)
+    await supabase.from('focus_sessions').update({ ended_at: now })
+      .eq('user_id', member.user_id).eq('office_id', officeId).is('ended_at', null);
+    const { error } = await supabase.from('work_sessions').update({ ended_at: now })
+      .eq('user_id', member.user_id).eq('office_id', officeId).is('ended_at', null);
+    await supabase.from('status_sessions').update({ ended_at: now })
+      .eq('user_id', member.user_id).eq('office_id', officeId).is('ended_at', null);
+    if (error) {
+      toast.error('퇴근 처리에 실패했어요');
+      return;
+    }
+    toast.success(`${member.nickname}님을 퇴근 처리했어요`);
+    onClose();
   };
 
   const toggleReaction = async (task: Task, emoji: string) => {
@@ -195,6 +213,15 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
                     {e}
                   </button>
                 ))}
+                {myRole === 'admin' && member.is_working && (
+                  <button
+                    onClick={forceClockOut}
+                    className="ml-auto text-xs text-red-500 border border-red-200 rounded-full px-2 py-0.5 hover:bg-red-50"
+                    title="깜빡한 멤버를 대신 퇴근시켜요"
+                  >
+                    퇴근시키기
+                  </button>
+                )}
               </div>
             )}
 

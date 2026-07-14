@@ -4,7 +4,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Calendar, Target, CheckCircle2, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Calendar, Target, CheckCircle2, TrendingUp, Pencil } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { getWeekStart, kstStartOfWeekISO } from '@/lib/dates';
 import BottomNav from '@/components/BottomNav';
@@ -31,6 +35,47 @@ export default function Report() {
     dailyFocus: [0, 0, 0, 0, 0, 0, 0],
   });
 
+  interface WS { id: string; started_at: string; ended_at: string | null }
+  const [sessions, setSessions] = useState<WS[]>([]);
+  const [editSession, setEditSession] = useState<WS | null>(null);
+  const [editStart, setEditStart] = useState('');
+  const [editEnd, setEditEnd] = useState('');
+
+  // ISO ↔ datetime-local 변환 (기기 로컬 시간 기준)
+  const toLocalInput = (iso: string | null) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const openEditSession = (s: WS) => {
+    setEditSession(s);
+    setEditStart(toLocalInput(s.started_at));
+    setEditEnd(toLocalInput(s.ended_at));
+  };
+
+  const saveSession = async () => {
+    if (!editSession || !editStart) return;
+    const started = new Date(editStart);
+    const ended = editEnd ? new Date(editEnd) : null;
+    if (ended && ended <= started) {
+      toast.error('퇴근 시간이 출근 시간보다 빨라요');
+      return;
+    }
+    const { error } = await supabase
+      .from('work_sessions')
+      .update({ started_at: started.toISOString(), ended_at: ended ? ended.toISOString() : null })
+      .eq('id', editSession.id);
+    if (error) {
+      toast.error('수정에 실패했어요');
+      return;
+    }
+    toast.success('출퇴근 기록이 수정되었어요');
+    setEditSession(null);
+    fetchWeeklyStats();
+  };
+
   const fetchWeeklyStats = useCallback(async () => {
     if (!user || !office) return;
     const weekStartStr = getWeekStart();
@@ -41,13 +86,14 @@ export default function Report() {
     // Work sessions this week
     const { data: workSessions } = await supabase
       .from('work_sessions')
-      .select('started_at')
+      .select('id, started_at, ended_at')
       .eq('user_id', user.id)
       .eq('office_id', office.id)
       .gte('started_at', weekStartISO)
       .lt('started_at', weekEnd.toISOString());
 
     const workDays = new Set((workSessions || []).map(s => new Date(s.started_at).toDateString())).size;
+    setSessions((workSessions || []).sort((a, b) => b.started_at.localeCompare(a.started_at)));
 
     // Focus sessions this week
     const { data: focusSessions } = await supabase
@@ -169,12 +215,59 @@ export default function Report() {
           </div>
         </Card>
 
+        {/* 출퇴근 기록 (수정 가능) */}
+        <Card className="p-5 border-amber-100/50">
+          <h3 className="font-semibold text-gray-800 text-sm mb-1">이번 주 출퇴근 기록</h3>
+          <p className="text-xs text-gray-400 mb-3">잘못 찍은 기록은 연필 버튼으로 고칠 수 있어요</p>
+          {sessions.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-3">기록이 없어요</p>
+          ) : (
+            <ul className="space-y-1.5">
+              {sessions.map(s => (
+                <li key={s.id} className="flex items-center gap-2 text-sm bg-gray-50/70 rounded-lg px-3 py-2">
+                  <span className="text-gray-600">
+                    {new Date(s.started_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', weekday: 'short' })}
+                  </span>
+                  <span className="text-gray-800 font-medium">
+                    {new Date(s.started_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                    {' ~ '}
+                    {s.ended_at
+                      ? new Date(s.ended_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+                      : '근무 중'}
+                  </span>
+                  <button onClick={() => openEditSession(s)} className="ml-auto text-gray-300 hover:text-amber-600">
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+
         {stats.totalFocus === 0 && stats.totalTasks === 0 && (
           <p className="text-center text-gray-400 text-sm py-4">
             이번 주 활동 기록이 없습니다. 출근해서 시작해 보세요!
           </p>
         )}
       </main>
+      <Dialog open={!!editSession} onOpenChange={(o) => !o && setEditSession(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>출퇴근 기록 수정</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 pt-1">
+            <div className="space-y-1.5">
+              <Label>출근 시간</Label>
+              <Input type="datetime-local" value={editStart} onChange={(e) => setEditStart(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>퇴근 시간 (비우면 "근무 중"으로)</Label>
+              <Input type="datetime-local" value={editEnd} onChange={(e) => setEditEnd(e.target.value)} />
+            </div>
+            <Button onClick={saveSession} className="w-full bg-amber-600 hover:bg-amber-700 text-white">저장</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <BottomNav />
     </div>
   );
