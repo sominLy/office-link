@@ -70,6 +70,7 @@ export interface Task {
   sort_order: number;
   completed_at: string | null;
   routine_id: string | null; // 루틴에서 자동 생성된 할 일이면 원본 루틴 id
+  is_private: boolean; // 비공개: 본인만 볼 수 있음
   created_at: string;
 }
 

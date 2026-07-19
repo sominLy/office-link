@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { defaultAvatar } from '@/lib/avatar';
 import BottomNav from '@/components/BottomNav';
+import MyTasksByOffice from '@/components/MyTasksByOffice';
 
 export default function Profile() {
   const { user, profile, refreshProfile, signOut } = useAuth();
@@ -182,6 +183,9 @@ export default function Profile() {
             </form>
           </CardContent>
         </Card>
+
+        {/* 오피스별 내 할 일 */}
+        <MyTasksByOffice />
 
         {/* 근무 시간 알림 */}
         <Card className="border-amber-100/50">

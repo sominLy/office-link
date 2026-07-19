@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, ArrowLeft, Trash2, CheckCircle2, Circle, GripVertical, Pencil, FolderOpen, CalendarDays, Repeat } from 'lucide-react';
+import { Plus, ArrowLeft, Trash2, CheckCircle2, Circle, GripVertical, Pencil, FolderOpen, CalendarDays, Repeat, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { getWeekStart, kstToday } from '@/lib/dates';
@@ -41,12 +41,14 @@ export default function Tasks() {
   const [newTitle, setNewTitle] = useState('');
   const [newCategory, setNewCategory] = useState('');
   const [newDueDate, setNewDueDate] = useState(kstToday());
+  const [newPrivate, setNewPrivate] = useState(false);
   const [newPriority, setNewPriority] = useState<'low' | 'normal' | 'high'>('normal');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTask, setEditTask] = useState<Task | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editCategory, setEditCategory] = useState('');
   const [editDueDate, setEditDueDate] = useState('');
+  const [editPrivate, setEditPrivate] = useState(false);
   const [editPriority, setEditPriority] = useState<'low' | 'normal' | 'high'>('normal');
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [routineDialogOpen, setRoutineDialogOpen] = useState(false);
@@ -181,6 +183,7 @@ export default function Tasks() {
       title: newTitle.trim(),
       category: newCategory.trim() || null,
       due_date: newDueDate || null,
+      is_private: newPrivate,
       status: 'todo',
       priority: newPriority,
       week_start: weekStart,
@@ -193,6 +196,7 @@ export default function Tasks() {
     setNewTitle('');
     setNewCategory('');
     setNewDueDate(kstToday());
+    setNewPrivate(false);
     setNewPriority('normal');
     setDialogOpen(false);
     fetchTasks();
@@ -205,6 +209,7 @@ export default function Tasks() {
     setEditTitle(task.title);
     setEditCategory(task.category || '');
     setEditDueDate(task.due_date || '');
+    setEditPrivate(task.is_private);
     setEditPriority(task.priority);
   };
 
@@ -216,6 +221,7 @@ export default function Tasks() {
         title: editTitle.trim(),
         category: editCategory.trim() || null,
         due_date: editDueDate || null,
+        is_private: editPrivate,
         priority: editPriority,
       })
       .eq('id', editTask.id);
@@ -263,6 +269,7 @@ export default function Tasks() {
       <span className={`text-sm flex-1 ${task.status === 'done' ? 'line-through text-gray-400' : 'text-gray-700'}`}>
         {task.title}
         {task.routine_id && <Repeat className="w-3 h-3 text-amber-400 inline ml-1" />}
+        {task.is_private && <Lock className="w-3 h-3 text-gray-400 inline ml-1" />}
       </span>
       {task.due_date && task.status !== 'done' && (() => {
         const b = dueBadge(task.due_date, kstToday());
@@ -355,6 +362,10 @@ export default function Tasks() {
                   <Label>마감일 (선택)</Label>
                   <Input type="date" value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} />
                 </div>
+                <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                  <input type="checkbox" checked={newPrivate} onChange={(e) => setNewPrivate(e.target.checked)} className="accent-amber-600" />
+                  <Lock className="w-3.5 h-3.5 text-gray-400" /> 비공개 (나만 볼 수 있어요)
+                </label>
                 <div className="space-y-2">
                   <Label>우선순위</Label>
                   <Select value={newPriority} onValueChange={(v) => setNewPriority(v as 'low' | 'normal' | 'high')}>
@@ -544,6 +555,10 @@ export default function Tasks() {
               <Label>마감일 (선택)</Label>
               <Input type="date" value={editDueDate} onChange={(e) => setEditDueDate(e.target.value)} />
             </div>
+            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+              <input type="checkbox" checked={editPrivate} onChange={(e) => setEditPrivate(e.target.checked)} className="accent-amber-600" />
+              <Lock className="w-3.5 h-3.5 text-gray-400" /> 비공개 (나만 볼 수 있어요)
+            </label>
             <div className="space-y-2">
               <Label>우선순위</Label>
               <Select value={editPriority} onValueChange={(v) => setEditPriority(v as 'low' | 'normal' | 'high')}>
