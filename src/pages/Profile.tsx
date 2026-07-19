@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { defaultAvatar } from '@/lib/avatar';
 import BottomNav from '@/components/BottomNav';
 import MyTasksByOffice from '@/components/MyTasksByOffice';
+import GrapeBoard from '@/components/GrapeBoard';
 
 export default function Profile() {
   const { user, profile, refreshProfile, signOut } = useAuth();
@@ -195,6 +196,9 @@ export default function Profile() {
             <p className="text-xs text-gray-500">고인물 팁 12가지 + 아이폰 앱으로 설치하는 법</p>
           </span>
         </button>
+
+        {/* 포도 스티커판 */}
+        <GrapeBoard />
 
         {/* 오피스별 내 할 일 */}
         <MyTasksByOffice />
