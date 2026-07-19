@@ -106,6 +106,33 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: cors });
   }
 
+  if (payload.action === 'midnight_clockout') {
+    // 매일 자정(KST)에 실행: 열려 있는 근무 세션을 전부 자동 퇴근 처리
+    const now = new Date().toISOString();
+    const { data: openSessions } = await supabase
+      .from('work_sessions')
+      .select('id, user_id, office_id')
+      .is('ended_at', null);
+    if (!openSessions || openSessions.length === 0) return new Response('ok', { headers: cors });
+
+    const userIds = [...new Set(openSessions.map((s) => s.user_id))];
+    // 근무·집중·상태 세션 모두 종료
+    await supabase.from('work_sessions').update({ ended_at: now }).is('ended_at', null);
+    await supabase.from('focus_sessions').update({ ended_at: now }).is('ended_at', null);
+    await supabase.from('status_sessions').update({ ended_at: now }).is('ended_at', null);
+    // 소식 피드에 퇴근 기록
+    await supabase.from('office_feed').insert(
+      openSessions.map((s) => ({ office_id: s.office_id, user_id: s.user_id, type: 'clock_out' })),
+    );
+    // 당사자들에게 안내 푸시
+    await sendTo(
+      userIds,
+      '자정이 지나 자동 퇴근됐어요 🌙',
+      '아직 일하고 계신다면 출근 버튼을 다시 눌러주세요! 무리하진 말고요 💛',
+    );
+    return new Response('ok', { headers: cors });
+  }
+
   if (payload.action === 'nudge') {
     const now = new Date();
     const kstHM = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false }).format(now);
