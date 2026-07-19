@@ -19,6 +19,7 @@ import BottomNav from '@/components/BottomNav';
 import { notificationsEnabled, requestNotificationPermission, notify, isMuted, setMuted } from '@/lib/notify';
 import { subscribePush, unsubscribePush } from '@/lib/push';
 import { kstToday } from '@/lib/dates';
+import { todayQuote } from '@/lib/quotes';
 import { displayName, TITLE_MODES } from '@/lib/callsign';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
@@ -181,6 +182,12 @@ export default function Home() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-6 pb-24 space-y-6">
+        {/* 오늘의 응원 한마디 */}
+        <div className="flex items-center gap-2.5 bg-gradient-to-r from-amber-100/80 to-orange-100/60 border border-amber-200/60 rounded-xl px-4 py-2.5">
+          <span className="text-lg">💌</span>
+          <p className="text-sm text-amber-800">{todayQuote()}</p>
+        </div>
+
         {/* My Status Control */}
         <section className="bg-white rounded-2xl p-5 shadow-sm border border-amber-100/50">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
