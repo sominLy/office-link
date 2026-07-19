@@ -1,0 +1,17 @@
+{
+  "name": "연결오피스",
+  "short_name": "연결오피스",
+  "description": "함께 일하는 가상 오피스",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fffbeb",
+  "theme_color": "#d97706",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
