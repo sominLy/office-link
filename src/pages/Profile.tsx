@@ -184,6 +184,18 @@ export default function Profile() {
           </CardContent>
         </Card>
 
+        {/* 공략집 바로가기 */}
+        <button
+          onClick={() => navigate('/guide')}
+          className="w-full flex items-center gap-3 bg-gradient-to-r from-amber-100 to-orange-100 border border-amber-200 rounded-xl px-4 py-3 hover:from-amber-200 hover:to-orange-200 transition-colors"
+        >
+          <span className="text-2xl">📖</span>
+          <span className="text-left flex-1">
+            <p className="text-sm font-semibold text-gray-800">200% 활용 공략집</p>
+            <p className="text-xs text-gray-500">고인물 팁 12가지 + 아이폰 앱으로 설치하는 법</p>
+          </span>
+        </button>
+
         {/* 오피스별 내 할 일 */}
         <MyTasksByOffice />
 

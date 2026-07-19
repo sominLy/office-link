@@ -7,7 +7,7 @@ import MyTasks from '@/components/MyTasks';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { LogOut, ChevronDown, Clock, ListTodo, BarChart3, Copy, Bell, Building2, Plus, Tag, Check, UtensilsCrossed, Palmtree, BellOff } from 'lucide-react';
+import { LogOut, ChevronDown, Clock, ListTodo, BarChart3, Copy, Bell, Building2, Plus, Tag, Check, UtensilsCrossed, Palmtree, BellOff, BookOpenText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { defaultAvatar } from '@/lib/avatar';
@@ -150,6 +150,9 @@ export default function Home() {
             )}
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/guide')} className="text-amber-500" title="200% 활용 공략집">
+              <BookOpenText className="w-4 h-4" />
+            </Button>
             <Button variant="ghost" size="icon" onClick={() => setMenuOpen(true)} className="text-amber-500" title="점메추/저메추">
               <UtensilsCrossed className="w-4 h-4" />
             </Button>

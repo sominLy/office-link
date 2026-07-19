@@ -11,6 +11,7 @@ import Report from './pages/Report';
 import Profile from './pages/Profile';
 import Feed from './pages/Feed';
 import OfficeSetup from './pages/OfficeSetup';
+import Guide from './pages/Guide';
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
               <Route path="/profile" element={<Profile />} />
               <Route path="/feed" element={<Feed />} />
               <Route path="/office-setup" element={<OfficeSetup />} />
+              <Route path="/guide" element={<Guide />} />
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
