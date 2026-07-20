@@ -138,6 +138,58 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: cors });
   }
 
+  if (payload.action === 'announce_poll') {
+    // 10분마다 실행: GitHub의 새 커밋 중 [공지] 마커가 있으면 자동 게시
+    const { data: state } = await supabase
+      .from('app_state').select('value').eq('key', 'last_announced_sha').maybeSingle();
+    const lastSha = state?.value;
+
+    const ghRes = await fetch('https://api.github.com/repos/sominLy/office-link/commits?per_page=15', {
+      headers: { 'User-Agent': 'office-link-announcer' },
+    });
+    if (!ghRes.ok) return new Response('github unavailable', { headers: cors });
+    const commits = await ghRes.json() as { sha: string; commit: { message: string } }[];
+    if (!Array.isArray(commits) || commits.length === 0) return new Response('ok', { headers: cors });
+
+    // last_sha 이후의 새 커밋만 (오래된 것부터 처리)
+    const newCommits: { sha: string; message: string }[] = [];
+    for (const c of commits) {
+      if (c.sha === lastSha) break;
+      newCommits.unshift({ sha: c.sha, message: c.commit.message });
+    }
+    // 초기 실행(state 없음)이면 게시 없이 현재 위치만 기록
+    if (!lastSha) {
+      await supabase.from('app_state').upsert({ key: 'last_announced_sha', value: commits[0].sha });
+      return new Response('initialized', { headers: cors });
+    }
+
+    for (const c of newCommits) {
+      const line = c.message.split('\n').find((l) => l.includes('[공지]'));
+      if (!line) continue;
+      const message = line.replace(/.*\[공지\]\s*/, '').trim();
+      if (!message) continue;
+      const { data: offices } = await supabase.from('offices').select('id');
+      for (const o of offices || []) {
+        const { data: admin } = await supabase
+          .from('office_members').select('user_id')
+          .eq('office_id', o.id).eq('role', 'admin').limit(1).maybeSingle();
+        if (!admin) continue;
+        await supabase.from('office_feed').insert({
+          office_id: o.id, user_id: admin.user_id, type: 'post', content: message,
+        });
+        const { data: members } = await supabase
+          .from('office_members').select('user_id').eq('office_id', o.id);
+        await sendTo(
+          (members || []).map((m) => m.user_id),
+          '연결오피스가 업데이트됐어요 ✨',
+          message.length > 80 ? message.slice(0, 80) + '…' : message,
+        );
+      }
+    }
+    await supabase.from('app_state').upsert({ key: 'last_announced_sha', value: commits[0].sha });
+    return new Response(`processed ${newCommits.length}`, { headers: cors });
+  }
+
   if (payload.action === 'midnight_clockout') {
     // 매일 자정(KST)에 실행: 열려 있는 근무 세션을 전부 자동 퇴근 처리
     const now = new Date().toISOString();
