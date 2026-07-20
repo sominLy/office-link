@@ -107,7 +107,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm border-b border-amber-100">
+      <header className="glass sticky top-0 z-10 border-b border-amber-100/70">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xl">🏢</span>
@@ -183,9 +183,9 @@ export default function Home() {
 
       <main className="max-w-5xl mx-auto px-4 py-6 pb-24 space-y-6">
         {/* 오늘의 응원 한마디 */}
-        <div className="flex items-center gap-2.5 bg-gradient-to-r from-amber-100/80 to-orange-100/60 border border-amber-200/60 rounded-xl px-4 py-2.5">
-          <span className="text-lg">💌</span>
-          <p className="text-sm text-amber-800">{todayQuote()}</p>
+        <div className="rise-in flex items-center gap-2.5 bg-gradient-to-r from-amber-100/80 to-orange-100/60 border border-amber-200/60 rounded-xl px-4 py-2.5 shadow-sm">
+          <span className="text-lg animate-pulse">💌</span>
+          <p className="text-sm text-amber-800 leading-snug">{todayQuote()}</p>
         </div>
 
         {/* My Status Control */}
@@ -272,7 +272,7 @@ export default function Home() {
           <h2 className="text-sm font-medium text-gray-500 mb-3 px-1">오피스 멤버 <span className="text-gray-300">· 카드를 누르면 기록이 보여요</span></h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {members.map((member) => (
-              <button key={member.user_id} onClick={() => setSelectedMember(member)} className="text-left">
+              <button key={member.user_id} onClick={() => setSelectedMember(member)} className="lift text-left rounded-xl">
                 <MemberCard member={member} />
               </button>
             ))}

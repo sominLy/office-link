@@ -116,7 +116,7 @@ export default function Feed() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
-      <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm border-b border-amber-100">
+      <header className="glass sticky top-0 z-10 border-b border-amber-100/70">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
             <ArrowLeft className="w-4 h-4" />
