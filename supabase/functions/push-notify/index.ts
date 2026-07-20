@@ -106,6 +106,38 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: cors });
   }
 
+  if (payload.action === 'announce') {
+    // 기능 업데이트 공지: 모든 오피스 소식 탭에 게시 + 전 멤버 푸시
+    // GitHub Actions가 배포 시 호출한다 (비밀키 검증)
+    if (!payload.secret || payload.secret !== Deno.env.get('ANNOUNCE_SECRET')) {
+      return new Response('unauthorized', { status: 401, headers: cors });
+    }
+    const message = (payload.message || '').trim();
+    if (!message) return new Response('empty', { status: 400, headers: cors });
+
+    const { data: offices } = await supabase.from('offices').select('id');
+    for (const o of offices || []) {
+      const { data: admin } = await supabase
+        .from('office_members').select('user_id')
+        .eq('office_id', o.id).eq('role', 'admin').limit(1).maybeSingle();
+      if (!admin) continue;
+      await supabase.from('office_feed').insert({
+        office_id: o.id,
+        user_id: admin.user_id,
+        type: 'post',
+        content: message,
+      });
+      const { data: members } = await supabase
+        .from('office_members').select('user_id').eq('office_id', o.id);
+      await sendTo(
+        (members || []).map((m) => m.user_id),
+        '연결오피스가 업데이트됐어요 ✨',
+        message.length > 80 ? message.slice(0, 80) + '…' : message,
+      );
+    }
+    return new Response('ok', { headers: cors });
+  }
+
   if (payload.action === 'midnight_clockout') {
     // 매일 자정(KST)에 실행: 열려 있는 근무 세션을 전부 자동 퇴근 처리
     const now = new Date().toISOString();
