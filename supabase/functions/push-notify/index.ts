@@ -20,17 +20,22 @@ const cors = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-async function sendTo(userIds: string[], title: string, body: string) {
-  if (userIds.length === 0) return;
+async function sendTo(userIds: string[], title: string, body: string, tag = 'office-link') {
+  const uniqueIds = [...new Set(userIds)]; // 여러 오피스 중복 수신 방지
+  if (uniqueIds.length === 0) return;
   const { data: subs } = await supabase
     .from('push_subscriptions')
     .select('endpoint, p256dh, auth')
-    .in('user_id', userIds);
-  await Promise.all((subs || []).map(async (s) => {
+    .in('user_id', uniqueIds);
+  // 같은 기기(endpoint)가 두 번 조회돼도 한 번만 발송
+  const seen = new Set<string>();
+  const unique = (subs || []).filter((s) => (seen.has(s.endpoint) ? false : (seen.add(s.endpoint), true)));
+  await Promise.all(unique.map(async (s) => {
     try {
       await webpush.sendNotification(
         { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-        JSON.stringify({ title, body }),
+        // tag를 넘기면 같은 종류 알림이 쌓이지 않고 하나로 갱신된다 (스팸 필터 완화)
+        JSON.stringify({ title, body, tag }),
       );
     } catch (e) {
       // 만료된 구독은 정리
@@ -57,6 +62,7 @@ Deno.serve(async (req) => {
       (members || []).map((m) => m.user_id),
       `${actor?.nickname || '멤버'}님이 출근했어요 👋`,
       '오피스에서 함께 달려봐요!',
+      `clockin-${office_id}`,
     );
     return new Response('ok', { headers: cors });
   }
@@ -69,6 +75,7 @@ Deno.serve(async (req) => {
       [target_id],
       `${actor?.nickname || '멤버'}님이 ${emoji || '👍'} 응원을 보냈어요!`,
       task_title ? `"${task_title}" 화이팅!` : '오늘도 화이팅!',
+      'cheer',
     );
     return new Response('ok', { headers: cors });
   }
@@ -102,7 +109,7 @@ Deno.serve(async (req) => {
         .eq('office_id', office_id).neq('user_id', actor_id);
       recipients = (members || []).map((m) => m.user_id);
     }
-    await sendTo(recipients, title, body);
+    await sendTo(recipients, title, body, kind === 'wave' ? 'wave' : 'feed');
     return new Response('ok', { headers: cors });
   }
 
@@ -116,11 +123,13 @@ Deno.serve(async (req) => {
     if (!message) return new Response('empty', { status: 400, headers: cors });
 
     const { data: offices } = await supabase.from('offices').select('id');
+    const allRecipients = new Set<string>();
     for (const o of offices || []) {
       const { data: admin } = await supabase
         .from('office_members').select('user_id')
         .eq('office_id', o.id).eq('role', 'admin').limit(1).maybeSingle();
       if (!admin) continue;
+      // 소식 피드는 오피스마다 남기고,
       await supabase.from('office_feed').insert({
         office_id: o.id,
         user_id: admin.user_id,
@@ -129,12 +138,15 @@ Deno.serve(async (req) => {
       });
       const { data: members } = await supabase
         .from('office_members').select('user_id').eq('office_id', o.id);
-      await sendTo(
-        (members || []).map((m) => m.user_id),
-        '연결오피스가 업데이트됐어요 ✨',
-        message.length > 80 ? message.slice(0, 80) + '…' : message,
-      );
+      (members || []).forEach((m) => allRecipients.add(m.user_id));
     }
+    // 푸시는 사람 기준으로 딱 한 번만 (여러 오피스 소속이어도 1회)
+    await sendTo(
+      [...allRecipients],
+      '연결오피스가 업데이트됐어요 ✨',
+      message.length > 80 ? message.slice(0, 80) + '…' : message,
+      'announce',
+    );
     return new Response('ok', { headers: cors });
   }
 
@@ -169,6 +181,7 @@ Deno.serve(async (req) => {
       const message = line.replace(/.*\[공지\]\s*/, '').trim();
       if (!message) continue;
       const { data: offices } = await supabase.from('offices').select('id');
+      const recipients = new Set<string>();
       for (const o of offices || []) {
         const { data: admin } = await supabase
           .from('office_members').select('user_id')
@@ -179,12 +192,15 @@ Deno.serve(async (req) => {
         });
         const { data: members } = await supabase
           .from('office_members').select('user_id').eq('office_id', o.id);
-        await sendTo(
-          (members || []).map((m) => m.user_id),
-          '연결오피스가 업데이트됐어요 ✨',
-          message.length > 80 ? message.slice(0, 80) + '…' : message,
-        );
+        (members || []).forEach((m) => recipients.add(m.user_id));
       }
+      // 사람 기준 1회 발송 (중복 방지)
+      await sendTo(
+        [...recipients],
+        '연결오피스가 업데이트됐어요 ✨',
+        message.length > 80 ? message.slice(0, 80) + '…' : message,
+        'announce',
+      );
     }
     await supabase.from('app_state').upsert({ key: 'last_announced_sha', value: commits[0].sha });
     return new Response(`processed ${newCommits.length}`, { headers: cors });
@@ -213,6 +229,7 @@ Deno.serve(async (req) => {
       userIds,
       '자정이 지나 자동 퇴근됐어요 🌙',
       '아직 일하고 계신다면 출근 버튼을 다시 눌러주세요! 무리하진 말고요 💛',
+      'midnight',
     );
     return new Response('ok', { headers: cors });
   }
@@ -234,7 +251,7 @@ Deno.serve(async (req) => {
         .gte('started_at', `${kstToday}T00:00:00+09:00`)
         .limit(1);
       if (open && open.length > 0) continue;
-      await sendTo([p.id], '오늘 일 안 하나요? 👀', `설정한 근무 시작 시간(${(p.work_start as string).slice(0, 5)})이 지났어요. 출근 버튼이 기다리고 있어요!`);
+      await sendTo([p.id], '오늘 일 안 하나요? 👀', `설정한 근무 시작 시간(${(p.work_start as string).slice(0, 5)})이 지났어요. 출근 버튼이 기다리고 있어요!`, 'nudge');
       await supabase.from('profiles').update({ last_nudged_on: kstToday }).eq('id', p.id);
     }
     return new Response('ok', { headers: cors });

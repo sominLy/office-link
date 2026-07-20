@@ -7,6 +7,9 @@ self.addEventListener('push', (event) => {
       body: data.body || '',
       icon: '/favicon.svg',
       badge: '/favicon.svg',
+      // 같은 tag의 알림은 쌓이지 않고 하나로 갱신 → 알림함이 깔끔해지고 스팸 오탐 감소
+      tag: data.tag || 'office-link',
+      renotify: true,
     })
   );
 });
