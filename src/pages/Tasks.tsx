@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, ArrowLeft, Trash2, CheckCircle2, Circle, GripVertical, Pencil, FolderOpen, CalendarDays, Repeat, Lock } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Plus, ArrowLeft, Trash2, CheckCircle2, Circle, GripVertical, Pencil, FolderOpen, CalendarDays, Repeat, Lock, MoreVertical, Play, CheckCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { getWeekStart, kstToday } from '@/lib/dates';
@@ -289,24 +290,52 @@ export default function Tasks() {
           </div>
         ) : null}
       </div>
-      {/* 액션: 우측 고정. 모바일에선 항상 보이고(터치), 데스크톱은 호버 시 노출 */}
-      <div className="flex items-center flex-shrink-0 gap-0.5">
+      {/* 데스크톱: 호버 시 인라인 버튼 노출 (기존 유지) */}
+      <div className="hidden sm:flex items-center flex-shrink-0 gap-0.5">
         {task.status !== 'done' && task.status !== 'in_progress' && (
-          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-blue-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100" onClick={() => updateStatus(task, 'in_progress')}>
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-blue-500 opacity-0 group-hover:opacity-100" onClick={() => updateStatus(task, 'in_progress')}>
             시작
           </Button>
         )}
         {task.status === 'in_progress' && (
-          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-green-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100" onClick={() => updateStatus(task, 'done')}>
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-green-500 opacity-0 group-hover:opacity-100" onClick={() => updateStatus(task, 'done')}>
             완료
           </Button>
         )}
-        <Button variant="ghost" size="icon" className="w-7 h-7 text-gray-300 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:text-amber-600" onClick={() => openEdit(task)}>
+        <Button variant="ghost" size="icon" className="w-7 h-7 text-gray-300 opacity-0 group-hover:opacity-100 hover:text-amber-600" onClick={() => openEdit(task)}>
           <Pencil className="w-3.5 h-3.5" />
         </Button>
-        <Button variant="ghost" size="icon" className="w-7 h-7 text-gray-300 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:text-red-500" onClick={() => deleteTask(task.id)}>
+        <Button variant="ghost" size="icon" className="w-7 h-7 text-gray-300 opacity-0 group-hover:opacity-100 hover:text-red-500" onClick={() => deleteTask(task.id)}>
           <Trash2 className="w-3.5 h-3.5" />
         </Button>
+      </div>
+      {/* 모바일: ⋯ 더보기 메뉴로 묶어 카드 우측을 깔끔하게 */}
+      <div className="sm:hidden flex-shrink-0">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="w-7 h-7 text-gray-400" aria-label="할 일 메뉴">
+              <MoreVertical className="w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {task.status !== 'done' && task.status !== 'in_progress' && (
+              <DropdownMenuItem onClick={() => updateStatus(task, 'in_progress')}>
+                <Play className="w-4 h-4 mr-2 text-blue-500" /> 시작
+              </DropdownMenuItem>
+            )}
+            {task.status === 'in_progress' && (
+              <DropdownMenuItem onClick={() => updateStatus(task, 'done')}>
+                <CheckCheck className="w-4 h-4 mr-2 text-green-500" /> 완료
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onClick={() => openEdit(task)}>
+              <Pencil className="w-4 h-4 mr-2 text-amber-600" /> 수정
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => deleteTask(task.id)} className="text-red-500 focus:text-red-500">
+              <Trash2 className="w-4 h-4 mr-2" /> 삭제
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

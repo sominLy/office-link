@@ -118,12 +118,12 @@ export default function Home() {
                   <ChevronDown className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
+              <DropdownMenuContent align="start" className="max-w-[min(16rem,calc(100vw-2rem))]">
                 {offices.map(o => (
                   <DropdownMenuItem key={o.id} onClick={() => switchOffice(o.id)} className="cursor-pointer">
-                    <Building2 className="w-4 h-4 mr-2 text-amber-500" />
-                    {o.name}
-                    {o.id === office?.id && <Check className="w-4 h-4 ml-auto text-amber-600" />}
+                    <Building2 className="w-4 h-4 mr-2 text-amber-500 flex-shrink-0" />
+                    <span className="truncate">{o.name}</span>
+                    {o.id === office?.id && <Check className="w-4 h-4 ml-auto flex-shrink-0 text-amber-600" />}
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuItem onClick={() => navigate('/office-setup')} className="cursor-pointer text-amber-600">

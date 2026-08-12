@@ -135,10 +135,12 @@ export default function Feed() {
               <SelectTrigger className="w-32 flex-shrink-0">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-w-[calc(100vw-2rem)]">
                 <SelectItem value="all">📢 모두에게</SelectItem>
                 {members.filter(m => m.user_id !== user?.id).map(m => (
-                  <SelectItem key={m.user_id} value={m.user_id}>💌 {m.nickname}</SelectItem>
+                  <SelectItem key={m.user_id} value={m.user_id}>
+                    <span className="truncate">💌 {m.nickname}</span>
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
