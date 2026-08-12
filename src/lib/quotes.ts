@@ -52,3 +52,10 @@ export function todayQuoteFrom(userQuotes: string[]): string {
   const pool = [...QUOTES, ...userQuotes].sort();
   return pool[daySeed() % pool.length];
 }
+
+/** 새로고침용 — 풀에서 무작위로 다른 한마디를 뽑는다 (현재 글귀는 제외) */
+export function randomQuoteFrom(userQuotes: string[], exclude?: string): string {
+  const pool = [...QUOTES, ...userQuotes].filter(q => q !== exclude);
+  if (pool.length === 0) return exclude || QUOTES[0];
+  return pool[Math.floor(Math.random() * pool.length)];
+}

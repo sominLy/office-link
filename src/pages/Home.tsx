@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { LogOut, ChevronDown, Clock, Copy, Bell, Building2, Plus, Tag, Check, UtensilsCrossed, Palmtree, BellOff, BookOpenText, Sparkles, MessageSquarePlus } from 'lucide-react';
+import { LogOut, ChevronDown, Clock, Copy, Bell, Building2, Plus, Tag, Check, UtensilsCrossed, Palmtree, BellOff, BookOpenText, Sparkles, MessageSquarePlus, RotateCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
@@ -21,7 +21,7 @@ import BottomNav from '@/components/BottomNav';
 import { notificationsEnabled, requestNotificationPermission, notify, isMuted, setMuted } from '@/lib/notify';
 import { subscribePush, unsubscribePush } from '@/lib/push';
 import { kstToday } from '@/lib/dates';
-import { todayQuoteFrom } from '@/lib/quotes';
+import { todayQuoteFrom, randomQuoteFrom } from '@/lib/quotes';
 import { checkQuote } from '@/lib/profanity';
 import { displayName, TITLE_MODES } from '@/lib/callsign';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -55,6 +55,7 @@ export default function Home() {
   const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
   const [quoteText, setQuoteText] = useState('');
   const [userQuotes, setUserQuotes] = useState<string[]>([]);
+  const [shuffledQuote, setShuffledQuote] = useState<string | null>(null); // 새로고침으로 뽑은 글귀
 
   // 승인된 사용자 제보 글귀를 불러와 기본 글귀와 합침 (테이블 없거나 실패 시 기본만)
   useEffect(() => {
@@ -62,7 +63,7 @@ export default function Home() {
       if (data) setUserQuotes(data.map(q => q.text));
     });
   }, []);
-  const quote = todayQuoteFrom(userQuotes);
+  const quote = shuffledQuote ?? todayQuoteFrom(userQuotes);
 
   const submitQuote = async () => {
     if (!user) return;
@@ -190,15 +191,27 @@ export default function Home() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-6 pb-24 space-y-6">
-        {/* 오늘의 응원 한마디 — 탭하면 내 글귀도 제보 가능 */}
-        <button
-          onClick={() => setQuoteDialogOpen(true)}
-          className="rise-in w-full text-left flex items-center gap-2.5 bg-gradient-to-r from-amber-100/80 to-orange-100/60 border border-amber-200/60 rounded-xl px-4 py-2.5 shadow-sm hover:from-amber-100 hover:to-orange-100 transition-colors"
-        >
+        {/* 오늘의 응원 한마디 — 🔄 새로고침으로 다른 글귀, ✏️ 로 제보 */}
+        <div className="rise-in flex items-center gap-2 bg-gradient-to-r from-amber-100/80 to-orange-100/60 border border-amber-200/60 rounded-xl px-4 py-2.5 shadow-sm">
           <span className="text-lg animate-pulse flex-shrink-0">💌</span>
           <p className="text-sm text-amber-800 leading-snug flex-1 min-w-0">{quote}</p>
-          <MessageSquarePlus className="w-4 h-4 text-amber-500 flex-shrink-0" />
-        </button>
+          <button
+            onClick={() => setShuffledQuote(randomQuoteFrom(userQuotes, quote))}
+            className="text-amber-500 hover:text-amber-700 flex-shrink-0 p-1"
+            aria-label="다른 응원 보기"
+            title="다른 응원 보기"
+          >
+            <RotateCw className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setQuoteDialogOpen(true)}
+            className="text-amber-500 hover:text-amber-700 flex-shrink-0 p-1"
+            aria-label="응원 글귀 제보"
+            title="응원 글귀 제보"
+          >
+            <MessageSquarePlus className="w-4 h-4" />
+          </button>
+        </div>
 
         {/* My Status Control */}
         <section className="bg-white rounded-2xl p-5 shadow-sm border border-amber-100/50">
