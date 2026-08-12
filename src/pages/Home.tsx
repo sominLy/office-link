@@ -6,10 +6,12 @@ import FocusTimer from '@/components/FocusTimer';
 import MyTasks from '@/components/MyTasks';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { LogOut, ChevronDown, Clock, ListTodo, BarChart3, Copy, Bell, Building2, Plus, Tag, Check, UtensilsCrossed, Palmtree, BellOff, BookOpenText } from 'lucide-react';
+import { LogOut, ChevronDown, Clock, Copy, Bell, Building2, Plus, Tag, Check, UtensilsCrossed, Palmtree, BellOff, BookOpenText, Sparkles, MessageSquarePlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 import { defaultAvatar } from '@/lib/avatar';
 import { useState, useEffect } from 'react';
 import { MemberStatus } from '@/lib/types';
@@ -19,7 +21,8 @@ import BottomNav from '@/components/BottomNav';
 import { notificationsEnabled, requestNotificationPermission, notify, isMuted, setMuted } from '@/lib/notify';
 import { subscribePush, unsubscribePush } from '@/lib/push';
 import { kstToday } from '@/lib/dates';
-import { todayQuote } from '@/lib/quotes';
+import { todayQuoteFrom } from '@/lib/quotes';
+import { checkQuote } from '@/lib/profanity';
 import { displayName, TITLE_MODES } from '@/lib/callsign';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
@@ -48,6 +51,38 @@ export default function Home() {
   const [notifOn, setNotifOn] = useState(notificationsEnabled() && !isMuted());
   const [titleDialogOpen, setTitleDialogOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
+  const [quoteText, setQuoteText] = useState('');
+  const [userQuotes, setUserQuotes] = useState<string[]>([]);
+
+  // 승인된 사용자 제보 글귀를 불러와 기본 글귀와 합침 (테이블 없거나 실패 시 기본만)
+  useEffect(() => {
+    supabase.from('quotes').select('text').eq('approved', true).then(({ data }) => {
+      if (data) setUserQuotes(data.map(q => q.text));
+    });
+  }, []);
+  const quote = todayQuoteFrom(userQuotes);
+
+  const submitQuote = async () => {
+    if (!user) return;
+    const check = checkQuote(quoteText);
+    if (!check.ok) {
+      toast.error(check.reason || '등록할 수 없는 글귀예요');
+      return;
+    }
+    const { error } = await supabase.from('quotes').insert({ text: quoteText.trim(), created_by: user.id });
+    if (error) {
+      toast.error('등록에 실패했어요. 잠시 후 다시 시도해 주세요');
+      return;
+    }
+    toast.success('응원 글귀가 등록됐어요! 언젠가 모두의 홈에 떠요 💌');
+    setQuoteText('');
+    setQuoteDialogOpen(false);
+    supabase.from('quotes').select('text').eq('approved', true).then(({ data }) => {
+      if (data) setUserQuotes(data.map(q => q.text));
+    });
+  };
 
   // 내 멤버 정보 (직급 순서 포함) — 호칭 표시용
   const me = members.find(m => m.user_id === user?.id);
@@ -150,44 +185,20 @@ export default function Home() {
               </button>
             )}
           </div>
-          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/guide')} className="text-amber-500" title="200% 활용 공략집">
-              <BookOpenText className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => setMenuOpen(true)} className="text-amber-500" title="점메추/저메추">
-              <UtensilsCrossed className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleNotifications}
-              className={notifOn ? 'text-amber-500' : 'text-gray-300'}
-              title={notifOn ? '알림 끄기' : '알림 켜기'}
-            >
-              {notifOn ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
-            </Button>
-            {/* 할 일·리포트는 하단 네비게이션에도 있어 모바일에선 숨김(중복 방지·헤더 여백 확보) */}
-            <Button variant="ghost" size="sm" onClick={() => navigate('/tasks')} className="text-gray-600 hidden sm:inline-flex">
-              <ListTodo className="w-4 h-4 mr-1" />
-              할 일
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/report')} className="text-gray-600 hidden sm:inline-flex">
-              <BarChart3 className="w-4 h-4 mr-1" />
-              리포트
-            </Button>
-            <Button variant="ghost" size="icon" onClick={signOut} className="text-gray-400">
-              <LogOut className="w-4 h-4" />
-            </Button>
-          </div>
+          {/* 헤더 우측은 비워 방 제목이 넉넉하게. 부가 기능은 우측 하단 ✨ 더보기로 이동 */}
         </div>
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-6 pb-24 space-y-6">
-        {/* 오늘의 응원 한마디 */}
-        <div className="rise-in flex items-center gap-2.5 bg-gradient-to-r from-amber-100/80 to-orange-100/60 border border-amber-200/60 rounded-xl px-4 py-2.5 shadow-sm">
-          <span className="text-lg animate-pulse">💌</span>
-          <p className="text-sm text-amber-800 leading-snug">{todayQuote()}</p>
-        </div>
+        {/* 오늘의 응원 한마디 — 탭하면 내 글귀도 제보 가능 */}
+        <button
+          onClick={() => setQuoteDialogOpen(true)}
+          className="rise-in w-full text-left flex items-center gap-2.5 bg-gradient-to-r from-amber-100/80 to-orange-100/60 border border-amber-200/60 rounded-xl px-4 py-2.5 shadow-sm hover:from-amber-100 hover:to-orange-100 transition-colors"
+        >
+          <span className="text-lg animate-pulse flex-shrink-0">💌</span>
+          <p className="text-sm text-amber-800 leading-snug flex-1 min-w-0">{quote}</p>
+          <MessageSquarePlus className="w-4 h-4 text-amber-500 flex-shrink-0" />
+        </button>
 
         {/* My Status Control */}
         <section className="bg-white rounded-2xl p-5 shadow-sm border border-amber-100/50">
@@ -285,6 +296,65 @@ export default function Home() {
           </div>
         </section>
       </main>
+
+      {/* ✨ 더보기 플로팅 버튼 — 부가 기능 모음 (헤더에서 이동) */}
+      <div className="fixed right-4 bottom-20 z-30 flex flex-col items-end gap-2">
+        {moreOpen && (
+          <div className="w-60 bg-white rounded-2xl shadow-lg border border-amber-100 overflow-hidden rise-in">
+            <div className="px-4 pt-3 pb-1 text-xs font-semibold text-amber-600 flex items-center gap-1">
+              <Sparkles className="w-3.5 h-3.5" /> 숨은 기능 · 꿀팁
+            </div>
+            <button onClick={() => { setMoreOpen(false); navigate('/guide'); }} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-amber-50 text-left">
+              <BookOpenText className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+              <span><span className="text-sm text-gray-800 font-medium">200% 활용 공략집</span><br/><span className="text-xs text-gray-400">앱 200% 쓰는 법 + 앱 설치</span></span>
+            </button>
+            <button onClick={() => { setMoreOpen(false); setMenuOpen(true); }} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-amber-50 text-left">
+              <UtensilsCrossed className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+              <span><span className="text-sm text-gray-800 font-medium">점메추 · 저메추</span><br/><span className="text-xs text-gray-400">메뉴 고민 3초 컷 룰렛</span></span>
+            </button>
+            <button onClick={() => { setMoreOpen(false); setQuoteDialogOpen(true); }} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-amber-50 text-left">
+              <MessageSquarePlus className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+              <span><span className="text-sm text-gray-800 font-medium">응원 글귀 제보</span><br/><span className="text-xs text-gray-400">내 한마디가 모두의 홈에</span></span>
+            </button>
+            <button onClick={toggleNotifications} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-amber-50 text-left">
+              {notifOn ? <Bell className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" /> : <BellOff className="w-4 h-4 text-gray-300 mt-0.5 flex-shrink-0" />}
+              <span><span className="text-sm text-gray-800 font-medium">알림 {notifOn ? '끄기' : '켜기'}</span><br/><span className="text-xs text-gray-400">출근·응원 소식 푸시</span></span>
+            </button>
+            <button onClick={() => { setMoreOpen(false); signOut(); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-red-50 text-left border-t border-gray-100">
+              <LogOut className="w-4 h-4 text-gray-400 flex-shrink-0" />
+              <span className="text-sm text-gray-500">로그아웃</span>
+            </button>
+          </div>
+        )}
+        <button
+          onClick={() => setMoreOpen(o => !o)}
+          className={`w-[52px] h-[52px] rounded-full shadow-lg flex items-center justify-center transition-transform ${moreOpen ? 'bg-amber-600 rotate-45' : 'bg-gradient-to-br from-amber-400 to-orange-500'}`}
+          aria-label="더보기"
+        >
+          <Sparkles className="w-5 h-5 text-white" />
+        </button>
+      </div>
+      {/* 패널 바깥 클릭 시 닫기 */}
+      {moreOpen && <div className="fixed inset-0 z-20" onClick={() => setMoreOpen(false)} />}
+
+      {/* 응원 글귀 제보 다이얼로그 */}
+      <Dialog open={quoteDialogOpen} onOpenChange={setQuoteDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><MessageSquarePlus className="w-4 h-4 text-amber-600" /> 응원 글귀 제보</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-500 -mt-1">모두의 홈에 뜨는 "오늘의 한마디"를 함께 채워요. 따뜻한 응원 한마디를 남겨주세요 💛</p>
+          <Input
+            value={quoteText}
+            onChange={(e) => setQuoteText(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && submitQuote()}
+            placeholder="예: 오늘도 조용히 애쓰는 당신을 응원해요 🌱"
+            maxLength={60}
+          />
+          <p className="text-xs text-gray-400">비속어·차별 표현은 자동으로 걸러져요. {quoteText.length}/60</p>
+          <Button onClick={submitQuote} disabled={!quoteText.trim()} className="w-full bg-amber-600 hover:bg-amber-700 text-white">등록하기</Button>
+        </DialogContent>
+      </Dialog>
 
       <MenuPickDialog open={menuOpen} onClose={() => setMenuOpen(false)} />
 

@@ -34,12 +34,21 @@ const QUOTES: string[] = [
   '커피 한 잔 하고, 다시 힘내봐요 ☕',
 ];
 
-/** 오늘의 응원 한마디 — 매일 오전 9시(KST)에 다음 글귀로 바뀐다 */
-export function todayQuote(): string {
-  // 지금 시각에서 9시간을 빼면 "오전 9시가 하루의 경계"가 된다
-  // (오전 8시 59분까지는 어제 글귀, 9시부터 오늘 글귀)
+// 오전 9시(KST)를 하루 경계로 한 날짜 시드
+function daySeed(): number {
   const shifted = new Date(Date.now() - 9 * 3600 * 1000);
   const [y, m, d] = kstToday(shifted).split('-').map(Number);
-  const seed = y * 372 + m * 31 + d;
-  return QUOTES[seed % QUOTES.length];
+  return y * 372 + m * 31 + d;
+}
+
+/** 오늘의 응원 한마디 (기본 글귀만) — 매일 오전 9시(KST)에 바뀐다 */
+export function todayQuote(): string {
+  return QUOTES[daySeed() % QUOTES.length];
+}
+
+/** 기본 글귀 + 사용자 제보 글귀를 합친 풀에서 오늘의 한마디를 고른다 */
+export function todayQuoteFrom(userQuotes: string[]): string {
+  // 정렬로 순서를 고정해야 모든 사용자가 같은 날 같은 글귀를 본다
+  const pool = [...QUOTES, ...userQuotes].sort();
+  return pool[daySeed() % pool.length];
 }
