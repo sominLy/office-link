@@ -143,6 +143,7 @@ export default function Feed() {
               </SelectContent>
             </Select>
             <Input
+              className="min-w-0"
               placeholder={targetId === 'all' ? '모두에게 응원 한마디!' : '칭찬이나 응원을 남겨보세요'}
               value={content}
               onChange={(e) => setContent(e.target.value)}

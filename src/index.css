@@ -91,6 +91,9 @@
 
   html {
     scroll-behavior: smooth;
+    /* 실제 원인은 각 컴포넌트에서 해결하고, 잔여 가로 넘침만 차단하는 안전망.
+       clip은 스크롤 컨테이너를 만들지 않아 sticky 헤더에 영향을 주지 않는다. */
+    overflow-x: clip;
   }
 
   body {

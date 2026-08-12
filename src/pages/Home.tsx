@@ -108,14 +108,14 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
       {/* Header */}
       <header className="glass sticky top-0 z-10 border-b border-amber-100/70">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">🏢</span>
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <span className="text-xl flex-shrink-0">🏢</span>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-1 font-bold text-gray-800 hover:text-amber-700">
-                  {office?.name || '연결오피스'}
-                  <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+                <button className="flex items-center gap-1 font-bold text-gray-800 hover:text-amber-700 min-w-0">
+                  <span className="truncate">{office?.name || '연결오피스'}</span>
+                  <ChevronDown className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
@@ -142,15 +142,15 @@ export default function Home() {
                   navigator.clipboard.writeText(office.invite_code);
                   toast.success(`초대 코드 ${office.invite_code} 복사됨! 친구에게 공유하세요`);
                 }}
-                className="flex items-center gap-1 text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-full px-2.5 py-1 transition-colors"
+                className="flex items-center gap-1 text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-full px-2.5 py-1 transition-colors flex-shrink-0"
                 title="초대 코드 복사"
               >
-                <Copy className="w-3 h-3" />
-                {office.invite_code}
+                <Copy className="w-3 h-3 flex-shrink-0" />
+                <span className="tracking-wide">{office.invite_code}</span>
               </button>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             <Button variant="ghost" size="icon" onClick={() => navigate('/guide')} className="text-amber-500" title="200% 활용 공략집">
               <BookOpenText className="w-4 h-4" />
             </Button>
@@ -166,13 +166,14 @@ export default function Home() {
             >
               {notifOn ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/tasks')} className="text-gray-600">
+            {/* 할 일·리포트는 하단 네비게이션에도 있어 모바일에선 숨김(중복 방지·헤더 여백 확보) */}
+            <Button variant="ghost" size="sm" onClick={() => navigate('/tasks')} className="text-gray-600 hidden sm:inline-flex">
               <ListTodo className="w-4 h-4 mr-1" />
-              <span className="hidden sm:inline">할 일</span>
+              할 일
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/report')} className="text-gray-600">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/report')} className="text-gray-600 hidden sm:inline-flex">
               <BarChart3 className="w-4 h-4 mr-1" />
-              <span className="hidden sm:inline">리포트</span>
+              리포트
             </Button>
             <Button variant="ghost" size="icon" onClick={signOut} className="text-gray-400">
               <LogOut className="w-4 h-4" />

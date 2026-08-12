@@ -257,47 +257,57 @@ export default function Tasks() {
   const doneTasks = tasks.filter(t => t.status === 'done');
 
   const TaskItem = ({ task }: { task: Task }) => (
-    <div className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-100 group hover:border-amber-200 transition-colors">
-      <GripVertical className="w-4 h-4 text-gray-300 flex-shrink-0" />
-      <button onClick={() => updateStatus(task, task.status === 'done' ? 'todo' : 'done')} className="flex-shrink-0">
+    <div className="flex items-start gap-2 p-3 bg-white rounded-lg border border-gray-100 group hover:border-amber-200 transition-colors">
+      <GripVertical className="w-4 h-4 text-gray-300 flex-shrink-0 mt-0.5" />
+      <button onClick={() => updateStatus(task, task.status === 'done' ? 'todo' : 'done')} className="flex-shrink-0 mt-0.5">
         {task.status === 'done' ? (
           <CheckCircle2 className="w-5 h-5 text-green-500" />
         ) : (
           <Circle className="w-5 h-5 text-gray-300 hover:text-amber-400" />
         )}
       </button>
-      <span className={`text-sm flex-1 ${task.status === 'done' ? 'line-through text-gray-400' : 'text-gray-700'}`}>
-        {task.title}
-        {task.routine_id && <Repeat className="w-3 h-3 text-amber-400 inline ml-1" />}
-        {task.is_private && <Lock className="w-3 h-3 text-gray-400 inline ml-1" />}
-      </span>
-      {task.due_date && task.status !== 'done' && (() => {
-        const b = dueBadge(task.due_date, kstToday());
-        return (
-          <Badge variant="outline" className={`text-xs ${b.cls}`}>
-            <CalendarDays className="w-3 h-3 mr-0.5" />{b.label}
-          </Badge>
-        );
-      })()}
-      <Badge variant="outline" className={`text-xs ${priorityColors[task.priority]}`}>
-        {priorityLabels[task.priority]}
-      </Badge>
-      {task.status !== 'done' && task.status !== 'in_progress' && (
-        <Button variant="ghost" size="sm" className="text-xs text-blue-500 opacity-0 group-hover:opacity-100" onClick={() => updateStatus(task, 'in_progress')}>
-          시작
+      {/* 제목 + 배지: 제목이 우선 공간을 갖고, 배지는 좁으면 아래 줄로 감싸짐 */}
+      <div className="flex-1 min-w-0">
+        <span className={`block text-sm break-keep [overflow-wrap:anywhere] ${task.status === 'done' ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+          {task.title}
+          {task.routine_id && <Repeat className="w-3 h-3 text-amber-400 inline ml-1 align-text-bottom" />}
+          {task.is_private && <Lock className="w-3 h-3 text-gray-400 inline ml-1 align-text-bottom" />}
+        </span>
+        {(task.due_date && task.status !== 'done') || task.priority ? (
+          <div className="flex flex-wrap items-center gap-1 mt-1">
+            {task.due_date && task.status !== 'done' && (() => {
+              const b = dueBadge(task.due_date, kstToday());
+              return (
+                <Badge variant="outline" className={`text-xs whitespace-nowrap ${b.cls}`}>
+                  <CalendarDays className="w-3 h-3 mr-0.5" />{b.label}
+                </Badge>
+              );
+            })()}
+            <Badge variant="outline" className={`text-xs whitespace-nowrap ${priorityColors[task.priority]}`}>
+              {priorityLabels[task.priority]}
+            </Badge>
+          </div>
+        ) : null}
+      </div>
+      {/* 액션: 우측 고정. 모바일에선 항상 보이고(터치), 데스크톱은 호버 시 노출 */}
+      <div className="flex items-center flex-shrink-0 gap-0.5">
+        {task.status !== 'done' && task.status !== 'in_progress' && (
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-blue-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100" onClick={() => updateStatus(task, 'in_progress')}>
+            시작
+          </Button>
+        )}
+        {task.status === 'in_progress' && (
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-green-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100" onClick={() => updateStatus(task, 'done')}>
+            완료
+          </Button>
+        )}
+        <Button variant="ghost" size="icon" className="w-7 h-7 text-gray-300 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:text-amber-600" onClick={() => openEdit(task)}>
+          <Pencil className="w-3.5 h-3.5" />
         </Button>
-      )}
-      {task.status === 'in_progress' && (
-        <Button variant="ghost" size="sm" className="text-xs text-green-500 opacity-0 group-hover:opacity-100" onClick={() => updateStatus(task, 'done')}>
-          완료
+        <Button variant="ghost" size="icon" className="w-7 h-7 text-gray-300 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 hover:text-red-500" onClick={() => deleteTask(task.id)}>
+          <Trash2 className="w-3.5 h-3.5" />
         </Button>
-      )}
-      <Button variant="ghost" size="icon" className="w-7 h-7 text-gray-300 opacity-0 group-hover:opacity-100 hover:text-amber-600" onClick={() => openEdit(task)}>
-        <Pencil className="w-3.5 h-3.5" />
-      </Button>
-      <Button variant="ghost" size="icon" className="w-7 h-7 text-gray-300 opacity-0 group-hover:opacity-100 hover:text-red-500" onClick={() => deleteTask(task.id)}>
-        <Trash2 className="w-3.5 h-3.5" />
-      </Button>
+      </div>
     </div>
   );
 
@@ -409,12 +419,12 @@ export default function Tasks() {
                 return (
                   <div key={cat ?? '__none__'} className="space-y-2">
                     <div className="flex items-center gap-2 px-1">
-                      <FolderOpen className="w-4 h-4 text-amber-500" />
-                      <h3 className="text-sm font-semibold text-gray-700">{cat ?? '기타'}</h3>
-                      <Badge variant="secondary" className="text-xs bg-amber-50 text-amber-700">{done}/{group.length}</Badge>
+                      <FolderOpen className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                      <h3 className="text-sm font-semibold text-gray-700 truncate min-w-0">{cat ?? '기타'}</h3>
+                      <Badge variant="secondary" className="text-xs bg-amber-50 text-amber-700 flex-shrink-0">{done}/{group.length}</Badge>
                       <button
                         onClick={() => { setNewCategory(cat ?? ''); setDialogOpen(true); }}
-                        className="ml-auto flex items-center gap-0.5 text-xs text-amber-600 hover:bg-amber-50 rounded-full px-2 py-0.5 border border-amber-200"
+                        className="ml-auto flex-shrink-0 flex items-center gap-0.5 text-xs text-amber-600 hover:bg-amber-50 rounded-full px-2 py-0.5 border border-amber-200"
                         title={`${cat ?? '기타'}에 할 일 추가`}
                       >
                         <Plus className="w-3 h-3" /> 추가
