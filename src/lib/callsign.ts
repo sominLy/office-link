@@ -25,12 +25,13 @@ function hash(str: string): number {
 export function displayName(nickname: string, mode: TitleMode | string | null | undefined, rankIndex = 0): string {
   switch (mode) {
     case 'pro':
-      return `${nickname} 프로`;
+      return nickname.endsWith('프로') ? nickname : `${nickname} 프로`;
     case 'rank':
       return `${nickname} ${RANKS[Math.min(rankIndex, RANKS.length - 1)]}`;
     case 'english':
       return ENGLISH_NAMES[hash(nickname) % ENGLISH_NAMES.length];
     default:
-      return `${nickname}님`;
+      // 닉네임이 이미 '님'으로 끝나면 중복해서 붙이지 않음 (옐님 → 옐님, 옐님님 방지)
+      return nickname.endsWith('님') ? nickname : `${nickname}님`;
   }
 }
