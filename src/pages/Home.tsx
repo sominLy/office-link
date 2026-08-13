@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { LogOut, ChevronDown, Clock, Copy, Bell, Building2, Plus, Tag, Check, UtensilsCrossed, Palmtree, BellOff, BookOpenText, Sparkles, MessageSquarePlus, RotateCw } from 'lucide-react';
+import { LogOut, ChevronDown, Clock, Copy, Bell, Building2, Plus, Tag, Check, UtensilsCrossed, Palmtree, BellOff, BookOpenText, NotebookPen, Sparkles, MessageSquarePlus, RotateCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
@@ -325,6 +325,10 @@ export default function Home() {
               <UtensilsCrossed className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
               <span><span className="text-sm text-gray-800 font-medium">점메추 · 저메추</span><br/><span className="text-xs text-gray-400">메뉴 고민 3초 컷 룰렛</span></span>
             </button>
+            <a href="https://bapsimi.vercel.app" target="_blank" rel="noopener noreferrer" onClick={() => setMoreOpen(false)} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-amber-50 text-left">
+              <NotebookPen className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+              <span><span className="text-sm text-gray-800 font-medium">밥시미</span><br/><span className="text-xs text-gray-400">먹은 곳 사진으로 기록하기</span></span>
+            </a>
             <button onClick={() => { setMoreOpen(false); setQuoteDialogOpen(true); }} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-amber-50 text-left">
               <MessageSquarePlus className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
               <span><span className="text-sm text-gray-800 font-medium">응원 글귀 제보</span><br/><span className="text-xs text-gray-400">내 한마디가 모두의 홈에</span></span>

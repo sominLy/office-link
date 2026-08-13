@@ -7,12 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Send, Trash2, Sun, Moon, Hand, MessageCircleHeart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { defaultAvatar } from '@/lib/avatar';
 import { displayName } from '@/lib/callsign';
 import BottomNav from '@/components/BottomNav';
+import OfficeChat from '@/components/OfficeChat';
 
 function timeAgo(iso: string): string {
   const sec = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -127,7 +129,18 @@ export default function Feed() {
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 py-6 pb-24 space-y-4">
+      <main className="max-w-lg mx-auto px-4 py-6 pb-24">
+       <Tabs defaultValue="board" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-4">
+          <TabsTrigger value="board">📌 게시판</TabsTrigger>
+          <TabsTrigger value="chat">💬 채팅</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="chat">
+          <OfficeChat />
+        </TabsContent>
+
+        <TabsContent value="board" className="space-y-4">
         {/* 글쓰기 */}
         <Card className="p-4 border-amber-100/50 space-y-2">
           <div className="flex gap-2">
@@ -191,6 +204,8 @@ export default function Feed() {
             ))}
           </ul>
         )}
+        </TabsContent>
+       </Tabs>
       </main>
       <BottomNav />
     </div>
