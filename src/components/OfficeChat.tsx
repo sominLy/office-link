@@ -195,7 +195,7 @@ export default function OfficeChat() {
                       <span className="text-[10px] text-gray-300 leading-none">{timeLabel(m.created_at)}</span>
                     </div>
                     {canDelete(m) && (
-                      <button onClick={() => del(m.id)} className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 flex-shrink-0" title="삭제 (10분 이내)">
+                      <button onClick={() => del(m.id)} className="text-gray-300 hover:text-red-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex-shrink-0" title="삭제 (10분 이내)">
                         <X className="w-3.5 h-3.5" />
                       </button>
                     )}
