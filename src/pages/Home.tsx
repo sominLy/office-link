@@ -85,6 +85,21 @@ export default function Home() {
     });
   };
 
+  // 강제 새로고침 — 캐시·서비스워커까지 비우고 최신 버전 로드
+  const forceRefresh = async () => {
+    try {
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      }
+      const regs = await navigator.serviceWorker?.getRegistrations?.();
+      // 푸시용 SW는 유지하되 캐시만 비웠으니 그대로 새로고침
+      void regs;
+    } catch { /* noop */ }
+    // 쿼리스트링으로 캐시 우회 후 강제 리로드
+    window.location.href = window.location.pathname + '?_r=' + Date.now();
+  };
+
   // 내 멤버 정보 (직급 순서 포함) — 호칭 표시용
   const me = members.find(m => m.user_id === user?.id);
   const myDisplay = me ? displayName(me.nickname, office?.title_mode, me.rank_index) : profile?.nickname;
@@ -336,6 +351,10 @@ export default function Home() {
             <button onClick={toggleNotifications} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-amber-50 text-left">
               {notifOn ? <Bell className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" /> : <BellOff className="w-4 h-4 text-gray-300 mt-0.5 flex-shrink-0" />}
               <span><span className="text-sm text-gray-800 font-medium">알림 {notifOn ? '끄기' : '켜기'}</span><br/><span className="text-xs text-gray-400">출근·응원 소식 푸시</span></span>
+            </button>
+            <button onClick={forceRefresh} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-amber-50 text-left">
+              <RotateCw className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+              <span><span className="text-sm text-gray-800 font-medium">앱 새로고침</span><br/><span className="text-xs text-gray-400">최신 버전이 안 보일 때 눌러요</span></span>
             </button>
             <button onClick={() => { setMoreOpen(false); signOut(); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-red-50 text-left border-t border-gray-100">
               <LogOut className="w-4 h-4 text-gray-400 flex-shrink-0" />
