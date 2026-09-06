@@ -186,4 +186,13 @@
   @keyframes rise-in {
     from { opacity: 0; transform: translateY(8px); }
   }
+
+  /* 집중 캐릭터 둥실둥실 */
+  .float-bob {
+    animation: float-bob 2.4s ease-in-out infinite;
+  }
+  @keyframes float-bob {
+    0%, 100% { transform: translateY(0) rotate(-2deg); }
+    50% { transform: translateY(-8px) rotate(2deg); }
+  }
 }

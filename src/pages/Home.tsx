@@ -17,6 +17,7 @@ import { useState, useEffect } from 'react';
 import { MemberStatus } from '@/lib/types';
 import MemberStatsDialog from '@/components/MemberStatsDialog';
 import MenuPickDialog from '@/components/MenuPickDialog';
+import FocusCompanion, { WATCH_KEY, CLOCKOUT_KEY } from '@/components/FocusCompanion';
 import BottomNav from '@/components/BottomNav';
 import { notificationsEnabled, requestNotificationPermission, notify, isMuted, setMuted } from '@/lib/notify';
 import { subscribePush, unsubscribePush } from '@/lib/push';
@@ -52,6 +53,7 @@ export default function Home() {
   const [titleDialogOpen, setTitleDialogOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [focusOpen, setFocusOpen] = useState(false);
   const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
   const [quoteText, setQuoteText] = useState('');
   const [userQuotes, setUserQuotes] = useState<string[]>([]);
@@ -154,6 +156,36 @@ export default function Home() {
     const t = setInterval(check, 60000);
     return () => clearInterval(t);
   }, [profile, myWorkSession]);
+
+  // 감시 모드(판옵티콘) + 예상 퇴근 알림 — 근무 중일 때만 동작
+  useEffect(() => {
+    const check = () => {
+      if (!myWorkSession) return; // 출근 중일 때만
+      // ① 판옵티콘: N분마다 "아직 집중 중?"
+      const interval = Number(localStorage.getItem(WATCH_KEY) || 0);
+      if (interval > 0) {
+        const last = Number(localStorage.getItem('watch_last') || 0);
+        if (Date.now() - last >= interval * 60 * 1000) {
+          localStorage.setItem('watch_last', String(Date.now()));
+          notify('👁 아직 집중하고 계신가요?', '스스로와의 약속, 지금도 잘하고 있어요!');
+        }
+      }
+      // ② 예상 퇴근 시간 알림 (하루 한 번)
+      const target = localStorage.getItem(CLOCKOUT_KEY); // "HH:MM"
+      if (target) {
+        const nowHM = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
+        const firedKey = `clockout_fired-${kstToday()}`;
+        if (nowHM >= target && !localStorage.getItem(firedKey)) {
+          localStorage.setItem(firedKey, '1');
+          notify('🏃 예상 퇴근 시간이에요!', '아직 일하고 계신가요? 무리하지 말고 마무리해도 좋아요 💛');
+          toast('🏃 예상 퇴근 시간이 됐어요');
+        }
+      }
+    };
+    check();
+    const t = setInterval(check, 30000);
+    return () => clearInterval(t);
+  }, [myWorkSession]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
@@ -336,6 +368,10 @@ export default function Home() {
               <BookOpenText className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
               <span><span className="text-sm text-gray-800 font-medium">200% 활용 공략집</span><br/><span className="text-xs text-gray-400">앱 200% 쓰는 법 + 앱 설치</span></span>
             </button>
+            <button onClick={() => { setMoreOpen(false); setFocusOpen(true); }} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-amber-50 text-left">
+              <span className="text-base leading-none mt-0.5 flex-shrink-0">🍅</span>
+              <span><span className="text-sm text-gray-800 font-medium">집중 모드</span><br/><span className="text-xs text-gray-400">뽀모도로 · 감시 · 퇴근 알림</span></span>
+            </button>
             <button onClick={() => { setMoreOpen(false); setMenuOpen(true); }} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-amber-50 text-left">
               <UtensilsCrossed className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
               <span><span className="text-sm text-gray-800 font-medium">점메추 · 저메추</span><br/><span className="text-xs text-gray-400">메뉴 고민 3초 컷 룰렛</span></span>
@@ -393,6 +429,7 @@ export default function Home() {
       </Dialog>
 
       <MenuPickDialog open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <FocusCompanion open={focusOpen} onClose={() => setFocusOpen(false)} />
 
       {/* 호칭 설정 (방장 전용) */}
       <Dialog open={titleDialogOpen} onOpenChange={setTitleDialogOpen}>
