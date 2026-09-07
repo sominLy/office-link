@@ -16,6 +16,14 @@ function fmt(sec: number): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
+// 분 → "N분" / "N시간" / "N시간 M분"
+function humanMin(min: number): string {
+  if (min < 60) return `${min}분`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m === 0 ? `${h}시간` : `${h}시간 ${m}분`;
+}
+
 // 뽀모도로 프리셋
 const PRESETS = [
   { label: '25 / 5', focus: 25, brk: 5 },
@@ -67,10 +75,10 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
 
   // ── 감시 모드 ──
   const [watch, setWatch] = useState<number>(() => Number(localStorage.getItem(WATCH_KEY) || 0));
+  const [draft, setWatchDraft] = useState<number>(() => Number(localStorage.getItem(WATCH_KEY) || 0) || 30);
   const setWatchMode = (min: number) => {
-    const next = watch === min ? 0 : min;
-    setWatch(next);
-    if (next) { localStorage.setItem(WATCH_KEY, String(next)); localStorage.setItem('watch_last', String(Date.now())); toast.success(`${next}분마다 감시 알림이 와요 👁`); }
+    setWatch(min);
+    if (min) { localStorage.setItem(WATCH_KEY, String(min)); localStorage.setItem('watch_last', String(Date.now())); toast.success(`${humanMin(min)}마다 감시 알림이 와요 👁`); }
     else { localStorage.removeItem(WATCH_KEY); toast.success('감시 모드를 껐어요'); }
   };
 
@@ -145,18 +153,34 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
             <div className="flex flex-col items-center gap-1 py-1">
               <div className="text-5xl float-bob">👁</div>
               <p className="text-sm font-semibold text-gray-700">판옵티콘 감시 모드</p>
-              <p className="text-xs text-gray-400 text-center">정한 간격마다 "아직 집중 중?" 알림이 와요.<br/>스스로를 감시하는 강제력 장치예요.</p>
+              <p className="text-xs text-gray-400 text-center">5분 단위로 5분~6시간, 정한 간격마다<br/>"아직 집중 중?" 알림이 와요. 스스로 감시하는 강제력 장치.</p>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              {[30, 45, 50].map(m => (
-                <button key={m} onClick={() => setWatchMode(m)}
-                  className={`rounded-xl border py-3 text-sm font-medium ${watch === m ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-gray-600 border-gray-200'}`}>
-                  {m}분
-                </button>
-              ))}
+            {/* 5분 단위 · 5분 ~ 6시간(360분) 슬라이더 */}
+            <div className="space-y-2 px-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-400">간격</span>
+                <span className="text-lg font-bold text-amber-600">{humanMin(draft)}<span className="text-xs text-gray-400 font-normal">마다</span></span>
+              </div>
+              <input
+                type="range" min={5} max={360} step={5}
+                value={draft}
+                onChange={(e) => setWatchDraft(Number(e.target.value))}
+                className="w-full accent-amber-500"
+              />
+              <div className="flex justify-between text-[10px] text-gray-300">
+                <span>5분</span><span>3시간</span><span>6시간</span>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={() => setWatchMode(draft)} className="flex-1 bg-amber-600 hover:bg-amber-700 text-white">
+                {watch === draft && watch > 0 ? '이 간격으로 켜짐' : '이 간격으로 켜기'}
+              </Button>
+              {watch > 0 && (
+                <Button variant="outline" className="border-amber-200 text-gray-500" onClick={() => setWatchMode(0)}>끄기</Button>
+              )}
             </div>
             <p className="text-xs text-center text-gray-400">
-              {watch ? `🟢 켜짐 · ${watch}분마다` : '⚪ 꺼짐 (버튼을 눌러 켜기)'}
+              {watch ? `🟢 켜짐 · ${humanMin(watch)}마다` : '⚪ 꺼짐'}
             </p>
             <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg p-2 flex items-center gap-1">
               <Eye className="w-3.5 h-3.5" /> 알림은 앱이 켜져 있을 때 와요. 푸시 알림이 켜져 있어야 백그라운드에서도 옵니다.
