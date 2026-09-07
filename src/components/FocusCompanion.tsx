@@ -153,24 +153,29 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
             <div className="flex flex-col items-center gap-1 py-1">
               <div className="text-5xl float-bob">👁</div>
               <p className="text-sm font-semibold text-gray-700">판옵티콘 감시 모드</p>
-              <p className="text-xs text-gray-400 text-center">5분 단위로 5분~6시간, 정한 간격마다<br/>"아직 집중 중?" 알림이 와요. 스스로 감시하는 강제력 장치.</p>
+              <p className="text-xs text-gray-400 text-center">시간(0~6)과 분(5분 단위)을 정하면<br/>그 간격마다 "아직 집중 중?" 알림이 와요.</p>
             </div>
-            {/* 5분 단위 · 5분 ~ 6시간(360분) 슬라이더 */}
-            <div className="space-y-2 px-1">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-400">간격</span>
-                <span className="text-lg font-bold text-amber-600">{humanMin(draft)}<span className="text-xs text-gray-400 font-normal">마다</span></span>
-              </div>
-              <input
-                type="range" min={5} max={360} step={5}
-                value={draft}
-                onChange={(e) => setWatchDraft(Number(e.target.value))}
-                className="w-full accent-amber-500"
-              />
-              <div className="flex justify-between text-[10px] text-gray-300">
-                <span>5분</span><span>3시간</span><span>6시간</span>
-              </div>
+            {/* 시:분 선택 · 시간 0~6, 분 5분 단위 (최소 5분) */}
+            <div className="flex items-end justify-center gap-2">
+              <label className="flex flex-col items-center gap-1">
+                <span className="text-[11px] text-gray-400">시간</span>
+                <select value={Math.floor(draft / 60)}
+                  onChange={(e) => setWatchDraft(Math.max(5, Number(e.target.value) * 60 + (draft % 60)))}
+                  className="border border-gray-200 rounded-lg px-3 py-2 text-lg font-bold text-amber-600 tabular-nums">
+                  {[0, 1, 2, 3, 4, 5, 6].map(h => <option key={h} value={h}>{String(h).padStart(2, '0')}</option>)}
+                </select>
+              </label>
+              <span className="text-2xl font-bold text-amber-400 pb-1.5">:</span>
+              <label className="flex flex-col items-center gap-1">
+                <span className="text-[11px] text-gray-400">분</span>
+                <select value={draft % 60}
+                  onChange={(e) => setWatchDraft(Math.max(5, Math.floor(draft / 60) * 60 + Number(e.target.value)))}
+                  className="border border-gray-200 rounded-lg px-3 py-2 text-lg font-bold text-amber-600 tabular-nums">
+                  {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => <option key={m} value={m}>{String(m).padStart(2, '0')}</option>)}
+                </select>
+              </label>
             </div>
+            <p className="text-center text-xs text-gray-400">→ {humanMin(draft)}마다</p>
             <div className="flex gap-2">
               <Button onClick={() => setWatchMode(draft)} className="flex-1 bg-amber-600 hover:bg-amber-700 text-white">
                 {watch === draft && watch > 0 ? '이 간격으로 켜짐' : '이 간격으로 켜기'}

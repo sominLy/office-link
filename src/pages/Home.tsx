@@ -54,6 +54,8 @@ export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [focusOpen, setFocusOpen] = useState(false);
+  const [clockInOpen, setClockInOpen] = useState(false);
+  const [offTarget, setOffTarget] = useState(''); // 출근 시 예상 퇴근 시간 ('' = 설정 안 함)
   const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
   const [quoteText, setQuoteText] = useState('');
   const [userQuotes, setUserQuotes] = useState<string[]>([]);
@@ -285,7 +287,7 @@ export default function Home() {
             <div className="flex items-center gap-2 w-full sm:w-auto">
               {!isWorking ? (
                 <>
-                <Button onClick={clockIn} className="bg-green-600 hover:bg-green-700 text-white flex-1 sm:flex-none">
+                <Button onClick={() => { setOffTarget(localStorage.getItem(CLOCKOUT_KEY) || ''); setClockInOpen(true); }} className="bg-green-600 hover:bg-green-700 text-white flex-1 sm:flex-none">
                   <Clock className="w-4 h-4 mr-1" />
                   출근하기
                 </Button>
@@ -430,6 +432,39 @@ export default function Home() {
 
       <MenuPickDialog open={menuOpen} onClose={() => setMenuOpen(false)} />
       <FocusCompanion open={focusOpen} onClose={() => setFocusOpen(false)} />
+
+      {/* 출근 → 예상 퇴근 시간 설정 */}
+      <Dialog open={clockInOpen} onOpenChange={setClockInOpen}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle>🟢 출근하기</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-gray-500">예상 퇴근 시간을 정해두면, 그 시간에 <b>"아직 일하고 계신가요?"</b> 알림을 보내드려요.</p>
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-amber-500 flex-shrink-0" />
+              <input type="time" value={offTarget} onChange={(e) => setOffTarget(e.target.value)}
+                className="border border-gray-200 rounded-lg px-3 py-2 text-sm flex-1" />
+            </div>
+            <label className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer">
+              <input type="checkbox" checked={offTarget === ''} onChange={(e) => setOffTarget(e.target.checked ? '' : '18:00')} className="accent-amber-500" />
+              일단 퇴근 시간 설정하지 않음
+            </label>
+            <Button
+              className="w-full bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => {
+                if (offTarget) { localStorage.setItem(CLOCKOUT_KEY, offTarget); localStorage.removeItem(`clockout_fired-${kstToday()}`); }
+                else { localStorage.removeItem(CLOCKOUT_KEY); }
+                setClockInOpen(false);
+                clockIn();
+                toast.success(offTarget ? `출근! ${offTarget}에 퇴근 알림을 보낼게요 🏃` : '출근했어요! 오늘도 화이팅 💪');
+              }}
+            >
+              출근하기
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* 호칭 설정 (방장 전용) */}
       <Dialog open={titleDialogOpen} onOpenChange={setTitleDialogOpen}>
