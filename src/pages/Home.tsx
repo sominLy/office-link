@@ -56,6 +56,7 @@ export default function Home() {
   const [focusOpen, setFocusOpen] = useState(false);
   const [clockInOpen, setClockInOpen] = useState(false);
   const [offTarget, setOffTarget] = useState(''); // 출근 시 예상 퇴근 시간 ('' = 설정 안 함)
+  const [clockInBase, setClockInBase] = useState(''); // 출근 버튼 누른 시각 (HH:MM), +N시간 계산 기준
   const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
   const [quoteText, setQuoteText] = useState('');
   const [userQuotes, setUserQuotes] = useState<string[]>([]);
@@ -287,7 +288,12 @@ export default function Home() {
             <div className="flex items-center gap-2 w-full sm:w-auto">
               {!isWorking ? (
                 <>
-                <Button onClick={() => { setOffTarget(localStorage.getItem(CLOCKOUT_KEY) || ''); setClockInOpen(true); }} className="bg-green-600 hover:bg-green-700 text-white flex-1 sm:flex-none">
+                <Button onClick={() => {
+                  const now = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
+                  setClockInBase(now);
+                  setOffTarget(now); // 기본값 = 출근한 지금 시각
+                  setClockInOpen(true);
+                }} className="bg-green-600 hover:bg-green-700 text-white flex-1 sm:flex-none">
                   <Clock className="w-4 h-4 mr-1" />
                   출근하기
                 </Button>
@@ -446,8 +452,21 @@ export default function Home() {
               <input type="time" value={offTarget} onChange={(e) => setOffTarget(e.target.value)}
                 className="border border-gray-200 rounded-lg px-3 py-2 text-sm flex-1" />
             </div>
+            {/* 출근 시각 기준 빠른 설정 */}
+            <div className="grid grid-cols-4 gap-1.5">
+              {[1, 3, 5, 10].map(h => {
+                const [bh, bm] = (clockInBase || '09:00').split(':').map(Number);
+                const target = `${String((bh + h) % 24).padStart(2, '0')}:${String(bm).padStart(2, '0')}`;
+                return (
+                  <button key={h} onClick={() => setOffTarget(target)}
+                    className={`rounded-lg border py-1.5 text-xs font-medium ${offTarget === target ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-gray-600 border-gray-200'}`}>
+                    +{h}시간
+                  </button>
+                );
+              })}
+            </div>
             <label className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer">
-              <input type="checkbox" checked={offTarget === ''} onChange={(e) => setOffTarget(e.target.checked ? '' : '18:00')} className="accent-amber-500" />
+              <input type="checkbox" checked={offTarget === ''} onChange={(e) => setOffTarget(e.target.checked ? '' : clockInBase)} className="accent-amber-500" />
               일단 퇴근 시간 설정하지 않음
             </label>
             <Button
