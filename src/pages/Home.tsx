@@ -18,6 +18,7 @@ import { MemberStatus } from '@/lib/types';
 import MemberStatsDialog from '@/components/MemberStatsDialog';
 import MenuPickDialog from '@/components/MenuPickDialog';
 import FocusCompanion, { WATCH_KEY, CLOCKOUT_KEY } from '@/components/FocusCompanion';
+import OverdueTasksDialog from '@/components/OverdueTasksDialog';
 import BottomNav from '@/components/BottomNav';
 import { notificationsEnabled, requestNotificationPermission, notify, isMuted, setMuted } from '@/lib/notify';
 import { subscribePush, unsubscribePush } from '@/lib/push';
@@ -57,6 +58,7 @@ export default function Home() {
   const [clockInOpen, setClockInOpen] = useState(false);
   const [offTarget, setOffTarget] = useState(''); // 출근 시 예상 퇴근 시간 ('' = 설정 안 함)
   const [clockInBase, setClockInBase] = useState(''); // 출근 버튼 누른 시각 (HH:MM), +N시간 계산 기준
+  const [overdueOpen, setOverdueOpen] = useState(false); // 출근 직후 "마감 지난 할 일" 확인
   const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
   const [quoteText, setQuoteText] = useState('');
   const [userQuotes, setUserQuotes] = useState<string[]>([]);
@@ -88,6 +90,20 @@ export default function Home() {
     supabase.from('quotes').select('text').eq('approved', true).then(({ data }) => {
       if (data) setUserQuotes(data.map(q => q.text));
     });
+  };
+
+  // 마감일이 지났는데 완료 안 된 할 일이 있으면 출근 직후 정리 다이얼로그를 띄운다
+  const checkOverdueTasks = async () => {
+    if (!user || !office) return;
+    const { count } = await supabase
+      .from('tasks')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('office_id', office.id)
+      .neq('status', 'done')
+      .not('due_date', 'is', null)
+      .lt('due_date', kstToday());
+    if (count && count > 0) setOverdueOpen(true);
   };
 
   // 강제 새로고침 — 캐시·서비스워커까지 비우고 최신 버전 로드
@@ -438,6 +454,7 @@ export default function Home() {
 
       <MenuPickDialog open={menuOpen} onClose={() => setMenuOpen(false)} />
       <FocusCompanion open={focusOpen} onClose={() => setFocusOpen(false)} />
+      <OverdueTasksDialog open={overdueOpen} onClose={() => setOverdueOpen(false)} />
 
       {/* 출근 → 예상 퇴근 시간 설정 */}
       <Dialog open={clockInOpen} onOpenChange={setClockInOpen}>
@@ -477,6 +494,7 @@ export default function Home() {
                 setClockInOpen(false);
                 clockIn();
                 toast.success(offTarget ? `출근! ${offTarget}에 퇴근 알림을 보낼게요 🏃` : '출근했어요! 오늘도 화이팅 💪');
+                checkOverdueTasks();
               }}
             >
               출근하기

@@ -66,6 +66,7 @@ export interface Task {
   status: 'todo' | 'in_progress' | 'done';
   priority: 'low' | 'normal' | 'high';
   due_date: string | null;
+  due_time: string | null; // 마감 시간 "HH:MM:SS" (null = 시간 지정 없음)
   week_start: string;
   sort_order: number;
   completed_at: string | null;

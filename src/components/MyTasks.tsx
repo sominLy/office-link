@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Circle, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getWeekStart } from '@/lib/dates';
+import { formatTimeLabel, getWeekEnd, getWeekStart } from '@/lib/dates';
 
 const priorityColors = {
   high: 'text-red-500',
@@ -25,12 +25,14 @@ export default function MyTasks({ compact = false }: { compact?: boolean }) {
   const fetchTasks = useCallback(async () => {
     if (!user || !office) return;
     const weekStart = getWeekStart();
+    const weekEnd = getWeekEnd();
+    // 이번 주에 담아둔 것 + 캘린더에서 마감일을 이번 주로 잡아둔 것
     const { data } = await supabase
       .from('tasks')
       .select('*')
       .eq('user_id', user.id)
       .eq('office_id', office.id)
-      .eq('week_start', weekStart)
+      .or(`week_start.eq.${weekStart},and(due_date.gte.${weekStart},due_date.lte.${weekEnd})`)
       .order('sort_order');
     setTasks(data || []);
   }, [user, office]);
@@ -89,6 +91,9 @@ export default function MyTasks({ compact = false }: { compact?: boolean }) {
               <span className={`text-sm flex-1 truncate ${task.status === 'done' ? 'line-through text-gray-400' : 'text-gray-700'}`}>
                 {task.title}
               </span>
+              {task.due_time && (
+                <span className="text-xs text-gray-400 flex-shrink-0">{formatTimeLabel(task.due_time)}까지</span>
+              )}
               {task.status === 'in_progress' && (
                 <Badge variant="outline" className="text-xs bg-blue-50 text-blue-600 border-blue-200">진행 중</Badge>
               )}

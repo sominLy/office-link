@@ -12,10 +12,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, ArrowLeft, Trash2, CheckCircle2, Circle, GripVertical, Pencil, FolderOpen, CalendarDays, Repeat, Lock, MoreVertical, Play, CheckCheck } from 'lucide-react';
+import { Plus, ArrowLeft, Trash2, CheckCircle2, Circle, GripVertical, Pencil, FolderOpen, CalendarDays, Repeat, Lock, MoreVertical } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { getWeekStart, kstToday } from '@/lib/dates';
+import { addDays, getWeekEnd, getWeekStart, formatTimeLabel, kstToday } from '@/lib/dates';
 import { Calendar } from '@/components/ui/calendar';
 import BottomNav from '@/components/BottomNav';
 
@@ -25,7 +25,12 @@ const priorityColors = {
   normal: 'bg-amber-50 text-amber-600 border-amber-200',
   low: 'bg-gray-50 text-gray-500 border-gray-200',
 };
-const statusLabels = { todo: '할 일', in_progress: '진행 중', done: '완료' };
+// 상태 선택 버튼(트리거) 색 — 한눈에 진행 상태가 보이도록
+const statusTriggerColors = {
+  todo: 'bg-gray-50 text-gray-600 border-gray-200',
+  in_progress: 'bg-blue-50 text-blue-600 border-blue-200',
+  done: 'bg-green-50 text-green-600 border-green-200',
+};
 
 // 마감일 D-day 라벨과 색상
 function dueBadge(due: string, today: string): { label: string; cls: string } {
@@ -42,6 +47,7 @@ export default function Tasks() {
   const [newTitle, setNewTitle] = useState('');
   const [newCategory, setNewCategory] = useState('');
   const [newDueDate, setNewDueDate] = useState(kstToday());
+  const [newDueTime, setNewDueTime] = useState(''); // 마감 시간 (빈 값 = 지정 안 함)
   const [newPrivate, setNewPrivate] = useState(false);
   const [newPriority, setNewPriority] = useState<'low' | 'normal' | 'high'>('normal');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -49,6 +55,7 @@ export default function Tasks() {
   const [editTitle, setEditTitle] = useState('');
   const [editCategory, setEditCategory] = useState('');
   const [editDueDate, setEditDueDate] = useState('');
+  const [editDueTime, setEditDueTime] = useState('');
   const [editPrivate, setEditPrivate] = useState(false);
   const [editPriority, setEditPriority] = useState<'low' | 'normal' | 'high'>('normal');
   const [routines, setRoutines] = useState<Routine[]>([]);
@@ -61,11 +68,19 @@ export default function Tasks() {
   const categories = [...new Set(tasks.map(t => t.category).filter(Boolean))] as string[];
 
   const weekStart = getWeekStart();
+  const weekEnd = getWeekEnd();
 
   // 캘린더 뷰: 선택한 날짜와 그 달의 할 일들
   const [calDay, setCalDay] = useState<Date>(new Date());
   const [calMonth, setCalMonth] = useState<Date>(new Date());
   const [monthTasks, setMonthTasks] = useState<Task[]>([]);
+
+  // 마감일이 속한 주 (마감일이 없으면 이번 주) — 할 일이 해당 주 목록에 놓이도록
+  const weekOf = (due: string) => {
+    if (!due) return weekStart;
+    const [y, m, d] = due.split('-').map(Number);
+    return getWeekStart(new Date(y, m - 1, d));
+  };
 
   const fmtDate = (d: Date) => {
     const pad = (n: number) => String(n).padStart(2, '0');
@@ -95,8 +110,11 @@ export default function Tasks() {
     const [y, m, day] = (d as string).split('-').map(Number);
     return new Date(y, m - 1, day);
   });
-  const dayTasks = monthTasks.filter(t => t.due_date === fmtDate(calDay));
+  const dayTasks = monthTasks
+    .filter(t => t.due_date === fmtDate(calDay))
+    .sort((a, b) => (a.due_time || '99').localeCompare(b.due_time || '99')); // 마감 시간 순
 
+  // 이번 주 할 일 = ① 이번 주에 담아둔 것 + ② 캘린더에서 마감일을 이번 주로 잡아둔 것
   const fetchTasks = useCallback(async () => {
     if (!user || !office) return;
     const { data } = await supabase
@@ -104,10 +122,10 @@ export default function Tasks() {
       .select('*')
       .eq('user_id', user.id)
       .eq('office_id', office.id)
-      .eq('week_start', weekStart)
+      .or(`week_start.eq.${weekStart},and(due_date.gte.${weekStart},due_date.lte.${weekEnd})`)
       .order('sort_order');
     setTasks(data || []);
-  }, [user, office, weekStart]);
+  }, [user, office, weekStart, weekEnd]);
 
   // 루틴 목록을 불러오고, 이번 주에 아직 생성 안 된 루틴 할 일을 자동 생성
   const syncRoutines = useCallback(async () => {
@@ -184,10 +202,11 @@ export default function Tasks() {
       title: newTitle.trim(),
       category: newCategory.trim() || null,
       due_date: newDueDate || null,
+      due_time: newDueTime || null,
       is_private: newPrivate,
       status: 'todo',
       priority: newPriority,
-      week_start: weekStart,
+      week_start: weekOf(newDueDate),
       sort_order: sortOrder,
     });
     if (error) {
@@ -197,6 +216,7 @@ export default function Tasks() {
     setNewTitle('');
     setNewCategory('');
     setNewDueDate(kstToday());
+    setNewDueTime('');
     setNewPrivate(false);
     setNewPriority('normal');
     setDialogOpen(false);
@@ -210,6 +230,7 @@ export default function Tasks() {
     setEditTitle(task.title);
     setEditCategory(task.category || '');
     setEditDueDate(task.due_date || '');
+    setEditDueTime((task.due_time || '').slice(0, 5));
     setEditPrivate(task.is_private);
     setEditPriority(task.priority);
   };
@@ -222,8 +243,10 @@ export default function Tasks() {
         title: editTitle.trim(),
         category: editCategory.trim() || null,
         due_date: editDueDate || null,
+        due_time: editDueTime || null,
         is_private: editPrivate,
         priority: editPriority,
+        week_start: weekOf(editDueDate),
       })
       .eq('id', editTask.id);
     if (error) {
@@ -274,34 +297,34 @@ export default function Tasks() {
           {task.routine_id && <Repeat className="w-3 h-3 text-amber-400 inline ml-1 align-text-bottom" />}
           {task.is_private && <Lock className="w-3 h-3 text-gray-400 inline ml-1 align-text-bottom" />}
         </span>
-        {(task.due_date && task.status !== 'done') || task.priority ? (
-          <div className="flex flex-wrap items-center gap-1 mt-1">
-            {task.due_date && task.status !== 'done' && (() => {
-              const b = dueBadge(task.due_date, kstToday());
-              return (
-                <Badge variant="outline" className={`text-xs whitespace-nowrap ${b.cls}`}>
-                  <CalendarDays className="w-3 h-3 mr-0.5" />{b.label}
-                </Badge>
-              );
-            })()}
-            <Badge variant="outline" className={`text-xs whitespace-nowrap ${priorityColors[task.priority]}`}>
-              {priorityLabels[task.priority]}
-            </Badge>
-          </div>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-1 mt-1">
+          {/* 상태 직접 고르기: 아직 안 함 / 진행 중 / 완료 */}
+          <Select value={task.status} onValueChange={(v) => updateStatus(task, v as Task['status'])}>
+            <SelectTrigger className={`h-6 w-[88px] px-2 text-xs ${statusTriggerColors[task.status]}`} aria-label="진행 상태">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todo" className="text-xs">시작 전</SelectItem>
+              <SelectItem value="in_progress" className="text-xs">진행 중</SelectItem>
+              <SelectItem value="done" className="text-xs">완료</SelectItem>
+            </SelectContent>
+          </Select>
+          {task.due_date && task.status !== 'done' && (() => {
+            const b = dueBadge(task.due_date, kstToday());
+            const t = formatTimeLabel(task.due_time);
+            return (
+              <Badge variant="outline" className={`text-xs whitespace-nowrap ${b.cls}`}>
+                <CalendarDays className="w-3 h-3 mr-0.5" />{b.label}{t ? ` ${t}` : ''}
+              </Badge>
+            );
+          })()}
+          <Badge variant="outline" className={`text-xs whitespace-nowrap ${priorityColors[task.priority]}`}>
+            {priorityLabels[task.priority]}
+          </Badge>
+        </div>
       </div>
       {/* 데스크톱: 호버 시 인라인 버튼 노출 (기존 유지) */}
       <div className="hidden sm:flex items-center flex-shrink-0 gap-0.5">
-        {task.status !== 'done' && task.status !== 'in_progress' && (
-          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-blue-500 opacity-0 group-hover:opacity-100" onClick={() => updateStatus(task, 'in_progress')}>
-            시작
-          </Button>
-        )}
-        {task.status === 'in_progress' && (
-          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-green-500 opacity-0 group-hover:opacity-100" onClick={() => updateStatus(task, 'done')}>
-            완료
-          </Button>
-        )}
         <Button variant="ghost" size="icon" className="w-7 h-7 text-gray-300 opacity-0 group-hover:opacity-100 hover:text-amber-600" onClick={() => openEdit(task)}>
           <Pencil className="w-3.5 h-3.5" />
         </Button>
@@ -318,16 +341,6 @@ export default function Tasks() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {task.status !== 'done' && task.status !== 'in_progress' && (
-              <DropdownMenuItem onClick={() => updateStatus(task, 'in_progress')}>
-                <Play className="w-4 h-4 mr-2 text-blue-500" /> 시작
-              </DropdownMenuItem>
-            )}
-            {task.status === 'in_progress' && (
-              <DropdownMenuItem onClick={() => updateStatus(task, 'done')}>
-                <CheckCheck className="w-4 h-4 mr-2 text-green-500" /> 완료
-              </DropdownMenuItem>
-            )}
             <DropdownMenuItem onClick={() => openEdit(task)}>
               <Pencil className="w-4 h-4 mr-2 text-amber-600" /> 수정
             </DropdownMenuItem>
@@ -399,7 +412,11 @@ export default function Tasks() {
                 </div>
                 <div className="space-y-2">
                   <Label>마감일 (선택)</Label>
-                  <Input type="date" value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} />
+                  <div className="flex gap-2">
+                    <Input type="date" value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} className="flex-1" />
+                    <Input type="time" value={newDueTime} onChange={(e) => setNewDueTime(e.target.value)} className="w-32" aria-label="마감 시간" />
+                  </div>
+                  <p className="text-xs text-gray-400">시간까지 정하면 "오후 6:00까지"처럼 보여요. 비워두면 날짜만 잡혀요.</p>
                 </div>
                 <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
                   <input type="checkbox" checked={newPrivate} onChange={(e) => setNewPrivate(e.target.checked)} className="accent-amber-600" />
@@ -592,7 +609,19 @@ export default function Tasks() {
             </div>
             <div className="space-y-2">
               <Label>마감일 (선택)</Label>
-              <Input type="date" value={editDueDate} onChange={(e) => setEditDueDate(e.target.value)} />
+              <div className="flex gap-2">
+                <Input type="date" value={editDueDate} onChange={(e) => setEditDueDate(e.target.value)} className="flex-1" />
+                <Input type="time" value={editDueTime} onChange={(e) => setEditDueTime(e.target.value)} className="w-32" aria-label="마감 시간" />
+              </div>
+              {/* 기간 늘리기: 오늘 기준으로 빠르게 미루기 */}
+              <div className="grid grid-cols-4 gap-1.5 pt-1">
+                {[1, 2, 3, 7].map(n => (
+                  <button key={n} type="button" onClick={() => setEditDueDate(addDays(editDueDate || kstToday(), n))}
+                    className="rounded-lg border border-amber-200 bg-white py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-50">
+                    {n === 7 ? '+일주일' : `+${n}일`}
+                  </button>
+                ))}
+              </div>
             </div>
             <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
               <input type="checkbox" checked={editPrivate} onChange={(e) => setEditPrivate(e.target.checked)} className="accent-amber-600" />

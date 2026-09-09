@@ -23,6 +23,28 @@ export function getWeekStart(date: Date = new Date()): string {
   return utcMidnight.toISOString().split('T')[0];
 }
 
+/** 이번 주 일요일의 KST 날짜 문자열 (YYYY-MM-DD) */
+export function getWeekEnd(date: Date = new Date()): string {
+  return addDays(getWeekStart(date), 6);
+}
+
+/** YYYY-MM-DD 문자열에 n일 더하기 (시간대 영향 없이 UTC 자정으로 계산) */
+export function addDays(dateStr: string, n: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + n);
+  return dt.toISOString().split('T')[0];
+}
+
+/** "HH:MM" 또는 "HH:MM:SS" → "오후 6:30" 형태 (빈 값이면 null) */
+export function formatTimeLabel(t: string | null): string | null {
+  if (!t) return null;
+  const [h, m] = t.split(':').map(Number);
+  const ampm = h < 12 ? '오전' : '오후';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${ampm} ${h12}:${String(m).padStart(2, '0')}`;
+}
+
 /** KST 기준 오늘 0시를 나타내는 ISO 타임스탬프 — timestamptz 컬럼 비교용 */
 export function kstStartOfTodayISO(date: Date = new Date()): string {
   return `${kstToday(date)}T00:00:00+09:00`;
