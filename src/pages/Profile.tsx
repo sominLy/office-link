@@ -193,7 +193,7 @@ export default function Profile() {
           <span className="text-2xl">📖</span>
           <span className="text-left flex-1">
             <p className="text-sm font-semibold text-gray-800">200% 활용 공략집</p>
-            <p className="text-xs text-gray-500">고인물 팁 12가지 + 아이폰 앱으로 설치하는 법</p>
+            <p className="text-xs text-gray-500">고인물 팁 13가지 + 아이폰 앱으로 설치하는 법</p>
           </span>
         </button>
 

@@ -10,6 +10,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps['theme']}
       className="toaster group"
+      // 하단 탭바(BottomNav)를 가리지 않도록 그 위에 띄운다
+      offset={{ bottom: 84 }}
+      mobileOffset={{ bottom: 'calc(72px + env(safe-area-inset-bottom))' }}
       toastOptions={{
         classNames: {
           toast:

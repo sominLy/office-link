@@ -54,3 +54,50 @@ export function kstStartOfTodayISO(date: Date = new Date()): string {
 export function kstStartOfWeekISO(date: Date = new Date()): string {
   return `${getWeekStart(date)}T00:00:00+09:00`;
 }
+
+/** 지금 시각의 KST "HH:MM" */
+export function kstNowHM(date: Date = new Date()): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false,
+  }).format(date);
+}
+
+/** YYYY-MM-DD가 속한 주의 월요일 (YYYY-MM-DD) — 기기 시간대와 무관 */
+export function weekStartOf(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dow = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7; // 월=0
+  return addDays(dateStr, -dow);
+}
+
+/** 두 YYYY-MM-DD 사이의 일수 (to - from) */
+export function daysBetween(from: string, to: string): number {
+  const [y1, m1, d1] = from.split('-').map(Number);
+  const [y2, m2, d2] = to.split('-').map(Number);
+  return Math.round((Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 86400000);
+}
+
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+
+/** YYYY-MM-DD → "9월 10일 (목)" */
+export function formatDateLabel(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  return `${m}월 ${d}일 (${WEEKDAYS[dow]})`;
+}
+
+/** YYYY-MM-DD → "9/10 (목)" — 버튼처럼 좁은 곳용 */
+export function formatShortDate(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  return `${m}/${d} (${WEEKDAYS[dow]})`;
+}
+
+/** YYYY-MM-DD ↔ 로컬 Date (달력 컴포넌트용, 시간대 영향 없이 날짜만 맞춘다) */
+export function dateFromStr(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+export function strFromDate(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}

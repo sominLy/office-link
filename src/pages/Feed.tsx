@@ -15,6 +15,7 @@ import { defaultAvatar } from '@/lib/avatar';
 import { displayName } from '@/lib/callsign';
 import BottomNav from '@/components/BottomNav';
 import OfficeChat from '@/components/OfficeChat';
+import { isSubmitEnter } from '@/lib/utils';
 
 function timeAgo(iso: string): string {
   const sec = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -162,7 +163,7 @@ export default function Feed() {
               placeholder={targetId === 'all' ? '모두에게 응원 한마디!' : '칭찬이나 응원을 남겨보세요'}
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && post()}
+              onKeyDown={(e) => isSubmitEnter(e) && post()}
               maxLength={200}
             />
             <Button onClick={post} disabled={posting || !content.trim()} size="icon" className="bg-amber-600 hover:bg-amber-700 text-white flex-shrink-0">

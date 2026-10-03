@@ -27,6 +27,7 @@ import { todayQuoteFrom, randomQuoteFrom } from '@/lib/quotes';
 import { checkQuote } from '@/lib/profanity';
 import { displayName, TITLE_MODES } from '@/lib/callsign';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { isSubmitEnter } from '@/lib/utils';
 
 const STATUS_OPTIONS: StatusPreset[] = ['출근', '집중 중', '업무 중', '휴식 중', '자리 비움', '스터디/회의 중', '점심 먹는 중', '저녁 먹는 중', '야식 먹는 중'];
 
@@ -443,7 +444,7 @@ export default function Home() {
           <Input
             value={quoteText}
             onChange={(e) => setQuoteText(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && submitQuote()}
+            onKeyDown={(e) => isSubmitEnter(e) && submitQuote()}
             placeholder="예: 오늘도 조용히 애쓰는 당신을 응원해요 🌱"
             maxLength={60}
           />

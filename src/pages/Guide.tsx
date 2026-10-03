@@ -8,7 +8,8 @@ import BottomNav from '@/components/BottomNav';
 const TIPS: { emoji: string; title: string; body: string }[] = [
   { emoji: '🌅', title: '하루의 시작은 출근 버튼', body: '출근하면 멤버들에게 알림이 가고 소식 탭에 기록돼요. "나 시작했다!"는 선언이 최고의 동기부여예요.' },
   { emoji: '👋', title: '출근한 친구에게 인사부터', body: '멤버 카드를 눌러 👋 🙌 ☕ 💛 인사를 보내보세요. 상대에게 푸시가 가고 소식 탭에도 남아요. 아침 인사 문화 만들기!' },
-  { emoji: '🎯', title: '집중 타이머는 꼭 업무를 골라서', body: '업무를 선택하고 집중을 시작하면 멤버 카드에 "🎯 자소서 쓰기 집중 중"이 떠요. 뭘 하는지 보이면 서로 덜 방해하고 더 자극받아요.' },
+  { emoji: '🎯', title: '집중 타이머는 꼭 업무를 골라서', body: '업무를 선택하고 집중을 시작하면 멤버 카드에 "🎯 자소서 쓰기 집중 중"이 뜨고, 그 할 일은 자동으로 "진행 중"이 돼요. 집중을 끝낼 때 "완료로 표시"를 누르면 바로 체크까지!' },
+  { emoji: '⚡', title: '할 일은 한 줄로 바로', body: '할 일 탭이나 홈 카드 입력칸에 적고 Enter만 누르면 끝. 📅 칩으로 오늘·내일·모레를 고르고, 마감이 지난 할 일은 빨간 배너에서 한 번에 정리해요. 실수로 지워도 "되돌리기"가 있어요.' },
   { emoji: '🔁', title: '매주 반복되는 건 루틴으로', body: '할 일 탭의 루틴 버튼에 "영어 단어 50개" 같은 걸 등록하면 매주 자동으로 추가돼요. 매주 다시 입력할 필요 없어요.' },
   { emoji: '📅', title: '캘린더로 미리 심어두기', body: '할 일 캘린더 탭에서 미래 날짜를 눌러 "이 날짜에 추가"하면 마감일이 자동 설정돼요. 서류 마감일 관리에 딱!' },
   { emoji: '🔒', title: '부끄러운 할 일은 비공개로', body: '할 일 추가할 때 비공개를 체크하면 나만 볼 수 있어요. "이력서 사진 다시 찍기" 같은 건 몰래 해치우기.' },
@@ -76,7 +77,7 @@ export default function Guide() {
 
         {/* 공략 팁 */}
         <div className="space-y-2">
-          <h2 className="text-sm font-medium text-gray-500 px-1">🏆 고인물처럼 쓰는 법 12가지</h2>
+          <h2 className="text-sm font-medium text-gray-500 px-1">🏆 고인물처럼 쓰는 법 {TIPS.length}가지</h2>
           {TIPS.map((tip, i) => (
             <Card key={i} className="p-4 border-amber-100/50">
               <p className="text-sm font-semibold text-gray-800 mb-1">{tip.emoji} {tip.title}</p>

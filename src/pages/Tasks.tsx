@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
@@ -7,85 +7,95 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, ArrowLeft, Trash2, CheckCircle2, Circle, GripVertical, Pencil, FolderOpen, CalendarDays, Repeat, Lock, MoreVertical } from 'lucide-react';
+import { Plus, ArrowLeft, Trash2, FolderOpen, Repeat, ChevronRight, Clock, CalendarDays, Columns3, List } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { addDays, getWeekEnd, getWeekStart, formatTimeLabel, kstToday } from '@/lib/dates';
+import { dateFromStr, formatDateLabel, getWeekEnd, getWeekStart, kstNowHM, kstToday, strFromDate, weekStartOf } from '@/lib/dates';
+import { cn, isSubmitEnter } from '@/lib/utils';
+import {
+  STATUS_META, TaskStatus, addedMessage, createTask, deleteWithUndo, fetchOverdueTasks, fetchWeekTasks, moveTaskDue,
+  notifyTasksChanged, postponeTarget, shortDueLabel, sortTasks, syncRoutineTasks, updateTaskStatus, useTasksChanged,
+  weekForDue, withoutPending,
+} from '@/lib/tasks';
 import { Calendar } from '@/components/ui/calendar';
+import { ko } from 'date-fns/locale';
 import BottomNav from '@/components/BottomNav';
+import TaskItem from '@/components/tasks/TaskItem';
+import TaskFormDialog, { TaskDraft, emptyDraft } from '@/components/tasks/TaskFormDialog';
+import QuickAddTask from '@/components/tasks/QuickAddTask';
+import OverdueTasksDialog from '@/components/OverdueTasksDialog';
 
-const priorityLabels = { high: '높음', normal: '보통', low: '낮음' };
-const priorityColors = {
-  high: 'bg-red-50 text-red-600 border-red-200',
-  normal: 'bg-amber-50 text-amber-600 border-amber-200',
-  low: 'bg-gray-50 text-gray-500 border-gray-200',
+// 마지막으로 보던 보기·완료 접기 상태는 이 기기에만 기억 (없어도 기본값으로 잘 동작)
+const VIEW_KEY = 'tasks_view';
+const SHOW_DONE_KEY = 'tasks_show_done';
+const readPref = (key: string, fallback: string) => {
+  try { return localStorage.getItem(key) ?? fallback; } catch { return fallback; }
 };
-// 상태 선택 버튼(트리거) 색 — 한눈에 진행 상태가 보이도록
-const statusTriggerColors = {
-  todo: 'bg-gray-50 text-gray-600 border-gray-200',
-  in_progress: 'bg-blue-50 text-blue-600 border-blue-200',
-  done: 'bg-green-50 text-green-600 border-green-200',
+const writePref = (key: string, value: string) => {
+  try { localStorage.setItem(key, value); } catch { /* 저장 못 해도 동작엔 지장 없음 */ }
 };
 
-// 마감일 D-day 라벨과 색상
-function dueBadge(due: string, today: string): { label: string; cls: string } {
-  const diff = Math.round((new Date(due).getTime() - new Date(today).getTime()) / 86400000);
-  if (diff < 0) return { label: `${-diff}일 지남`, cls: 'bg-red-100 text-red-600 border-red-200' };
-  if (diff === 0) return { label: '오늘까지', cls: 'bg-orange-100 text-orange-600 border-orange-200' };
-  return { label: `D-${diff}`, cls: 'bg-blue-50 text-blue-600 border-blue-200' };
-}
+const monthDay = (d: string) => {
+  const [, m, day] = d.split('-').map(Number);
+  return `${m}월 ${day}일`;
+};
+
+type FormState = { open: boolean; mode: 'create' | 'edit'; task: Task | null; initial: TaskDraft };
 
 export default function Tasks() {
   const { user } = useAuth();
   const { office } = useOffice();
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [newTitle, setNewTitle] = useState('');
-  const [newCategory, setNewCategory] = useState('');
-  const [newDueDate, setNewDueDate] = useState(kstToday());
-  const [newDueTime, setNewDueTime] = useState(''); // 마감 시간 (빈 값 = 지정 안 함)
-  const [newPrivate, setNewPrivate] = useState(false);
-  const [newPriority, setNewPriority] = useState<'low' | 'normal' | 'high'>('normal');
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editTask, setEditTask] = useState<Task | null>(null);
-  const [editTitle, setEditTitle] = useState('');
-  const [editCategory, setEditCategory] = useState('');
-  const [editDueDate, setEditDueDate] = useState('');
-  const [editDueTime, setEditDueTime] = useState('');
-  const [editPrivate, setEditPrivate] = useState(false);
-  const [editPriority, setEditPriority] = useState<'low' | 'normal' | 'high'>('normal');
+  const [loading, setLoading] = useState(true);
+  const [monthTasks, setMonthTasks] = useState<Task[]>([]);
   const [routines, setRoutines] = useState<Routine[]>([]);
+  const [overdueCount, setOverdueCount] = useState(0);
+  const [overdueOpen, setOverdueOpen] = useState(false);
+  const [view, setView] = useState(() => readPref(VIEW_KEY, 'list'));
+  const [showDone, setShowDone] = useState(() => readPref(SHOW_DONE_KEY, '0') === '1');
+  const [form, setForm] = useState<FormState>({ open: false, mode: 'create', task: null, initial: emptyDraft() });
   const [routineDialogOpen, setRoutineDialogOpen] = useState(false);
   const [routineTitle, setRoutineTitle] = useState('');
   const [routineCategory, setRoutineCategory] = useState('');
-  const navigate = useNavigate();
+  const [routineSaving, setRoutineSaving] = useState(false);
 
-  // 이미 쓰고 있는 카테고리들 (입력할 때 추천으로 보여줌)
-  const categories = [...new Set(tasks.map(t => t.category).filter(Boolean))] as string[];
-
+  const today = kstToday();
   const weekStart = getWeekStart();
   const weekEnd = getWeekEnd();
+  // 1분마다 갱신 — "오늘 오후 6:00 지남" 같은 표시가 제때 바뀌게
+  const [nowHM, setNowHM] = useState(kstNowHM());
+  useEffect(() => {
+    const t = setInterval(() => setNowHM(kstNowHM()), 60000);
+    return () => clearInterval(t);
+  }, []);
 
-  // 캘린더 뷰: 선택한 날짜와 그 달의 할 일들
-  const [calDay, setCalDay] = useState<Date>(new Date());
-  const [calMonth, setCalMonth] = useState<Date>(new Date());
-  const [monthTasks, setMonthTasks] = useState<Task[]>([]);
+  // 캘린더 뷰: 선택한 날짜와 그 달의 할 일들 (기본 = 한국시간 오늘)
+  const [calDay, setCalDay] = useState<Date>(() => dateFromStr(kstToday()));
+  const [calMonth, setCalMonth] = useState<Date>(() => dateFromStr(kstToday()));
 
-  // 마감일이 속한 주 (마감일이 없으면 이번 주) — 할 일이 해당 주 목록에 놓이도록
-  const weekOf = (due: string) => {
-    if (!due) return weekStart;
-    const [y, m, d] = due.split('-').map(Number);
-    return getWeekStart(new Date(y, m - 1, d));
+  const changeView = (v: string) => {
+    setView(v);
+    writePref(VIEW_KEY, v);
+  };
+  const toggleShowDone = () => {
+    setShowDone(v => {
+      writePref(SHOW_DONE_KEY, v ? '0' : '1');
+      return !v;
+    });
   };
 
-  const fmtDate = (d: Date) => {
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  };
+  // ───────── 불러오기 ─────────
+
+  const fetchTasks = useCallback(async () => {
+    if (!user || !office) return;
+    setTasks(await fetchWeekTasks(user.id, office.id));
+    setLoading(false);
+  }, [user, office]);
 
   const fetchMonthTasks = useCallback(async () => {
     if (!user || !office) return;
@@ -96,80 +106,189 @@ export default function Tasks() {
       .select('*')
       .eq('user_id', user.id)
       .eq('office_id', office.id)
-      .gte('due_date', fmtDate(first))
-      .lte('due_date', fmtDate(last))
+      .gte('due_date', strFromDate(first))
+      .lte('due_date', strFromDate(last))
       .order('sort_order');
-    setMonthTasks(data || []);
+    setMonthTasks(withoutPending(data || []));
   }, [user, office, calMonth]);
+
+  const fetchOverdueCount = useCallback(async () => {
+    if (!user || !office) return;
+    setOverdueCount((await fetchOverdueTasks(user.id, office.id)).length);
+  }, [user, office]);
+
+  const refreshAll = useCallback(() => {
+    fetchTasks();
+    fetchMonthTasks();
+    fetchOverdueCount();
+  }, [fetchTasks, fetchMonthTasks, fetchOverdueCount]);
+
+  useEffect(() => {
+    if (!user || !office) return;
+    fetchTasks();
+    fetchOverdueCount();
+    // 이번 주 루틴 할 일이 아직 없으면 자동 생성
+    syncRoutineTasks(user.id, office.id).then(({ routines, created }) => {
+      setRoutines(routines);
+      if (created > 0) fetchTasks();
+    });
+  }, [user, office, fetchTasks, fetchOverdueCount]);
 
   useEffect(() => {
     fetchMonthTasks();
   }, [fetchMonthTasks]);
 
-  const taskDates = [...new Set(monthTasks.map(t => t.due_date).filter(Boolean))].map(d => {
-    const [y, m, day] = (d as string).split('-').map(Number);
-    return new Date(y, m - 1, day);
-  });
-  const dayTasks = monthTasks
-    .filter(t => t.due_date === fmtDate(calDay))
-    .sort((a, b) => (a.due_time || '99').localeCompare(b.due_time || '99')); // 마감 시간 순
+  // 다른 곳(밀린 할 일 정리 등)에서 바뀌면 다시 불러오기
+  useTasksChanged(refreshAll);
 
-  // 이번 주 할 일 = ① 이번 주에 담아둔 것 + ② 캘린더에서 마감일을 이번 주로 잡아둔 것
-  const fetchTasks = useCallback(async () => {
-    if (!user || !office) return;
-    const { data } = await supabase
+  // ───────── 파생 데이터 ─────────
+
+  const sorted = useMemo(() => sortTasks(tasks), [tasks]);
+  const openTasks = sorted.filter(t => t.status !== 'done');
+  const doneTasks = sorted
+    .filter(t => t.status === 'done')
+    .sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''));
+  const inProgressCount = tasks.filter(t => t.status === 'in_progress').length;
+  const dueTodayCount = openTasks.filter(t => t.due_date === today).length;
+  const progress = tasks.length > 0 ? Math.round((doneTasks.length / tasks.length) * 100) : 0;
+
+  // 리스트 묶음: 급한 할 일이 든 카테고리부터, 카테고리 없는 건 맨 아래 '기타'
+  const groupCategories = useMemo(() => {
+    const seen: string[] = [];
+    for (const t of sortTasks(tasks)) if (t.category && !seen.includes(t.category)) seen.push(t.category);
+    return seen;
+  }, [tasks]);
+
+  // 입력할 때 추천할 카테고리 (이번 주 + 이번 달 + 루틴에서 쓴 것)
+  const suggestCategories = useMemo(
+    () => [...new Set([...tasks, ...monthTasks, ...routines].map(t => t.category).filter(Boolean))] as string[],
+    [tasks, monthTasks, routines],
+  );
+
+  // ───────── 변경 ─────────
+
+  const patchLocal = (id: string, patch: Partial<Task>) => {
+    const apply = (list: Task[]) => list.map(t => (t.id === id ? { ...t, ...patch } : t));
+    setTasks(apply);
+    setMonthTasks(apply);
+  };
+
+  const changeStatus = async (task: Task, status: TaskStatus) => {
+    if (task.status === status) return;
+    // 먼저 화면에 반영하고(바로 체크되는 느낌), 실패하면 다시 불러와 되돌린다
+    patchLocal(task.id, { status, completed_at: status === 'done' ? new Date().toISOString() : null });
+    const ok = await updateTaskStatus(task, status);
+    if (!ok) {
+      refreshAll();
+      return;
+    }
+    if (status === 'done' && tasks.some(t => t.id === task.id)) {
+      const remaining = tasks.filter(t => t.id !== task.id && t.status !== 'done').length;
+      if (remaining === 0) toast.success('이번 주 할 일을 모두 끝냈어요! 🎉 정말 수고했어요');
+    }
+  };
+
+  const toggle = (task: Task) => changeStatus(task, task.status === 'done' ? 'todo' : 'done');
+
+  const postpone = async (task: Task) => {
+    const target = postponeTarget(task, today);
+    patchLocal(task.id, { due_date: target, week_start: weekStartOf(target) });
+    if (await moveTaskDue(task, target)) {
+      toast.success(`"${task.title}" ${shortDueLabel(target, today)}까지로 미뤘어요`);
+    } else {
+      refreshAll();
+    }
+  };
+
+  const remove = (task: Task) => {
+    const inMonth = monthTasks.some(t => t.id === task.id);
+    deleteWithUndo({
+      table: 'tasks',
+      id: task.id,
+      message: `"${task.title}" 삭제했어요`,
+      onHide: () => {
+        setTasks(prev => prev.filter(t => t.id !== task.id));
+        setMonthTasks(prev => prev.filter(t => t.id !== task.id));
+      },
+      onRestore: () => {
+        setTasks(prev => (prev.some(t => t.id === task.id) ? prev : [...prev, task]));
+        if (inMonth) setMonthTasks(prev => (prev.some(t => t.id === task.id) ? prev : [...prev, task]));
+      },
+    });
+  };
+
+  const openCreate = (overrides: Partial<TaskDraft> = {}) =>
+    setForm({ open: true, mode: 'create', task: null, initial: emptyDraft(overrides) });
+
+  const openEdit = (task: Task) =>
+    setForm({
+      open: true,
+      mode: 'edit',
+      task,
+      initial: {
+        title: task.title,
+        category: task.category || '',
+        due_date: task.due_date || '',
+        due_time: (task.due_time || '').slice(0, 5),
+        is_private: task.is_private,
+        priority: task.priority,
+      },
+    });
+
+  const closeForm = () => setForm(f => ({ ...f, open: false }));
+
+  const addToState = (task: Task) => {
+    if (task.week_start === weekStart || (task.due_date && task.due_date >= weekStart && task.due_date <= weekEnd)) {
+      setTasks(prev => [...prev, task]);
+    }
+  };
+
+  const submitForm = async (d: TaskDraft): Promise<boolean> => {
+    if (!user || !office) return false;
+    const fields = {
+      title: d.title,
+      category: d.category || null,
+      due_date: d.due_date || null,
+      due_time: d.due_date && d.due_time ? d.due_time : null,
+      is_private: d.is_private,
+      priority: d.priority,
+    };
+    if (form.mode === 'create') {
+      const created = await createTask(user.id, office.id, { ...fields, sort_order: tasks.length });
+      if (!created) return false;
+      addToState(created);
+      toast.success(addedMessage(fields.due_date));
+      return true;
+    }
+    if (!form.task) return false;
+    const { error } = await supabase
       .from('tasks')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('office_id', office.id)
-      .or(`week_start.eq.${weekStart},and(due_date.gte.${weekStart},due_date.lte.${weekEnd})`)
-      .order('sort_order');
-    setTasks(data || []);
-  }, [user, office, weekStart, weekEnd]);
+      .update({ ...fields, week_start: weekForDue(fields.due_date) })
+      .eq('id', form.task.id);
+    if (error) {
+      toast.error('수정하지 못했어요. 잠시 후 다시 시도해 주세요');
+      return false;
+    }
+    patchLocal(form.task.id, fields);
+    notifyTasksChanged();
+    toast.success('수정했어요');
+    return true;
+  };
 
-  // 루틴 목록을 불러오고, 이번 주에 아직 생성 안 된 루틴 할 일을 자동 생성
-  const syncRoutines = useCallback(async () => {
-    if (!user || !office) return;
-    const { data: routineList } = await supabase
-      .from('routines')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('office_id', office.id)
-      .order('created_at');
-    setRoutines(routineList || []);
-    if (!routineList || routineList.length === 0) return;
+  const quickAdd = async (title: string, due: string | null) => {
+    if (!user || !office) return false;
+    const created = await createTask(user.id, office.id, { title, due_date: due, sort_order: tasks.length });
+    if (!created) return false;
+    addToState(created);
+    toast.success(addedMessage(due));
+    return true;
+  };
 
-    const { data: existing } = await supabase
-      .from('tasks')
-      .select('routine_id')
-      .eq('user_id', user.id)
-      .eq('week_start', weekStart)
-      .not('routine_id', 'is', null);
-    const existingIds = new Set((existing || []).map(t => t.routine_id));
-    const missing = routineList.filter(r => !existingIds.has(r.id));
-    if (missing.length === 0) return;
-    // unique index(one_task_per_routine_week)가 중복 생성을 막아준다
-    await supabase.from('tasks').insert(missing.map(r => ({
-      office_id: office.id,
-      user_id: user.id,
-      title: r.title,
-      category: r.category,
-      priority: r.priority,
-      status: 'todo',
-      week_start: weekStart,
-      sort_order: 999,
-      routine_id: r.id,
-    })));
-    fetchTasks();
-  }, [user, office, weekStart, fetchTasks]);
-
-  useEffect(() => {
-    fetchTasks();
-    syncRoutines();
-  }, [fetchTasks, syncRoutines]);
+  // ───────── 루틴 ─────────
 
   const addRoutine = async () => {
-    if (!user || !office || !routineTitle.trim()) return;
+    if (!user || !office || !routineTitle.trim() || routineSaving) return;
+    setRoutineSaving(true);
     const { error } = await supabase.from('routines').insert({
       office_id: office.id,
       user_id: user.id,
@@ -177,366 +296,261 @@ export default function Tasks() {
       category: routineCategory.trim() || null,
       priority: 'normal',
     });
+    setRoutineSaving(false);
     if (error) {
-      toast.error('루틴 추가에 실패했어요');
+      toast.error('루틴을 추가하지 못했어요');
       return;
     }
     setRoutineTitle('');
     setRoutineCategory('');
-    toast.success('매주 자동으로 추가돼요 🔁');
-    syncRoutines();
+    toast.success('이번 주부터 매주 자동으로 담겨요 🔁');
+    const { routines: list, created } = await syncRoutineTasks(user.id, office.id);
+    setRoutines(list);
+    if (created > 0) fetchTasks();
   };
 
-  const deleteRoutine = async (id: string) => {
-    await supabase.from('routines').delete().eq('id', id);
-    toast.success('루틴이 삭제되었어요 (이미 만들어진 할 일은 그대로예요)');
-    syncRoutines();
-  };
-
-  const addTask = async () => {
-    if (!user || !office || !newTitle.trim()) return;
-    const sortOrder = tasks.length;
-    const { error } = await supabase.from('tasks').insert({
-      office_id: office.id,
-      user_id: user.id,
-      title: newTitle.trim(),
-      category: newCategory.trim() || null,
-      due_date: newDueDate || null,
-      due_time: newDueTime || null,
-      is_private: newPrivate,
-      status: 'todo',
-      priority: newPriority,
-      week_start: weekOf(newDueDate),
-      sort_order: sortOrder,
+  const deleteRoutine = (routine: Routine) => {
+    deleteWithUndo({
+      table: 'routines',
+      id: routine.id,
+      message: `루틴 "${routine.title}" 삭제했어요 · 이미 담긴 할 일은 그대로예요`,
+      onHide: () => setRoutines(prev => prev.filter(r => r.id !== routine.id)),
+      onRestore: () => setRoutines(prev => (prev.some(r => r.id === routine.id) ? prev : [...prev, routine])),
     });
-    if (error) {
-      toast.error('추가에 실패했어요');
-      return;
-    }
-    setNewTitle('');
-    setNewCategory('');
-    setNewDueDate(kstToday());
-    setNewDueTime('');
-    setNewPrivate(false);
-    setNewPriority('normal');
-    setDialogOpen(false);
-    fetchTasks();
-    fetchMonthTasks();
-    toast.success('할 일이 추가되었습니다');
   };
 
-  const openEdit = (task: Task) => {
-    setEditTask(task);
-    setEditTitle(task.title);
-    setEditCategory(task.category || '');
-    setEditDueDate(task.due_date || '');
-    setEditDueTime((task.due_time || '').slice(0, 5));
-    setEditPrivate(task.is_private);
-    setEditPriority(task.priority);
-  };
+  // ───────── 캘린더 ─────────
 
-  const saveEdit = async () => {
-    if (!editTask || !editTitle.trim()) return;
-    const { error } = await supabase
-      .from('tasks')
-      .update({
-        title: editTitle.trim(),
-        category: editCategory.trim() || null,
-        due_date: editDueDate || null,
-        due_time: editDueTime || null,
-        is_private: editPrivate,
-        priority: editPriority,
-        week_start: weekOf(editDueDate),
-      })
-      .eq('id', editTask.id);
-    if (error) {
-      toast.error('수정에 실패했어요');
-      return;
-    }
-    setEditTask(null);
-    fetchTasks();
-    fetchMonthTasks();
-    toast.success('수정되었습니다');
-  };
+  const calDayStr = strFromDate(calDay);
+  const dayTasks = sortTasks(monthTasks.filter(t => t.due_date === calDayStr));
+  const openDates = [...new Set(monthTasks.filter(t => t.status !== 'done' && t.due_date).map(t => t.due_date as string))];
+  const doneOnlyDates = [...new Set(monthTasks.filter(t => t.due_date).map(t => t.due_date as string))].filter(d => !openDates.includes(d));
 
-  const updateStatus = async (task: Task, status: 'todo' | 'in_progress' | 'done') => {
-    const now = new Date().toISOString();
-    await supabase
-      .from('tasks')
-      .update({ status, completed_at: status === 'done' ? now : null })
-      .eq('id', task.id);
-    fetchTasks();
-    fetchMonthTasks();
-  };
-
-  const deleteTask = async (taskId: string) => {
-    await supabase.from('tasks').delete().eq('id', taskId);
-    fetchTasks();
-    fetchMonthTasks();
-    toast.success('삭제되었습니다');
-  };
-
-  const todoTasks = tasks.filter(t => t.status === 'todo');
-  const inProgressTasks = tasks.filter(t => t.status === 'in_progress');
-  const doneTasks = tasks.filter(t => t.status === 'done');
-
-  const TaskItem = ({ task }: { task: Task }) => (
-    <div className="flex items-start gap-2 p-3 bg-white rounded-lg border border-gray-100 group hover:border-amber-200 transition-colors">
-      <GripVertical className="w-4 h-4 text-gray-300 flex-shrink-0 mt-0.5" />
-      <button onClick={() => updateStatus(task, task.status === 'done' ? 'todo' : 'done')} className="flex-shrink-0 mt-0.5">
-        {task.status === 'done' ? (
-          <CheckCircle2 className="w-5 h-5 text-green-500" />
-        ) : (
-          <Circle className="w-5 h-5 text-gray-300 hover:text-amber-400" />
-        )}
-      </button>
-      {/* 제목 + 배지: 제목이 우선 공간을 갖고, 배지는 좁으면 아래 줄로 감싸짐 */}
-      <div className="flex-1 min-w-0">
-        <span className={`block text-sm break-keep [overflow-wrap:anywhere] ${task.status === 'done' ? 'line-through text-gray-400' : 'text-gray-700'}`}>
-          {task.title}
-          {task.routine_id && <Repeat className="w-3 h-3 text-amber-400 inline ml-1 align-text-bottom" />}
-          {task.is_private && <Lock className="w-3 h-3 text-gray-400 inline ml-1 align-text-bottom" />}
-        </span>
-        <div className="flex flex-wrap items-center gap-1 mt-1">
-          {/* 상태 직접 고르기: 아직 안 함 / 진행 중 / 완료 */}
-          <Select value={task.status} onValueChange={(v) => updateStatus(task, v as Task['status'])}>
-            <SelectTrigger className={`h-6 w-[88px] px-2 text-xs ${statusTriggerColors[task.status]}`} aria-label="진행 상태">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todo" className="text-xs">시작 전</SelectItem>
-              <SelectItem value="in_progress" className="text-xs">진행 중</SelectItem>
-              <SelectItem value="done" className="text-xs">완료</SelectItem>
-            </SelectContent>
-          </Select>
-          {task.due_date && task.status !== 'done' && (() => {
-            const b = dueBadge(task.due_date, kstToday());
-            const t = formatTimeLabel(task.due_time);
-            return (
-              <Badge variant="outline" className={`text-xs whitespace-nowrap ${b.cls}`}>
-                <CalendarDays className="w-3 h-3 mr-0.5" />{b.label}{t ? ` ${t}` : ''}
-              </Badge>
-            );
-          })()}
-          <Badge variant="outline" className={`text-xs whitespace-nowrap ${priorityColors[task.priority]}`}>
-            {priorityLabels[task.priority]}
-          </Badge>
-        </div>
-      </div>
-      {/* 데스크톱: 호버 시 인라인 버튼 노출 (기존 유지) */}
-      <div className="hidden sm:flex items-center flex-shrink-0 gap-0.5">
-        <Button variant="ghost" size="icon" className="w-7 h-7 text-gray-300 opacity-0 group-hover:opacity-100 hover:text-amber-600" onClick={() => openEdit(task)}>
-          <Pencil className="w-3.5 h-3.5" />
-        </Button>
-        <Button variant="ghost" size="icon" className="w-7 h-7 text-gray-300 opacity-0 group-hover:opacity-100 hover:text-red-500" onClick={() => deleteTask(task.id)}>
-          <Trash2 className="w-3.5 h-3.5" />
-        </Button>
-      </div>
-      {/* 모바일: ⋯ 더보기 메뉴로 묶어 카드 우측을 깔끔하게 */}
-      <div className="sm:hidden flex-shrink-0">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="w-7 h-7 text-gray-400" aria-label="할 일 메뉴">
-              <MoreVertical className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => openEdit(task)}>
-              <Pencil className="w-4 h-4 mr-2 text-amber-600" /> 수정
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => deleteTask(task.id)} className="text-red-500 focus:text-red-500">
-              <Trash2 className="w-4 h-4 mr-2" /> 삭제
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    </div>
-  );
+  const itemProps = { today, nowHM, onToggle: toggle, onStatus: changeStatus, onEdit: openEdit, onPostpone: postpone, onDelete: remove };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
       <header className="glass sticky top-0 z-10 border-b border-amber-100/70">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+        <div className="max-w-5xl mx-auto px-4 py-2.5 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1 min-w-0">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/')} aria-label="홈으로">
               <ArrowLeft className="w-4 h-4" />
             </Button>
-            <h1 className="font-bold text-gray-800">이번 주 할 일</h1>
+            <div className="min-w-0">
+              <h1 className="font-bold text-gray-800 leading-tight">이번 주 할 일</h1>
+              <p className="text-[11px] text-gray-400 leading-tight">{monthDay(weekStart)} ~ {monthDay(weekEnd)}</p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" className="border-amber-200 text-amber-700" onClick={() => setRoutineDialogOpen(true)}>
-            <Repeat className="w-4 h-4 mr-1" /> 루틴
-          </Button>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white">
-                <Plus className="w-4 h-4 mr-1" /> 추가
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>새 할 일</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 pt-2">
-                <div className="space-y-2">
-                  <Label>제목</Label>
-                  <Input
-                    placeholder="할 일을 입력하세요"
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && addTask()}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>카테고리 (선택)</Label>
-                  <Input
-                    placeholder="예: 자소서, 코딩테스트, 영어"
-                    value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value)}
-                    list="category-suggestions"
-                    maxLength={20}
-                  />
-                  <datalist id="category-suggestions">
-                    {categories.map((c) => <option key={c} value={c} />)}
-                  </datalist>
-                  {categories.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {categories.map((c) => (
-                        <button key={c} type="button" onClick={() => setNewCategory(c)}
-                          className="text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5">
-                          {c}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label>마감일 (선택)</Label>
-                  <div className="flex gap-2">
-                    <Input type="date" value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} className="flex-1" />
-                    <Input type="time" value={newDueTime} onChange={(e) => setNewDueTime(e.target.value)} className="w-32" aria-label="마감 시간" />
-                  </div>
-                  <p className="text-xs text-gray-400">시간까지 정하면 "오후 6:00까지"처럼 보여요. 비워두면 날짜만 잡혀요.</p>
-                </div>
-                <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                  <input type="checkbox" checked={newPrivate} onChange={(e) => setNewPrivate(e.target.checked)} className="accent-amber-600" />
-                  <Lock className="w-3.5 h-3.5 text-gray-400" /> 비공개 (나만 볼 수 있어요)
-                </label>
-                <div className="space-y-2">
-                  <Label>우선순위</Label>
-                  <Select value={newPriority} onValueChange={(v) => setNewPriority(v as 'low' | 'normal' | 'high')}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="high">높음</SelectItem>
-                      <SelectItem value="normal">보통</SelectItem>
-                      <SelectItem value="low">낮음</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button onClick={addTask} className="w-full bg-amber-600 hover:bg-amber-700 text-white">추가하기</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <Button size="sm" variant="outline" className="border-amber-200 text-amber-700" onClick={() => setRoutineDialogOpen(true)}>
+              <Repeat className="w-4 h-4 mr-1" /> 루틴{routines.length > 0 && <span className="ml-0.5 text-amber-500">{routines.length}</span>}
+            </Button>
+            <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white" onClick={() => openCreate()}>
+              <Plus className="w-4 h-4 mr-1" /> 추가
+            </Button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-6 pb-24">
-        <Tabs defaultValue="list">
-          <TabsList className="mb-4">
-            <TabsTrigger value="list">리스트</TabsTrigger>
-            <TabsTrigger value="kanban">칸반</TabsTrigger>
-            <TabsTrigger value="calendar">캘린더</TabsTrigger>
+      <main className="max-w-5xl mx-auto px-4 py-5 pb-28 space-y-4">
+        {/* 이번 주 진행률 */}
+        {tasks.length > 0 && (
+          <Card className="p-4 border-amber-100/60 shadow-sm rise-in">
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-sm font-semibold text-gray-800">
+                {openTasks.length === 0 ? '이번 주 할 일 끝! 🎉' : `남은 할 일 ${openTasks.length}개`}
+              </p>
+              <p className="text-xs text-gray-500 flex-shrink-0">
+                <b className="text-amber-700 text-sm">{doneTasks.length}</b> / {tasks.length} 완료 · {progress}%
+              </p>
+            </div>
+            <Progress value={progress} className="h-2 mt-2 bg-amber-100 [&>div]:bg-gradient-to-r [&>div]:from-amber-400 [&>div]:to-orange-500" aria-label="이번 주 진행률" />
+            {(dueTodayCount > 0 || inProgressCount > 0) && (
+              <div className="flex flex-wrap gap-1.5 mt-2.5">
+                {dueTodayCount > 0 && (
+                  <span className="text-xs rounded-full px-2 py-0.5 bg-orange-50 text-orange-600 border border-orange-200">오늘 마감 {dueTodayCount}</span>
+                )}
+                {inProgressCount > 0 && (
+                  <span className="text-xs rounded-full px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-200">진행 중 {inProgressCount}</span>
+                )}
+              </div>
+            )}
+          </Card>
+        )}
+
+        {/* 마감 지난 할 일 — '나중에 하기'로 넘겨도 여기서 다시 정리할 수 있게 */}
+        {overdueCount > 0 && (
+          <button
+            onClick={() => setOverdueOpen(true)}
+            className="w-full flex items-center gap-2.5 rounded-xl border border-red-200 bg-red-50/80 px-4 py-3 text-left hover:bg-red-50 transition-colors rise-in"
+          >
+            <Clock className="w-4 h-4 text-red-500 flex-shrink-0" />
+            <span className="flex-1 min-w-0 text-sm text-red-700">
+              마감이 지난 할 일 <b>{overdueCount}개</b>가 있어요
+            </span>
+            <span className="text-xs font-semibold text-red-600 flex items-center flex-shrink-0">
+              정리하기 <ChevronRight className="w-3.5 h-3.5" />
+            </span>
+          </button>
+        )}
+
+        {/* 한 줄 빠른 추가 */}
+        <QuickAddTask
+          onAdd={quickAdd}
+          onOpenDetail={(title, due) => openCreate({ title, due_date: due ?? '' })}
+        />
+
+        <Tabs value={view} onValueChange={changeView}>
+          <TabsList className="mb-1">
+            <TabsTrigger value="list" className="gap-1"><List className="w-3.5 h-3.5" />리스트</TabsTrigger>
+            <TabsTrigger value="kanban" className="gap-1"><Columns3 className="w-3.5 h-3.5" />칸반</TabsTrigger>
+            <TabsTrigger value="calendar" className="gap-1"><CalendarDays className="w-3.5 h-3.5" />캘린더</TabsTrigger>
           </TabsList>
 
           <TabsContent value="list" className="space-y-5">
-            {tasks.length === 0 ? (
-              <Card className="p-8 text-center border-dashed">
-                <p className="text-gray-400 text-sm">이번 주 할 일을 추가해 보세요</p>
+            {loading ? (
+              <div className="space-y-2">
+                {[0, 1, 2].map(i => <Skeleton key={i} className="h-16 rounded-xl bg-amber-100/50" />)}
+              </div>
+            ) : tasks.length === 0 ? (
+              <Card className="p-8 text-center border-dashed border-amber-200 bg-white/70">
+                <p className="text-3xl mb-2">📝</p>
+                <p className="text-sm font-medium text-gray-700">이번 주 할 일이 아직 없어요</p>
+                <p className="text-xs text-gray-400 mt-1">위 입력칸에 적고 Enter만 누르면 바로 담겨요</p>
+                <Button size="sm" variant="outline" className="mt-4 border-amber-200 text-amber-700" onClick={() => setRoutineDialogOpen(true)}>
+                  <Repeat className="w-3.5 h-3.5 mr-1" /> 매주 하는 일은 루틴으로 등록
+                </Button>
               </Card>
             ) : (
-              // 카테고리별로 묶어서 표시 (카테고리 없는 항목은 맨 아래 '기타')
-              [...categories, null].map((cat) => {
-                const group = tasks.filter(t => (t.category || null) === cat);
-                if (group.length === 0) return null;
-                const done = group.filter(t => t.status === 'done').length;
-                return (
-                  <div key={cat ?? '__none__'} className="space-y-2">
-                    <div className="flex items-center gap-2 px-1">
-                      <FolderOpen className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                      <h3 className="text-sm font-semibold text-gray-700 truncate min-w-0">{cat ?? '기타'}</h3>
-                      <Badge variant="secondary" className="text-xs bg-amber-50 text-amber-700 flex-shrink-0">{done}/{group.length}</Badge>
-                      <button
-                        onClick={() => { setNewCategory(cat ?? ''); setDialogOpen(true); }}
-                        className="ml-auto flex-shrink-0 flex items-center gap-0.5 text-xs text-amber-600 hover:bg-amber-50 rounded-full px-2 py-0.5 border border-amber-200"
-                        title={`${cat ?? '기타'}에 할 일 추가`}
-                      >
-                        <Plus className="w-3 h-3" /> 추가
-                      </button>
-                    </div>
-                    {group.map((task) => <TaskItem key={task.id} task={task} />)}
-                  </div>
-                );
-              })
+              <>
+                {openTasks.length === 0 && (
+                  <Card className="p-6 text-center border-green-200 bg-green-50/60">
+                    <p className="text-3xl mb-1">🎉</p>
+                    <p className="text-sm font-semibold text-green-700">이번 주 할 일을 모두 끝냈어요!</p>
+                    <p className="text-xs text-green-600/80 mt-1">다음 주 할 일을 미리 담아두거나, 오늘은 푹 쉬어요</p>
+                  </Card>
+                )}
+                {/* 안 끝난 할 일 — 카테고리별, 급한 순 */}
+                {[...groupCategories, null].map((cat) => {
+                  const group = openTasks.filter(t => (t.category || null) === cat);
+                  if (group.length === 0) return null;
+                  const total = tasks.filter(t => (t.category || null) === cat);
+                  const done = total.length - group.length;
+                  // 카테고리를 하나도 안 쓰면 '기타' 머리글 없이 바로 목록만
+                  const showHeader = groupCategories.length > 0;
+                  return (
+                    <section key={cat ?? '__none__'} className="space-y-2">
+                      {showHeader && (
+                        <div className="flex items-center gap-2 px-1">
+                          <FolderOpen className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                          <h3 className="text-sm font-semibold text-gray-700 truncate min-w-0">{cat ?? '기타'}</h3>
+                          <Badge variant="secondary" className="text-xs bg-amber-50 text-amber-700 flex-shrink-0">{done}/{total.length}</Badge>
+                          <button
+                            onClick={() => openCreate({ category: cat ?? '' })}
+                            className="ml-auto flex-shrink-0 flex items-center gap-0.5 text-xs text-amber-600 hover:bg-amber-50 rounded-full px-2 py-0.5 border border-amber-200"
+                            aria-label={`${cat ?? '기타'}에 할 일 추가`}
+                          >
+                            <Plus className="w-3 h-3" /> 추가
+                          </button>
+                        </div>
+                      )}
+                      {group.map((task) => <TaskItem key={task.id} task={task} {...itemProps} />)}
+                    </section>
+                  );
+                })}
+
+                {/* 완료한 할 일 — 기본은 접어서 남은 일에 집중 */}
+                {doneTasks.length > 0 && (
+                  <section className="space-y-2">
+                    <button
+                      onClick={toggleShowDone}
+                      className="flex items-center gap-1 px-1 text-sm font-medium text-gray-500 hover:text-gray-700"
+                      aria-expanded={showDone}
+                    >
+                      <ChevronRight className={cn('w-4 h-4 transition-transform', showDone && 'rotate-90')} />
+                      완료한 할 일 {doneTasks.length}개
+                    </button>
+                    {showDone && doneTasks.map((task) => <TaskItem key={task.id} task={task} showCategory {...itemProps} />)}
+                  </section>
+                )}
+              </>
             )}
           </TabsContent>
 
           <TabsContent value="kanban">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium text-gray-500 px-1">할 일 ({todoTasks.length})</h3>
-                <div className="space-y-2 min-h-[100px] bg-gray-50/50 rounded-lg p-2">
-                  {todoTasks.map((task) => <TaskItem key={task.id} task={task} />)}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium text-blue-600 px-1">진행 중 ({inProgressTasks.length})</h3>
-                <div className="space-y-2 min-h-[100px] bg-blue-50/30 rounded-lg p-2">
-                  {inProgressTasks.map((task) => <TaskItem key={task.id} task={task} />)}
-                </div>
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium text-green-600 px-1">완료 ({doneTasks.length})</h3>
-                <div className="space-y-2 min-h-[100px] bg-green-50/30 rounded-lg p-2">
-                  {doneTasks.map((task) => <TaskItem key={task.id} task={task} />)}
-                </div>
-              </div>
+              {(['todo', 'in_progress', 'done'] as TaskStatus[]).map(status => {
+                const col = status === 'done' ? doneTasks : sorted.filter(t => t.status === status);
+                const tone = {
+                  todo: { title: 'text-gray-600', bg: 'bg-gray-50/70' },
+                  in_progress: { title: 'text-blue-600', bg: 'bg-blue-50/40' },
+                  done: { title: 'text-green-600', bg: 'bg-green-50/40' },
+                }[status];
+                return (
+                  <div key={status} className="space-y-2">
+                    <h3 className={cn('text-sm font-semibold px-1 flex items-center gap-1.5', tone.title)}>
+                      <span className={cn('h-2 w-2 rounded-full', STATUS_META[status].dot)} />
+                      {STATUS_META[status].label} <span className="font-normal text-gray-400">{col.length}</span>
+                    </h3>
+                    <div className={cn('space-y-2 min-h-[88px] rounded-xl p-2', tone.bg)}>
+                      {col.length === 0 ? (
+                        <p className="text-xs text-gray-400 text-center py-6">
+                          {status === 'in_progress' ? '카드의 상태를 "진행 중"으로 바꿔보세요' : '비어 있어요'}
+                        </p>
+                      ) : (
+                        col.map((task) => <TaskItem key={task.id} task={task} showCategory {...itemProps} />)
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </TabsContent>
 
           <TabsContent value="calendar">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className="p-3 border-amber-100/50 flex justify-center">
+              <Card className="p-3 border-amber-100/50 flex flex-col items-center">
                 <Calendar
+                  locale={ko}
                   mode="single"
                   selected={calDay}
                   onSelect={(d) => d && setCalDay(d)}
                   month={calMonth}
                   onMonthChange={setCalMonth}
-                  modifiers={{ hasTask: taskDates }}
-                  modifiersClassNames={{ hasTask: 'font-bold text-amber-700 underline decoration-amber-400 decoration-2 underline-offset-4' }}
+                  modifiers={{ hasOpen: openDates.map(dateFromStr), allDone: doneOnlyDates.map(dateFromStr) }}
+                  modifiersClassNames={{
+                    hasOpen: "relative font-semibold after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1 after:w-1 after:rounded-full after:bg-amber-500 aria-selected:after:bg-white",
+                    allDone: "relative after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1 after:w-1 after:rounded-full after:bg-green-400 aria-selected:after:bg-white",
+                  }}
                 />
+                <div className="flex items-center gap-3 pb-1 text-[11px] text-gray-400">
+                  <span className="flex items-center gap-1"><i className="h-1.5 w-1.5 rounded-full bg-amber-500" /> 남은 할 일</span>
+                  <span className="flex items-center gap-1"><i className="h-1.5 w-1.5 rounded-full bg-green-400" /> 다 끝낸 날</span>
+                </div>
               </Card>
               <div className="space-y-2">
-                <h3 className="text-sm font-medium text-gray-500 px-1">
-                  {calDay.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })} 할 일
-                  <span className="ml-2 text-gray-300">{dayTasks.filter(t => t.status === 'done').length}/{dayTasks.length}</span>
-                </h3>
+                <div className="flex items-center justify-between px-1">
+                  <h3 className="text-sm font-semibold text-gray-700">
+                    {formatDateLabel(calDayStr)}
+                    {calDayStr === today && <span className="ml-1.5 text-xs font-medium text-amber-600">오늘</span>}
+                  </h3>
+                  {dayTasks.length > 0 && (
+                    <span className="text-xs text-gray-400">{dayTasks.filter(t => t.status === 'done').length}/{dayTasks.length} 완료</span>
+                  )}
+                </div>
                 {dayTasks.length === 0 ? (
-                  <Card className="p-6 text-center border-dashed">
+                  <Card className="p-6 text-center border-dashed bg-white/70">
                     <p className="text-gray-400 text-sm">이 날짜엔 할 일이 없어요</p>
-                    <Button size="sm" variant="outline" className="mt-2 border-amber-200 text-amber-700"
-                      onClick={() => { setNewDueDate(fmtDate(calDay)); setDialogOpen(true); }}>
+                    <Button size="sm" variant="outline" className="mt-3 border-amber-200 text-amber-700"
+                      onClick={() => openCreate({ due_date: calDayStr })}>
                       <Plus className="w-3.5 h-3.5 mr-1" /> 이 날짜에 추가
                     </Button>
                   </Card>
                 ) : (
                   <>
-                    {dayTasks.map((task) => <TaskItem key={task.id} task={task} />)}
+                    {dayTasks.map((task) => <TaskItem key={task.id} task={task} showCategory {...itemProps} />)}
                     <Button size="sm" variant="ghost" className="text-amber-600"
-                      onClick={() => { setNewDueDate(fmtDate(calDay)); setDialogOpen(true); }}>
+                      onClick={() => openCreate({ due_date: calDayStr })}>
                       <Plus className="w-3.5 h-3.5 mr-1" /> 이 날짜에 추가
                     </Button>
                   </>
@@ -547,24 +561,40 @@ export default function Tasks() {
         </Tabs>
       </main>
 
+      <TaskFormDialog
+        open={form.open}
+        mode={form.mode}
+        initial={form.initial}
+        categories={suggestCategories}
+        onClose={closeForm}
+        onSubmit={submitForm}
+      />
+
+      <OverdueTasksDialog open={overdueOpen} onClose={() => setOverdueOpen(false)} onChanged={refreshAll} />
+
       {/* 루틴 관리 다이얼로그 */}
       <Dialog open={routineDialogOpen} onOpenChange={setRoutineDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><Repeat className="w-4 h-4 text-amber-600" /> 반복 할 일 (루틴)</DialogTitle>
+            <DialogDescription className="text-left">
+              매주 하는 일을 한 번만 등록하면, 매주 이번 주 할 일에 자동으로 담겨요.
+            </DialogDescription>
           </DialogHeader>
-          <p className="text-sm text-gray-500 -mt-2">등록하면 매주 이번 주 할 일에 자동으로 추가돼요.</p>
-          <div className="space-y-3 pt-1">
+          <div className="space-y-3">
             {routines.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-3">아직 루틴이 없어요</p>
+              <div className="text-center py-4 rounded-lg bg-amber-50/50 border border-dashed border-amber-200">
+                <p className="text-sm text-gray-500">아직 루틴이 없어요</p>
+                <p className="text-xs text-gray-400 mt-0.5">예: 주간 회고 쓰기, 영어 단어 50개</p>
+              </div>
             ) : (
               <ul className="space-y-1.5 max-h-48 overflow-y-auto">
                 {routines.map(r => (
-                  <li key={r.id} className="flex items-center gap-2 text-sm bg-amber-50/50 border border-amber-100 rounded-lg px-3 py-2">
+                  <li key={r.id} className="flex items-center gap-2 text-sm bg-amber-50/50 border border-amber-100 rounded-lg pl-3 pr-1 py-1.5">
                     <Repeat className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-                    <span className="flex-1 truncate text-gray-700">{r.title}</span>
-                    {r.category && <Badge variant="outline" className="text-[10px] bg-white text-amber-600 border-amber-200">{r.category}</Badge>}
-                    <Button variant="ghost" size="icon" className="w-6 h-6 text-gray-300 hover:text-red-500" onClick={() => deleteRoutine(r.id)}>
+                    <span className="flex-1 min-w-0 truncate text-gray-700">{r.title}</span>
+                    {r.category && <Badge variant="outline" className="text-[10px] bg-white text-amber-600 border-amber-200 max-w-[6rem] truncate">{r.category}</Badge>}
+                    <Button variant="ghost" size="icon" className="w-8 h-8 text-gray-400 hover:text-red-500" onClick={() => deleteRoutine(r)} aria-label={`루틴 ${r.title} 삭제`}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
                   </li>
@@ -572,73 +602,31 @@ export default function Tasks() {
               </ul>
             )}
             <div className="space-y-2 border-t pt-3">
-              <Input placeholder="예: 영어 단어 50개 외우기" value={routineTitle} onChange={(e) => setRoutineTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addRoutine()} maxLength={100} />
+              <Input
+                placeholder="예: 영어 단어 50개 외우기"
+                value={routineTitle}
+                onChange={(e) => setRoutineTitle(e.target.value)}
+                onKeyDown={(e) => isSubmitEnter(e) && addRoutine()}
+                maxLength={100}
+                aria-label="루틴 이름"
+              />
               <div className="flex gap-2">
-                <Input placeholder="카테고리 (선택)" value={routineCategory} onChange={(e) => setRoutineCategory(e.target.value)} list="category-suggestions" maxLength={20} className="flex-1" />
-                <Button onClick={addRoutine} className="bg-amber-600 hover:bg-amber-700 text-white">추가</Button>
+                <Input placeholder="카테고리 (선택)" value={routineCategory} onChange={(e) => setRoutineCategory(e.target.value)}
+                  onKeyDown={(e) => isSubmitEnter(e) && addRoutine()} maxLength={20} className="flex-1" aria-label="루틴 카테고리" />
+                <Button onClick={addRoutine} disabled={!routineTitle.trim() || routineSaving} className="bg-amber-600 hover:bg-amber-700 text-white">추가</Button>
               </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* 할 일 수정 다이얼로그 */}
-      <Dialog open={!!editTask} onOpenChange={(open) => !open && setEditTask(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>할 일 수정</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="space-y-2">
-              <Label>제목</Label>
-              <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && saveEdit()} />
-            </div>
-            <div className="space-y-2">
-              <Label>카테고리 (선택)</Label>
-              <Input value={editCategory} onChange={(e) => setEditCategory(e.target.value)} list="category-suggestions" maxLength={20} placeholder="예: 자소서, 코딩테스트" />
-              {categories.length > 0 && (
+              {suggestCategories.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
-                  {categories.map((c) => (
-                    <button key={c} type="button" onClick={() => setEditCategory(c)}
-                      className="text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5">
+                  {suggestCategories.map((c) => (
+                    <button key={c} type="button" onClick={() => setRoutineCategory(routineCategory === c ? '' : c)}
+                      className={cn('text-xs rounded-full px-2 py-0.5 border max-w-[10rem] truncate',
+                        routineCategory === c ? 'bg-amber-500 text-white border-amber-500' : 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200')}>
                       {c}
                     </button>
                   ))}
                 </div>
               )}
             </div>
-            <div className="space-y-2">
-              <Label>마감일 (선택)</Label>
-              <div className="flex gap-2">
-                <Input type="date" value={editDueDate} onChange={(e) => setEditDueDate(e.target.value)} className="flex-1" />
-                <Input type="time" value={editDueTime} onChange={(e) => setEditDueTime(e.target.value)} className="w-32" aria-label="마감 시간" />
-              </div>
-              {/* 기간 늘리기: 오늘 기준으로 빠르게 미루기 */}
-              <div className="grid grid-cols-4 gap-1.5 pt-1">
-                {[1, 2, 3, 7].map(n => (
-                  <button key={n} type="button" onClick={() => setEditDueDate(addDays(editDueDate || kstToday(), n))}
-                    className="rounded-lg border border-amber-200 bg-white py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-50">
-                    {n === 7 ? '+일주일' : `+${n}일`}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-              <input type="checkbox" checked={editPrivate} onChange={(e) => setEditPrivate(e.target.checked)} className="accent-amber-600" />
-              <Lock className="w-3.5 h-3.5 text-gray-400" /> 비공개 (나만 볼 수 있어요)
-            </label>
-            <div className="space-y-2">
-              <Label>우선순위</Label>
-              <Select value={editPriority} onValueChange={(v) => setEditPriority(v as 'low' | 'normal' | 'high')}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="high">높음</SelectItem>
-                  <SelectItem value="normal">보통</SelectItem>
-                  <SelectItem value="low">낮음</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button onClick={saveEdit} className="w-full bg-amber-600 hover:bg-amber-700 text-white">저장</Button>
           </div>
         </DialogContent>
       </Dialog>
