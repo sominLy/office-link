@@ -17,6 +17,8 @@ export interface Profile {
   nickname: string;
   avatar_url: string | null;
   work_start: string | null; // 근무 시작 시간 "HH:MM:SS" (미출근 알림용)
+  retro_day?: number | null; // 주간 회고 받는 요일 0=월 … 6=일 (016 마이그레이션 전엔 없음)
+  retro_time?: string | null; // 주간 회고 받는 시간 "HH:MM:SS"
   created_at: string;
 }
 

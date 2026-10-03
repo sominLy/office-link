@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { Routine, Task } from '@/lib/types';
+import { requestTrophyCheck } from '@/lib/awards';
 import {
   addDays, daysBetween, formatShortDate, formatTimeLabel, getWeekEnd, getWeekStart, kstNowHM, kstToday, weekStartOf,
 } from '@/lib/dates';
@@ -224,6 +225,7 @@ export async function updateTaskStatus(task: Pick<Task, 'id'>, status: TaskStatu
     return false;
   }
   notifyTasksChanged();
+  if (status === 'done') requestTrophyCheck(); // 할 일 10개·50개… 트로피
   return true;
 }
 

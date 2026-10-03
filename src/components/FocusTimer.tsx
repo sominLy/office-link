@@ -10,6 +10,7 @@ import { Play, Square, Timer } from 'lucide-react';
 import { toast } from 'sonner';
 import { kstStartOfTodayISO } from '@/lib/dates';
 import { sortTasks, updateTaskStatus, useTasksChanged, withoutPending } from '@/lib/tasks';
+import { requestTrophyCheck } from '@/lib/awards';
 
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -150,6 +151,7 @@ export default function FocusTimer() {
       return;
     }
     await changeStatus('업무 중');
+    requestTrophyCheck(); // 누적 집중 시간 트로피
     const focusedTask = tasks.find(t => t.id === activeFocus.task_id);
     setActiveFocus(null);
     await fetchTodayTotal();

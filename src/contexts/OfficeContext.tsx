@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useAuth } from './AuthContext';
 import { Office, OfficeMember, StatusSession, WorkSession, MemberStatus, StatusPreset } from '@/lib/types';
 import { notify } from '@/lib/notify';
+import { requestTrophyCheck } from '@/lib/awards';
 
 interface OfficeContextType {
   office: Office | null;
@@ -252,6 +253,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
     await changeStatus('출근');
     await fetchMySession();
     await fetchMembers();
+    requestTrophyCheck(); // 출근 7일·30일… 트로피
     // 소식 피드에 출근 기록
     supabase.from('office_feed').insert({ office_id: office.id, user_id: user.id, type: 'clock_in' }).then(() => {});
     // 브라우저를 닫아둔 멤버에게도 웹푸시로 출근 소식 전송 (실패해도 무시)
