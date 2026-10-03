@@ -1,6 +1,8 @@
 // 웹푸시 발송 함수
 // - action "clock_in": 출근한 사람을 제외한 오피스 멤버 전원에게 푸시
 // - action "nudge": (pg_cron이 10분마다 호출) 근무 시작 시간이 지났는데 미출근인 사용자에게 하루 1회 푸시
+//                   + 각자 정한 주간 회고 시간이 지나면 "회고 도착" 푸시 (주 1회)
+// - action "announce" / "announce_poll": [공지] 커밋을 업데이트 공지로 게시 + 전원 푸시
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import webpush from 'npm:web-push@3';
 
@@ -20,7 +22,7 @@ const cors = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-async function sendTo(userIds: string[], title: string, body: string, tag = 'office-link') {
+async function sendTo(userIds: string[], title: string, body: string, tag = 'office-link', url = '/') {
   const uniqueIds = [...new Set(userIds)]; // 여러 오피스 중복 수신 방지
   if (uniqueIds.length === 0) return;
   const { data: subs } = await supabase
@@ -35,7 +37,8 @@ async function sendTo(userIds: string[], title: string, body: string, tag = 'off
       await webpush.sendNotification(
         { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
         // tag를 넘기면 같은 종류 알림이 쌓이지 않고 하나로 갱신된다 (스팸 필터 완화)
-        JSON.stringify({ title, body, tag }),
+        // url: 알림을 누르면 열 화면
+        JSON.stringify({ title, body, tag, url }),
       );
     } catch (e) {
       // 만료된 구독은 정리
@@ -45,6 +48,52 @@ async function sendTo(userIds: string[], title: string, body: string, tag = 'off
       }
     }
   }));
+}
+
+/**
+ * 업데이트 공지 게시: announcements 테이블에 한 번만 저장(커밋 sha 기준) + 사람마다 1회 푸시.
+ * GitHub Actions와 크론 폴링이 같은 커밋을 동시에 처리해도 sha unique 제약 덕분에 한 번만 나간다.
+ * 017 마이그레이션 전(테이블 없음)이면 예전처럼 오피스마다 방장 이름의 게시글로 남긴다.
+ */
+async function publishAnnouncement(message: string, sha?: string): Promise<'posted' | 'duplicate' | 'legacy'> {
+  const { error } = await supabase.from('announcements').insert({ message, sha: sha ?? null });
+  if (error?.code === '23505') return 'duplicate';
+  const legacy = !!error;
+
+  const recipients = new Set<string>();
+  if (legacy) {
+    const { data: offices } = await supabase.from('offices').select('id');
+    for (const o of offices || []) {
+      const { data: admin } = await supabase
+        .from('office_members').select('user_id')
+        .eq('office_id', o.id).eq('role', 'admin').limit(1).maybeSingle();
+      if (!admin) continue;
+      await supabase.from('office_feed').insert({ office_id: o.id, user_id: admin.user_id, type: 'post', content: message });
+    }
+  }
+  const { data: members } = await supabase.from('office_members').select('user_id');
+  (members || []).forEach((m) => recipients.add(m.user_id));
+  // 푸시는 사람 기준으로 딱 한 번만 (여러 오피스 소속이어도 1회)
+  await sendTo(
+    [...recipients],
+    '연결오피스가 업데이트됐어요 ✨',
+    message.length > 80 ? message.slice(0, 80) + '…' : message,
+    'announce',
+    '/feed',
+  );
+  return legacy ? 'legacy' : 'posted';
+}
+
+// 한국시간 날짜 계산 (YYYY-MM-DD 문자열, UTC 자정 기준 연산이라 시간대 영향 없음)
+function addDaysStr(date: string, n: number): string {
+  const [y, m, d] = date.split('-').map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d + n));
+  return t.toISOString().slice(0, 10);
+}
+function weekStartStr(date: string): string {
+  const [y, m, d] = date.split('-').map(Number);
+  const dow = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7; // 월=0
+  return addDaysStr(date, -dow);
 }
 
 Deno.serve(async (req) => {
@@ -114,40 +163,14 @@ Deno.serve(async (req) => {
   }
 
   if (payload.action === 'announce') {
-    // 기능 업데이트 공지: 모든 오피스 소식 탭에 게시 + 전 멤버 푸시
-    // GitHub Actions가 배포 시 호출한다 (비밀키 검증)
+    // 기능 업데이트 공지: GitHub Actions가 배포 시 호출한다 (비밀키 검증)
     if (!payload.secret || payload.secret !== Deno.env.get('ANNOUNCE_SECRET')) {
       return new Response('unauthorized', { status: 401, headers: cors });
     }
     const message = (payload.message || '').trim();
     if (!message) return new Response('empty', { status: 400, headers: cors });
-
-    const { data: offices } = await supabase.from('offices').select('id');
-    const allRecipients = new Set<string>();
-    for (const o of offices || []) {
-      const { data: admin } = await supabase
-        .from('office_members').select('user_id')
-        .eq('office_id', o.id).eq('role', 'admin').limit(1).maybeSingle();
-      if (!admin) continue;
-      // 소식 피드는 오피스마다 남기고,
-      await supabase.from('office_feed').insert({
-        office_id: o.id,
-        user_id: admin.user_id,
-        type: 'post',
-        content: message,
-      });
-      const { data: members } = await supabase
-        .from('office_members').select('user_id').eq('office_id', o.id);
-      (members || []).forEach((m) => allRecipients.add(m.user_id));
-    }
-    // 푸시는 사람 기준으로 딱 한 번만 (여러 오피스 소속이어도 1회)
-    await sendTo(
-      [...allRecipients],
-      '연결오피스가 업데이트됐어요 ✨',
-      message.length > 80 ? message.slice(0, 80) + '…' : message,
-      'announce',
-    );
-    return new Response('ok', { headers: cors });
+    const result = await publishAnnouncement(message, payload.sha || undefined);
+    return new Response(result, { headers: cors });
   }
 
   if (payload.action === 'announce_poll') {
@@ -180,27 +203,7 @@ Deno.serve(async (req) => {
       if (!line) continue;
       const message = line.replace(/.*\[공지\]\s*/, '').trim();
       if (!message) continue;
-      const { data: offices } = await supabase.from('offices').select('id');
-      const recipients = new Set<string>();
-      for (const o of offices || []) {
-        const { data: admin } = await supabase
-          .from('office_members').select('user_id')
-          .eq('office_id', o.id).eq('role', 'admin').limit(1).maybeSingle();
-        if (!admin) continue;
-        await supabase.from('office_feed').insert({
-          office_id: o.id, user_id: admin.user_id, type: 'post', content: message,
-        });
-        const { data: members } = await supabase
-          .from('office_members').select('user_id').eq('office_id', o.id);
-        (members || []).forEach((m) => recipients.add(m.user_id));
-      }
-      // 사람 기준 1회 발송 (중복 방지)
-      await sendTo(
-        [...recipients],
-        '연결오피스가 업데이트됐어요 ✨',
-        message.length > 80 ? message.slice(0, 80) + '…' : message,
-        'announce',
-      );
+      await publishAnnouncement(message, c.sha);
     }
     await supabase.from('app_state').upsert({ key: 'last_announced_sha', value: commits[0].sha });
     return new Response(`processed ${newCommits.length}`, { headers: cors });
@@ -253,6 +256,39 @@ Deno.serve(async (req) => {
       if (open && open.length > 0) continue;
       await sendTo([p.id], '오늘 일 안 하나요? 👀', `설정한 근무 시작 시간(${(p.work_start as string).slice(0, 5)})이 지났어요. 출근 버튼이 기다리고 있어요!`, 'nudge');
       await supabase.from('profiles').update({ last_nudged_on: kstToday }).eq('id', p.id);
+    }
+
+    // 주간 회고 도착 알림 — 각자 정한 요일·시간(기본 월 07:00)이 지나면 그 주에 한 번.
+    // 월요일에 받으면 지난주, 다른 요일이면 그 주를 돌아본다. (016 마이그레이션 전이면 조용히 건너뜀)
+    const { data: retroProfiles, error: retroError } = await supabase
+      .from('profiles')
+      .select('id, retro_day, retro_time, last_retro_pushed');
+    if (!retroError) {
+      const thisWeek = weekStartStr(kstToday);
+      for (const p of retroProfiles || []) {
+        const day = (p.retro_day as number | null) ?? 0;
+        const time = ((p.retro_time as string | null) || '07:00').slice(0, 5);
+        const deliveryDate = addDaysStr(thisWeek, day);
+        if (kstToday < deliveryDate || (kstToday === deliveryDate && kstHM < time)) continue;
+        const covered = day === 0 ? addDaysStr(thisWeek, -7) : thisWeek;
+        if (p.last_retro_pushed === covered) continue;
+        await supabase.from('profiles').update({ last_retro_pushed: covered }).eq('id', p.id);
+        // 그 주에 한 번이라도 출근한 사람에게만 (쉬어간 주엔 조용히)
+        const { data: worked } = await supabase
+          .from('work_sessions').select('id')
+          .eq('user_id', p.id)
+          .gte('started_at', `${covered}T00:00:00+09:00`)
+          .lt('started_at', `${addDaysStr(covered, 7)}T00:00:00+09:00`)
+          .limit(1);
+        if (!worked || worked.length === 0) continue;
+        await sendTo(
+          [p.id],
+          '📬 주간 회고가 도착했어요',
+          '한 주 동안 얼마나 열심히 살았는지 보고, 스스로를 듬뿍 칭찬해 줘요 💛 이번 주 상장도 기다리고 있어요!',
+          'retro',
+          `/retro?week=${covered}`,
+        );
+      }
     }
     return new Response('ok', { headers: cors });
   }
