@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { Profile, Task } from '@/lib/types';
 import { addDays, daysBetween, formatDateLabel, formatTimeLabel, getWeekStart, kstNowHM, kstToday, weekStartOf } from '@/lib/dates';
 import {
-  CertificateData, EarnedSticker, certDate, mainAward, shortPeriod, stickerDef, templateForWeek, weekNumber,
+  CertificateData, EarnedSticker, certDate, isoWeekYear, mainAward, shortRange, stickerDef, templateForWeek, weekNumber,
 } from '@/lib/awards';
 
 export interface RetroPrefs {
@@ -14,32 +14,48 @@ export interface RetroPrefs {
 export const DEFAULT_RETRO: RetroPrefs = { day: 0, time: '07:00' };
 export const WEEKDAY_NAMES = ['월', '화', '수', '목', '금', '토', '일'];
 
-// DB 컬럼이 아직 없거나(마이그레이션 전) 저장에 실패했을 때 이 기기에 보관
+// DB 컬럼이 아직 없거나(마이그레이션 전) 저장에 실패했을 때 이 기기에 보관.
+// pending=true면 아직 서버에 못 올린 설정 → 서버 값보다 우선하고, 서버가 준비되면 올린다.
 const LOCAL_PREFS_KEY = 'retro_prefs';
 
-const isValidPrefs = (p: unknown): p is RetroPrefs =>
+type LocalPrefs = RetroPrefs & { pending?: boolean };
+
+const isValidPrefs = (p: unknown): p is LocalPrefs =>
   !!p && typeof (p as RetroPrefs).day === 'number' && (p as RetroPrefs).day >= 0 && (p as RetroPrefs).day <= 6
   && /^\d{2}:\d{2}/.test((p as RetroPrefs).time || '');
 
+function readLocalPrefs(): LocalPrefs | null {
+  try {
+    const local = JSON.parse(localStorage.getItem(LOCAL_PREFS_KEY) || 'null');
+    return isValidPrefs(local) ? { ...local, time: local.time.slice(0, 5) } : null;
+  } catch { return null; }
+}
+
 export function readRetroPrefs(profile: Profile | null): RetroPrefs {
+  const local = readLocalPrefs();
+  if (local?.pending) return { day: local.day, time: local.time };
   if (profile && profile.retro_day != null && profile.retro_time) {
     return { day: profile.retro_day, time: profile.retro_time.slice(0, 5) };
   }
-  try {
-    const local = JSON.parse(localStorage.getItem(LOCAL_PREFS_KEY) || 'null');
-    if (isValidPrefs(local)) return { day: local.day, time: local.time.slice(0, 5) };
-  } catch { /* 기본값 사용 */ }
+  if (local) return { day: local.day, time: local.time };
   return DEFAULT_RETRO;
 }
 
-/** 저장 위치를 돌려준다: 'server'(모든 기기) 또는 'local'(이 기기만) */
+/** 저장 위치를 돌려준다: 'server'(모든 기기) 또는 'local'(이 기기만, 나중에 자동으로 서버에 올림) */
 export async function saveRetroPrefs(userId: string, prefs: RetroPrefs): Promise<'server' | 'local'> {
-  try { localStorage.setItem(LOCAL_PREFS_KEY, JSON.stringify(prefs)); } catch { /* noop */ }
   const { error } = await supabase
     .from('profiles')
     .update({ retro_day: prefs.day, retro_time: prefs.time })
     .eq('id', userId);
+  try { localStorage.setItem(LOCAL_PREFS_KEY, JSON.stringify({ ...prefs, pending: !!error })); } catch { /* noop */ }
   return error ? 'local' : 'server';
+}
+
+/** 이 기기에만 저장됐던 설정을 서버가 준비되면(016 적용 후) 올린다 — 올렸으면 true */
+export async function syncPendingRetroPrefs(userId: string, profile: Profile | null): Promise<boolean> {
+  const local = readLocalPrefs();
+  if (!local?.pending || !profile || profile.retro_day == null) return false;
+  return (await saveRetroPrefs(userId, { day: local.day, time: local.time })) === 'server';
 }
 
 export function describePrefs(prefs: RetroPrefs): string {
@@ -69,6 +85,16 @@ export function latestRetroWeek(prefs: RetroPrefs, today: string = kstToday(), n
   return deliveredThisWeek(prefs, today, nowHM) ? coveredWeek(ws, prefs) : coveredWeek(addDays(ws, -7), prefs);
 }
 
+/** 그 주의 회고가 도착하는 날 (월요일 회고면 다음 주 월요일, 아니면 그 주의 그 요일) */
+export function deliveryDateFor(week: string, prefs: RetroPrefs): string {
+  return prefs.day === 0 ? addDays(week, 7) : addDays(week, prefs.day);
+}
+
+/** 그 주의 회고 도착 시각 — "10월 12일 (월) 오전 7:00" */
+export function deliveryLabelFor(week: string, prefs: RetroPrefs): string {
+  return `${formatDateLabel(deliveryDateFor(week, prefs))} ${formatTimeLabel(prefs.time)}`;
+}
+
 /** 다음 회고 도착 시각 — "10월 12일 (월) 오전 7:00" */
 export function nextDeliveryLabel(prefs: RetroPrefs, today: string = kstToday(), nowHM: string = kstNowHM()): string {
   const ws = weekStartOf(today);
@@ -76,13 +102,26 @@ export function nextDeliveryLabel(prefs: RetroPrefs, today: string = kstToday(),
   return `${formatDateLabel(date)} ${formatTimeLabel(prefs.time)}`;
 }
 
-// 홈 배너: 이번 주에 도착한 회고를 열어봤는지 (기기별)
-const seenKey = (userId: string, week: string) => `retro_seen:${userId}:${week}`;
-export function isRetroSeen(userId: string, week: string): boolean {
-  try { return localStorage.getItem(seenKey(userId, week)) === '1'; } catch { return false; }
+// 홈 배너: 도착한 회고를 열어봤는지 (기기·오피스별)
+const seenKey = (userId: string, officeId: string, week: string) => `retro_seen:${userId}:${officeId}:${week}`;
+export function isRetroSeen(userId: string, officeId: string, week: string): boolean {
+  try { return localStorage.getItem(seenKey(userId, officeId, week)) === '1'; } catch { return false; }
 }
-export function markRetroSeen(userId: string, week: string) {
-  try { localStorage.setItem(seenKey(userId, week), '1'); } catch { /* noop */ }
+export function markRetroSeen(userId: string, officeId: string, week: string) {
+  try { localStorage.setItem(seenKey(userId, officeId, week), '1'); } catch { /* noop */ }
+}
+
+/** 그 주에 이 오피스에서 출근했거나 할 일을 끝낸 적이 있는지 — 쉬어간 주엔 '도착' 배너를 띄우지 않는다 */
+export async function weekHasActivity(userId: string, officeId: string, week: string): Promise<boolean> {
+  const from = kstStart(week);
+  const to = kstStart(addDays(week, 7));
+  const [{ count: works }, { count: done }] = await Promise.all([
+    supabase.from('work_sessions').select('id', { count: 'exact', head: true })
+      .eq('user_id', userId).eq('office_id', officeId).gte('started_at', from).lt('started_at', to),
+    supabase.from('tasks').select('id', { count: 'exact', head: true })
+      .eq('user_id', userId).eq('office_id', officeId).gte('completed_at', from).lt('completed_at', to),
+  ]);
+  return (works || 0) > 0 || (done || 0) > 0;
 }
 
 /** "9월 28일 (월) ~ 10월 4일 (일)" */
@@ -101,46 +140,70 @@ export interface WeekNumbers {
 
 export interface RetroData extends WeekNumbers {
   week: string;
+  lastDate: string; // 회고에 담기는 마지막 날 (월요일 회고면 일요일, 금요일 회고면 그 주 금요일)
+  issueDate: string; // 상장 발급일 = 회고 도착일
   dailyWork: number[]; // 월~일 근무 초
   dailyFocus: number[]; // 월~일 집중 초
   longestFocus: number; // 한 번에 가장 오래 집중한 초
-  planned: Task[]; // 그 주에 계획한 할 일 (week_start = 그 주 or 마감일이 그 주)
-  completed: Task[]; // 그 주에 체크한 할 일 (completed_at 기준)
+  planned: Task[]; // 그 주에 계획한 할 일 (처음 계획한 주 기준 — 옮겨도 계획은 그대로)
+  completed: Task[]; // 회고 기간에 체크한 할 일 (completed_at 기준)
   focusByTask: { id: string; title: string; seconds: number }[];
-  prev: WeekNumbers; // 그 전 주 (비교용)
+  prev: WeekNumbers; // 그 전 주의 같은 구간 (비교용 — 금요일 회고면 지난주 월~금끼리 비교)
 }
 
 const kstStart = (date: string) => `${date}T00:00:00+09:00`;
 const kstDayOf = (iso: string) => kstToday(new Date(iso));
+const ms = (iso: string) => new Date(iso).getTime();
 
-export async function fetchRetro(userId: string, officeId: string, week: string): Promise<RetroData> {
+/**
+ * 한 주 회고 집계. 회고 구간은 그 주 월요일 0시 ~ 회고 도착 시각
+ * (월요일 회고 = 일요일 밤까지 전체, 금요일 18시 회고 = 금요일 18시까지).
+ */
+export async function fetchRetro(userId: string, officeId: string, week: string, prefs: RetroPrefs): Promise<RetroData> {
   const prevWeek = addDays(week, -7);
-  const nextWeek = addDays(week, 7);
   const weekEnd = addDays(week, 6);
+  const issueDate = deliveryDateFor(week, prefs);
+  const lastDate = prefs.day === 0 ? weekEnd : issueDate;
+  const endISO = prefs.day === 0 ? kstStart(addDays(week, 7)) : `${issueDate}T${prefs.time}:00+09:00`;
+  const prevEndISO = prefs.day === 0 ? kstStart(week) : `${addDays(issueDate, -7)}T${prefs.time}:00+09:00`;
+  const weekStartMs = ms(kstStart(week));
+  const endMs = ms(endISO);
+  const prevEndMs = ms(prevEndISO);
   const now = Date.now();
 
-  const [{ data: works }, { data: focuses }, { data: planned }, { data: completed }] = await Promise.all([
+  // 계획한 할 일: planned_week(처음 계획한 주, 016)로 — 없으면 예전 방식(지금의 week_start/마감일)
+  const fetchPlanned = async (): Promise<Task[]> => {
+    const byPlan = await supabase.from('tasks').select('*')
+      .eq('user_id', userId).eq('office_id', officeId).eq('planned_week', week).order('sort_order');
+    if (!byPlan.error) return byPlan.data || [];
+    const legacy = await supabase.from('tasks').select('*')
+      .eq('user_id', userId).eq('office_id', officeId)
+      .or(`week_start.eq.${week},and(due_date.gte.${week},due_date.lte.${weekEnd})`)
+      .order('sort_order');
+    return legacy.data || [];
+  };
+
+  const [{ data: works }, { data: focuses }, plannedAll, { data: completed }] = await Promise.all([
     supabase.from('work_sessions')
       .select('started_at, ended_at')
       .eq('user_id', userId).eq('office_id', officeId)
-      .gte('started_at', kstStart(prevWeek)).lt('started_at', kstStart(nextWeek)),
+      .gte('started_at', kstStart(prevWeek)).lt('started_at', endISO),
     supabase.from('focus_sessions')
-      .select('started_at, ended_at, duration_seconds, task_id')
+      .select('started_at, duration_seconds, task_id')
       .eq('user_id', userId).eq('office_id', officeId)
       .not('ended_at', 'is', null)
-      .gte('started_at', kstStart(prevWeek)).lt('started_at', kstStart(nextWeek)),
-    supabase.from('tasks')
-      .select('*')
-      .eq('user_id', userId).eq('office_id', officeId)
-      .or(`week_start.eq.${week},and(due_date.gte.${week},due_date.lte.${weekEnd})`)
-      .order('sort_order'),
+      .gte('started_at', kstStart(prevWeek)).lt('started_at', endISO),
+    fetchPlanned(),
     supabase.from('tasks')
       .select('*')
       .eq('user_id', userId).eq('office_id', officeId)
       .eq('status', 'done')
-      .gte('completed_at', kstStart(prevWeek)).lt('completed_at', kstStart(nextWeek))
+      .gte('completed_at', kstStart(prevWeek)).lt('completed_at', endISO)
       .order('completed_at'),
   ]);
+
+  // 회고 시각 뒤에 마감인 일은 아직 '못 한 일'이 아니다 (단, 이미 끝냈으면 칭찬 대상)
+  const planned = plannedAll.filter(t => !(t.status !== 'done' && t.due_date && t.due_date > lastDate && t.due_date <= weekEnd));
 
   const empty = (): WeekNumbers => ({ workDays: 0, workSeconds: 0, focusSeconds: 0, completedCount: 0 });
   const cur = empty();
@@ -149,12 +212,21 @@ export async function fetchRetro(userId: string, officeId: string, week: string)
   const dailyFocus = [0, 0, 0, 0, 0, 0, 0];
   const curDays = new Set<string>();
   const prevDays = new Set<string>();
+  // 이번 주 구간인지 / 지난주의 같은 구간인지 (그 사이는 비교에서 뺀다)
+  const bucket = (iso: string): 'cur' | 'prev' | null => {
+    const t = ms(iso);
+    if (t >= weekStartMs && t < endMs) return 'cur';
+    if (t < prevEndMs) return 'prev';
+    return null;
+  };
 
   for (const s of works || []) {
-    const end = s.ended_at ? new Date(s.ended_at).getTime() : now;
-    const secs = Math.max(0, Math.floor((end - new Date(s.started_at).getTime()) / 1000));
+    const b = bucket(s.started_at);
+    if (!b) continue;
+    const end = Math.min(s.ended_at ? ms(s.ended_at) : now, b === 'cur' ? endMs : prevEndMs);
+    const secs = Math.max(0, Math.floor((end - ms(s.started_at)) / 1000));
     const day = kstDayOf(s.started_at);
-    if (day >= week) {
+    if (b === 'cur') {
       cur.workSeconds += secs;
       curDays.add(day);
       dailyWork[daysBetween(week, day)] += secs;
@@ -169,25 +241,26 @@ export async function fetchRetro(userId: string, officeId: string, week: string)
   let longestFocus = 0;
   const focusTaskSecs = new Map<string, number>();
   for (const f of focuses || []) {
-    const secs = f.duration_seconds ?? Math.max(0, Math.floor((new Date(f.ended_at).getTime() - new Date(f.started_at).getTime()) / 1000));
-    const day = kstDayOf(f.started_at);
-    if (day >= week) {
+    // 자정 자동퇴근·관리자 퇴근으로 닫힌 집중은 길이가 기록되지 않는다 → 리포트처럼 0으로 (부풀리지 않기)
+    const secs = f.duration_seconds ?? 0;
+    const b = bucket(f.started_at);
+    if (b === 'cur') {
       cur.focusSeconds += secs;
-      dailyFocus[daysBetween(week, day)] += secs;
+      dailyFocus[daysBetween(week, kstDayOf(f.started_at))] += secs;
       longestFocus = Math.max(longestFocus, secs);
       if (f.task_id) focusTaskSecs.set(f.task_id, (focusTaskSecs.get(f.task_id) || 0) + secs);
-    } else {
+    } else if (b === 'prev') {
       prev.focusSeconds += secs;
     }
   }
 
-  const completedThis = (completed || []).filter(t => t.completed_at && kstDayOf(t.completed_at) >= week);
+  const completedThis = (completed || []).filter(t => t.completed_at && bucket(t.completed_at) === 'cur');
   cur.completedCount = completedThis.length;
-  prev.completedCount = (completed || []).length - completedThis.length;
+  prev.completedCount = (completed || []).filter(t => t.completed_at && bucket(t.completed_at) === 'prev').length;
 
   // 집중한 할 일 제목 — 위에서 못 불러온 할 일은 따로
   const known = new Map<string, string>();
-  [...(planned || []), ...(completed || [])].forEach(t => known.set(t.id, t.title));
+  [...plannedAll, ...(completed || [])].forEach(t => known.set(t.id, t.title));
   const missing = [...focusTaskSecs.keys()].filter(id => !known.has(id));
   if (missing.length > 0) {
     const { data } = await supabase.from('tasks').select('id, title').in('id', missing);
@@ -195,15 +268,18 @@ export async function fetchRetro(userId: string, officeId: string, week: string)
   }
   const focusByTask = [...focusTaskSecs.entries()]
     .map(([id, seconds]) => ({ id, title: known.get(id) || '지워진 할 일', seconds }))
+    .filter(t => t.seconds > 0)
     .sort((a, b) => b.seconds - a.seconds);
 
   return {
     week,
+    lastDate,
+    issueDate,
     ...cur,
     dailyWork,
     dailyFocus,
     longestFocus,
-    planned: planned || [],
+    planned,
     completed: completedThis,
     focusByTask,
     prev,
@@ -282,17 +358,18 @@ export function weeklyCertificate(d: RetroData, stickers: EarnedSticker[], recip
   if (d.focusSeconds >= 60) { highlights.push(`집중 ${formatHM(d.focusSeconds)}`); clauses.push(`${formatHM(d.focusSeconds)} 집중하며`); }
   if (d.completedCount > 0) { highlights.push(`할 일 ${d.completedCount}개`); clauses.push(`할 일 ${d.completedCount}개를 해냈으며`); }
   if (highlights.length === 0) highlights.push('한 주 완주');
-  const period = shortPeriod(d.week);
-  const body = `위 사람은 ${period} 한 주 동안 ${clauses.length ? clauses.join(', ') + ' ' : ''}${award.flavor} 스스로를 칭찬하는 마음을 담아 이 상장을 수여합니다.`;
+  const period = shortRange(d.week, d.lastDate);
+  const span = d.lastDate === addDays(d.week, 6) ? '한 주 동안' : '동안';
+  const body = `위 사람은 ${period} ${span} ${clauses.length ? clauses.join(', ') + ' ' : ''}${award.flavor} 스스로를 칭찬하는 마음을 담아 이 상장을 수여합니다.`;
   return {
     template: templateForWeek(d.week),
-    serial: `제 ${d.week.slice(0, 4)}-${String(weekNumber(d.week)).padStart(2, '0')} 호`,
+    serial: `제 ${isoWeekYear(d.week)}-${String(weekNumber(d.week)).padStart(2, '0')} 호`,
     awardEmoji: award.emoji,
     awardTitle: award.title,
     recipient,
     highlights,
     body,
-    dateLabel: certDate(addDays(d.week, 7)),
+    dateLabel: certDate(d.issueDate),
     periodLabel: period,
     issuer,
   };
@@ -344,14 +421,23 @@ export async function saveReflection(userId: string, officeId: string, week: str
   return !error;
 }
 
-/** 못 끝낸 할 일을 이번 주로 — 지난 마감일은 비워서 '이번 주 안에'로 */
-export async function carryOverToThisWeek(tasks: Task[]): Promise<number> {
+/** 이번 주로 가져올 수 있는 못 끝낸 일 — 루틴은 매주 새로 생기니 빼고, 이미 옮긴 건 빼고 */
+export function carryableTasks(tasks: Task[]): Task[] {
   const thisWeek = getWeekStart();
-  const targets = tasks.filter(t => t.status !== 'done' && (!t.due_date || t.due_date < thisWeek));
-  if (targets.length === 0) return 0;
+  return tasks.filter(t => t.status !== 'done' && !t.routine_id && t.week_start < thisWeek && (!t.due_date || t.due_date < thisWeek));
+}
+
+/**
+ * 못 끝낸 할 일을 이번 주로 — 지난 마감일은 비워서 '이번 주 안에'로.
+ * 처음 계획한 주(planned_week)는 그대로라 지난주 회고의 계획 달성률은 바뀌지 않는다.
+ * 옮긴 할 일 id 목록 (실패하면 null)
+ */
+export async function carryOverToThisWeek(tasks: Task[]): Promise<string[] | null> {
+  const targets = carryableTasks(tasks);
+  if (targets.length === 0) return [];
   const { error } = await supabase
     .from('tasks')
-    .update({ week_start: thisWeek, due_date: null, due_time: null })
+    .update({ week_start: getWeekStart(), due_date: null, due_time: null })
     .in('id', targets.map(t => t.id));
-  return error ? -1 : targets.length;
+  return error ? null : targets.map(t => t.id);
 }

@@ -260,19 +260,29 @@ Deno.serve(async (req) => {
 
     // 주간 회고 도착 알림 — 각자 정한 요일·시간(기본 월 07:00)이 지나면 그 주에 한 번.
     // 월요일에 받으면 지난주, 다른 요일이면 그 주를 돌아본다. (016 마이그레이션 전이면 조용히 건너뜀)
-    const { data: retroProfiles, error: retroError } = await supabase
-      .from('profiles')
-      .select('id, retro_day, retro_time, last_retro_pushed');
-    if (!retroError) {
-      const thisWeek = weekStartStr(kstToday);
-      for (const p of retroProfiles || []) {
+    // - last_retro_pushed는 '여기까지 보냈다' 표시: 같거나 이전 주는 다시 보내지 않는다 (요일을 바꿔도 중복 없음)
+    // - 도착 시각에서 12시간 넘게 지났으면 보내지 않고 표시만 (마이그레이션 직후·서버 지연 때 새벽 푸시 방지)
+    const thisWeek = weekStartStr(kstToday);
+    const nowMs = now.getTime();
+    for (let from = 0; ; from += 1000) {
+      // 1000명씩 나눠서 (Supabase 한 번 조회 최대 1000행)
+      const { data: retroProfiles, error: retroError } = await supabase
+        .from('profiles')
+        .select('id, retro_day, retro_time, last_retro_pushed')
+        .order('id')
+        .range(from, from + 999);
+      if (retroError || !retroProfiles) break;
+      for (const p of retroProfiles) {
         const day = (p.retro_day as number | null) ?? 0;
         const time = ((p.retro_time as string | null) || '07:00').slice(0, 5);
         const deliveryDate = addDaysStr(thisWeek, day);
-        if (kstToday < deliveryDate || (kstToday === deliveryDate && kstHM < time)) continue;
+        const deliveryMs = new Date(`${deliveryDate}T${time}:00+09:00`).getTime();
+        if (nowMs < deliveryMs) continue;
         const covered = day === 0 ? addDaysStr(thisWeek, -7) : thisWeek;
-        if (p.last_retro_pushed === covered) continue;
+        const last = p.last_retro_pushed as string | null;
+        if (last && last >= covered) continue;
         await supabase.from('profiles').update({ last_retro_pushed: covered }).eq('id', p.id);
+        if (nowMs - deliveryMs > 12 * 3600 * 1000) continue;
         // 그 주에 한 번이라도 출근한 사람에게만 (쉬어간 주엔 조용히)
         const { data: worked } = await supabase
           .from('work_sessions').select('id')
@@ -289,6 +299,7 @@ Deno.serve(async (req) => {
           `/retro?week=${covered}`,
         );
       }
+      if (retroProfiles.length < 1000) break;
     }
     return new Response('ok', { headers: cors });
   }

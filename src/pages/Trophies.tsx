@@ -14,7 +14,7 @@ import {
   AchievementRow, CertificateData, LifetimeStats, STICKERS, earnedTrophies, fetchLifetimeStats, mainAward,
   readSeenTrophies, shortPeriod, trackProgress, writeSeenTrophies,
 } from '@/lib/awards';
-import { fetchRetro, weeklyCertificate } from '@/lib/retro';
+import { fetchRetro, readRetroPrefs, weeklyCertificate } from '@/lib/retro';
 
 /** 내 진열장 — 회고 스티커가 쌓이고, 누적 기록으로 트로피가 열리고, 매주 받은 상장이 모인다 */
 export default function Trophies() {
@@ -30,11 +30,12 @@ export default function Trophies() {
     if (!user) return;
     fetchLifetimeStats(user.id).then(s => {
       setStats(s);
+      if (s.failed) return;
       const ids = earnedTrophies(s).map(t => t.id);
       const seen = readSeenTrophies(user.id);
       // 지난 방문 이후 새로 열린 트로피엔 NEW 표시
       if (seen) setNewIds(new Set(ids.filter(id => !seen.has(id))));
-      writeSeenTrophies(user.id, ids);
+      writeSeenTrophies(user.id, [...new Set([...(seen || []), ...ids])]);
     });
   }, [user]);
 
@@ -61,7 +62,7 @@ export default function Trophies() {
   const openCertificate = async (c: typeof certificates[number]) => {
     if (!user || loadingCert) return;
     setLoadingCert(c.key);
-    const d = await fetchRetro(user.id, c.officeId, c.week);
+    const d = await fetchRetro(user.id, c.officeId, c.week, readRetroPrefs(profile));
     const officeName = offices.find(o => o.id === c.officeId)?.name || '연결오피스';
     const stickers = c.rows.map(r => ({ code: r.code, emoji: r.emoji, title: r.title, desc: r.detail || '' }));
     setOpenCert(weeklyCertificate(d, stickers, profile?.nickname || '나', officeName));
@@ -76,7 +77,7 @@ export default function Trophies() {
     <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
       <header className="glass sticky top-0 z-10 border-b border-amber-100/70">
         <div className="max-w-lg mx-auto px-4 py-2.5 flex items-center gap-1">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} aria-label="뒤로">
+          <Button variant="ghost" size="icon" onClick={() => ((window.history.state?.idx ?? 0) > 0 ? navigate(-1) : navigate('/'))} aria-label="뒤로">
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div className="min-w-0 flex-1">

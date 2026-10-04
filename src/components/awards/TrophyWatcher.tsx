@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,31 +11,35 @@ import { TROPHY_CHECK_EVENT, earnedTrophies, fetchLifetimeStats, readSeenTrophie
 export default function TrophyWatcher() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  // navigate는 화면을 옮길 때마다 바뀌므로 ref로 — 탭을 옮길 때마다 누적 기록을 다시 받지 않게
+  const navRef = useRef(navigate);
+  navRef.current = navigate;
+  const userId = user?.id;
 
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
     let timer: number | undefined;
     let cancelled = false;
 
     const check = async () => {
-      const stats = await fetchLifetimeStats(user.id);
-      if (cancelled) return;
+      const stats = await fetchLifetimeStats(userId);
+      if (cancelled || stats.failed) return; // 조회 실패면 판단 보류 (기록을 덮어쓰지 않음)
       const earned = earnedTrophies(stats);
-      const seen = readSeenTrophies(user.id);
+      const seen = readSeenTrophies(userId);
       // 이 기기에서 처음이면 지금까지 받은 건 조용히 기록만 (축하 폭탄 방지)
       if (!seen) {
-        writeSeenTrophies(user.id, earned.map(t => t.id));
+        writeSeenTrophies(userId, earned.map(t => t.id));
         return;
       }
       const fresh = earned.filter(t => !seen.has(t.id));
       if (fresh.length === 0) return;
-      writeSeenTrophies(user.id, earned.map(t => t.id));
+      writeSeenTrophies(userId, [...new Set([...seen, ...earned.map(t => t.id)])]);
       fresh.slice(0, 3).forEach((t, i) => {
         window.setTimeout(() => {
           toast.success(`${t.emoji} 새 트로피: ${t.title}!`, {
             description: `${t.track} 기록 달성 · 진열장에 올려뒀어요`,
             duration: 6000,
-            action: { label: '보기', onClick: () => navigate('/trophies') },
+            action: { label: '보기', onClick: () => navRef.current('/trophies') },
           });
         }, i * 700);
       });
@@ -53,7 +57,7 @@ export default function TrophyWatcher() {
       window.clearTimeout(timer);
       window.removeEventListener(TROPHY_CHECK_EVENT, schedule);
     };
-  }, [user, navigate]);
+  }, [userId]);
 
   return null;
 }

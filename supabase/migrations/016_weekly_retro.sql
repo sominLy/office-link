@@ -66,3 +66,25 @@ create policy achievements_select on public.achievements for select to authentic
 drop policy if exists achievements_insert on public.achievements;
 create policy achievements_insert on public.achievements for insert to authenticated
   with check (user_id = auth.uid() and public.is_office_member(office_id));
+
+-- ========== 회고의 '계획 달성률'용: 처음 계획한 주 ==========
+-- 할 일을 미루거나 이번 주로 옮겨도 week_start는 바뀌지만, 지난주에 계획했던 사실은 남아야
+-- 지난주 회고가 "다 해냈어요 💯"로 뒤바뀌지 않는다. 앱 코드는 이 값을 쓰지 않고, 만들 때 트리거가 채운다.
+alter table public.tasks add column if not exists planned_week date;
+update public.tasks set planned_week = week_start where planned_week is null; -- 기존 할 일은 지금 주로 최선 추정
+
+create or replace function public.set_task_planned_week()
+returns trigger language plpgsql as $$
+begin
+  if new.planned_week is null then
+    new.planned_week := new.week_start;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists tasks_planned_week on public.tasks;
+create trigger tasks_planned_week before insert on public.tasks
+  for each row execute function public.set_task_planned_week();
+
+create index if not exists idx_tasks_planned_week on public.tasks (user_id, office_id, planned_week);

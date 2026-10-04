@@ -2,17 +2,31 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOffice } from '@/contexts/OfficeContext';
 import { getWeekStart } from '@/lib/dates';
-import { coveredWeek, deliveredThisWeek, isRetroSeen, markRetroSeen, readRetroPrefs } from '@/lib/retro';
+import {
+  coveredWeek, deliveredThisWeek, isRetroSeen, markRetroSeen, readRetroPrefs, syncPendingRetroPrefs, weekHasActivity,
+} from '@/lib/retro';
 import { shortPeriod } from '@/lib/awards';
 
-/** 홈: 정한 회고 시간이 지나면 '회고·상장 도착' 편지가 뜬다 (열어보거나 닫으면 그 주엔 다시 안 뜸) */
+/**
+ * 홈: 정한 회고 시간이 지나면 '회고·상장 도착' 편지가 뜬다.
+ * 열어보거나 닫으면 그 주엔 다시 안 뜨고, 그 주에 이 오피스에서 활동이 없었으면(휴가·가입 전) 띄우지 않는다.
+ */
 export default function RetroBanner() {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
+  const { office } = useOffice();
   const navigate = useNavigate();
   const prefs = readRetroPrefs(profile);
   const [, setTick] = useState(0);
   const [dismissed, setDismissed] = useState(false);
+  const [active, setActive] = useState(false);
+
+  const userId = user?.id;
+  const officeId = office?.id;
+  const week = coveredWeek(getWeekStart(), prefs);
+  const delivered = deliveredThisWeek(prefs);
+  const seen = !userId || !officeId || isRetroSeen(userId, officeId, week);
 
   // 앱을 켜둔 채 회고 시간이 지나도 바로 뜨도록 1분마다 다시 확인
   useEffect(() => {
@@ -20,8 +34,24 @@ export default function RetroBanner() {
     return () => clearInterval(t);
   }, []);
 
-  const week = coveredWeek(getWeekStart(), prefs);
-  if (!user || dismissed || !deliveredThisWeek(prefs) || isRetroSeen(user.id, week)) return null;
+  // 이 기기에만 저장됐던 회고 시간 설정을 서버가 준비되면(016 적용 후) 올린다
+  useEffect(() => {
+    if (!userId) return;
+    syncPendingRetroPrefs(userId, profile).then(ok => { if (ok) refreshProfile(); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, profile?.retro_day]);
+
+  useEffect(() => {
+    if (!userId || !officeId || !delivered || seen) {
+      setActive(false);
+      return;
+    }
+    let cancelled = false;
+    weekHasActivity(userId, officeId, week).then(a => { if (!cancelled) setActive(a); });
+    return () => { cancelled = true; };
+  }, [userId, officeId, week, delivered, seen]);
+
+  if (!userId || !officeId || dismissed || !delivered || seen || !active) return null;
 
   return (
     <div className="rise-in relative overflow-hidden rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-100 via-orange-50 to-rose-100 shadow-sm">
@@ -36,7 +66,7 @@ export default function RetroBanner() {
         </span>
       </button>
       <button
-        onClick={() => { markRetroSeen(user.id, week); setDismissed(true); }}
+        onClick={() => { markRetroSeen(userId, officeId, week); setDismissed(true); }}
         className="absolute right-2 top-2 p-1 text-amber-700/60 hover:text-amber-900"
         aria-label="회고 알림 닫기"
       >

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
@@ -19,9 +19,9 @@ import { displayName } from '@/lib/callsign';
 import { addDays, formatShortDate, getWeekStart, weekStartOf } from '@/lib/dates';
 import { EarnedSticker, claimStickers, mainAward } from '@/lib/awards';
 import {
-  RetroData, Reflection, RetroPrefs, WEEKDAY_NAMES, carryOverToThisWeek, categoryShares, describePrefs, earnedStickers,
-  fetchReflection, fetchRetro, formatHM, hasActivity, headline, isFinalWeek, latestRetroWeek, markRetroSeen,
-  nextDeliveryLabel, plannedRate, readRetroPrefs, saveReflection, weekRangeLabel, weeklyCertificate,
+  RetroData, Reflection, RetroPrefs, WEEKDAY_NAMES, carryOverToThisWeek, carryableTasks, categoryShares, deliveryLabelFor,
+  describePrefs, earnedStickers, fetchReflection, fetchRetro, formatHM, hasActivity, headline, isFinalWeek, latestRetroWeek,
+  markRetroSeen, nextDeliveryLabel, plannedRate, readRetroPrefs, saveReflection, weekRangeLabel, weeklyCertificate,
 } from '@/lib/retro';
 import { notifyTasksChanged } from '@/lib/tasks';
 
@@ -44,7 +44,13 @@ export default function Retro() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const [prefs, setPrefs] = useState<RetroPrefs>(() => readRetroPrefs(profile));
-  useEffect(() => setPrefs(readRetroPrefs(profile)), [profile]);
+  // 프로필이 새로 불려와도(토큰 갱신 등) 설정이 같으면 그대로 — 화면을 다시 불러오지 않게
+  useEffect(() => {
+    setPrefs(p => {
+      const n = readRetroPrefs(profile);
+      return p.day === n.day && p.time === n.time ? p : n;
+    });
+  }, [profile]);
 
   const thisWeek = getWeekStart();
   const requested = params.get('week');
@@ -62,32 +68,46 @@ export default function Retro() {
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [showAllDone, setShowAllDone] = useState(false);
   const [carrying, setCarrying] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const [shared, setShared] = useState(false);
+  const reqRef = useRef(0); // 주를 빠르게 넘길 때 늦게 온 이전 응답이 화면을 덮지 않게
 
   const me = members.find(m => m.user_id === user?.id);
   const myName = me ? displayName(me.nickname, office?.title_mode, me.rank_index) : (profile?.nickname || '나');
   const plainName = profile?.nickname || '나';
 
   const goWeek = (w: string) => setParams({ week: w }, { replace: true });
+  // 푸시 알림으로 바로 열면 뒤로 갈 곳이 없다 → 홈으로
+  const goBack = () => ((window.history.state?.idx ?? 0) > 0 ? navigate(-1) : navigate('/'));
 
+  const userId = user?.id;
+  const officeId = office?.id;
   const load = useCallback(async () => {
-    if (!user || !office) return;
+    if (!userId || !officeId) return;
+    const req = ++reqRef.current;
+    const p: RetroPrefs = { day: prefs.day, time: prefs.time };
     setData(null);
     setSealed(null);
+    setCelebrate(null);
     setSelectedDay(null);
     setShowAllDone(false);
-    const [d, r] = await Promise.all([fetchRetro(user.id, office.id, week), fetchReflection(user.id, office.id, week)]);
+    setShared(false);
+    const [d, r] = await Promise.all([fetchRetro(userId, officeId, week, p), fetchReflection(userId, officeId, week)]);
+    if (req !== reqRef.current) return;
     setData(d);
     setReflectionReady(r.available);
     setReflection(r.data || { mood: null, praise: null, next_goal: null });
     setSavedReflection(!!r.data);
-    markRetroSeen(user.id, week);
+    // 이미 도착한 회고만 '봤음' 처리 (진행 중인 주를 미리 열어봐도 도착 배너는 그대로 뜨게)
+    if (week <= latestRetroWeek(p)) markRetroSeen(userId, officeId, week);
     // 끝난 주면 스티커를 진열장에 담고, 새로 받은 게 있으면 상장 도착 축하
-    if (isFinalWeek(week, prefs)) {
-      const { sealed: kept, fresh } = await claimStickers(user.id, office.id, week, earnedStickers(d));
+    if (isFinalWeek(week, p)) {
+      const { sealed: kept, fresh } = await claimStickers(userId, officeId, week, earnedStickers(d));
+      if (req !== reqRef.current) return;
       if (kept.length > 0) setSealed(kept);
       if (fresh.length > 0) setCelebrate(fresh);
     }
-  }, [user, office, week, prefs]);
+  }, [userId, officeId, week, prefs.day, prefs.time]);
 
   useEffect(() => {
     load();
@@ -100,6 +120,7 @@ export default function Retro() {
   const rate = data ? plannedRate(data) : null;
   const shares = data ? categoryShares(data.completed) : [];
   const unfinished = data ? data.planned.filter(t => t.status !== 'done') : [];
+  const carryable = carryableTasks(unfinished);
   const bestDay = data ? data.dailyWork.indexOf(Math.max(...data.dailyWork)) : -1;
   const dayIdx = selectedDay ?? (data && data.dailyWork[bestDay] > 0 ? bestDay : null);
   const maxDay = data ? Math.max(...data.dailyWork, 1) : 1;
@@ -121,41 +142,50 @@ export default function Retro() {
     toast.success('나에게 보낸 칭찬, 잘 보관했어요 💛');
   };
 
+  // 상장 기록만 자랑 — '나만 볼 수 있어요'인 칭찬 한마디는 절대 함께 올리지 않는다
   const shareToFeed = async () => {
-    if (!user || !office || !data || !cert) return;
-    const praise = reflection.praise?.trim();
-    let content = `📬 주간 회고 (${cert.periodLabel}) ${cert.awardEmoji} ${cert.awardTitle} 수상! ${cert.highlights.join(' · ')}`;
-    if (praise) content += ` · 나에게: "${praise.length > 50 ? praise.slice(0, 50) + '…' : praise}"`;
+    if (!user || !office || !data || !cert || sharing || shared) return;
+    setSharing(true);
+    const content = `📬 주간 회고 (${cert.periodLabel}) ${cert.awardEmoji} ${cert.awardTitle} 수상! ${cert.highlights.join(' · ')}`;
     const { error } = await supabase.from('office_feed').insert({ office_id: office.id, user_id: user.id, type: 'post', content });
+    setSharing(false);
     if (error) {
       toast.error('소식에 올리지 못했어요');
       return;
     }
+    setShared(true);
     supabase.functions.invoke('push-notify', {
       body: { action: 'feed', kind: 'post', office_id: office.id, actor_id: user.id, target_id: null, content },
     }).catch(() => {});
     toast.success('소식 탭에 자랑했어요! 응원이 쏟아질 거예요 🎉');
   };
 
+  // 다시 불러오지 않고 화면만 갱신 — 쓰던 칭찬 한마디가 지워지지 않게
   const carryOver = async () => {
     if (carrying) return;
     setCarrying(true);
-    const n = await carryOverToThisWeek(unfinished);
+    const moved = await carryOverToThisWeek(unfinished);
     setCarrying(false);
-    if (n < 0) {
+    if (!moved) {
       toast.error('옮기지 못했어요');
       return;
     }
+    if (moved.length === 0) {
+      toast('옮길 할 일이 없어요 · 루틴은 이번 주에 새로 생겨요');
+      return;
+    }
+    const ids = new Set(moved);
+    const thisWeekStart = getWeekStart();
+    setData(d => d && { ...d, planned: d.planned.map(t => (ids.has(t.id) ? { ...t, week_start: thisWeekStart, due_date: null, due_time: null } : t)) });
     notifyTasksChanged();
-    toast.success(n > 0 ? `${n}개를 이번 주 할 일로 가져왔어요. 이번 주엔 해낼 거예요 💪` : '옮길 할 일이 없어요');
-    load();
+    toast.success(`${moved.length}개를 이번 주 할 일로 가져왔어요. 이번 주엔 해낼 거예요 💪`);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
       <header className="glass sticky top-0 z-10 border-b border-amber-100/70">
         <div className="max-w-lg mx-auto px-4 py-2.5 flex items-center gap-1">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} aria-label="뒤로">
+          <Button variant="ghost" size="icon" onClick={goBack} aria-label="뒤로">
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div className="min-w-0 flex-1">
@@ -179,7 +209,7 @@ export default function Retro() {
           </Button>
           <div className="text-center">
             <p className="text-sm font-semibold text-gray-700">{weekRangeLabel(week)}</p>
-            {!final && <p className="text-[11px] text-amber-600">진행 중인 주 · 상장은 {nextDeliveryLabel(prefs)} 도착</p>}
+            {!final && <p className="text-[11px] text-amber-600">진행 중인 주 · 상장은 {deliveryLabelFor(week, prefs)} 도착</p>}
           </div>
           <Button variant="ghost" size="icon" disabled={addDays(week, 7) > thisWeek} onClick={() => goWeek(addDays(week, 7))} aria-label="다음 주" className="disabled:opacity-30">
             <ChevronRight className="w-4 h-4" />
@@ -214,12 +244,17 @@ export default function Retro() {
               <section className="space-y-2">
                 <AwardCertificate data={cert} />
                 <p className="text-center text-xs text-gray-400">상장은 매주 다른 디자인으로 와요 · 캡처해서 자랑해 보세요 📸</p>
+                {/* 상장 기록만 올라가요 (칭찬 한마디는 나만 보기) */}
+                <Button variant="outline" onClick={shareToFeed} disabled={sharing || shared}
+                  className="w-full border-amber-200 text-amber-700 hover:bg-amber-50">
+                  <Share2 className="w-4 h-4 mr-1" /> {shared ? '소식에 자랑했어요 ✓' : sharing ? '올리는 중…' : '이 상장 소식에 자랑하기'}
+                </Button>
               </section>
             ) : !final && hasActivity(data) ? (
               <Card className="p-5 text-center border-dashed border-amber-200 bg-white/70">
                 <p className="text-3xl">✉️</p>
                 <p className="text-sm font-medium text-gray-700 mt-1">이번 주 상장은 아직 봉투 속에 있어요</p>
-                <p className="text-xs text-gray-400 mt-0.5">{nextDeliveryLabel(prefs)}에 도착해요</p>
+                <p className="text-xs text-gray-400 mt-0.5">{deliveryLabelFor(week, prefs)}에 도착해요</p>
               </Card>
             ) : null}
 
@@ -396,13 +431,22 @@ export default function Retro() {
                 <p className="text-xs text-gray-500 mt-0.5 mb-2">괜찮아요. 다 하는 주보다 이어서 하는 주가 더 많아요.</p>
                 <ul className="space-y-1 mb-3">
                   {unfinished.slice(0, 5).map(t => (
-                    <li key={t.id} className="text-sm text-gray-600 truncate">· {t.title}</li>
+                    <li key={t.id} className="flex items-center gap-1.5 text-sm text-gray-600">
+                      <span className="flex-1 min-w-0 truncate">· {t.title}</span>
+                      {t.week_start >= thisWeek
+                        ? <span className="flex-shrink-0 text-[11px] text-green-600">이번 주로 옮김</span>
+                        : t.routine_id && <span className="flex-shrink-0 text-[11px] text-gray-400">루틴 · 이번 주에 새로 생겨요</span>}
+                    </li>
                   ))}
                   {unfinished.length > 5 && <li className="text-xs text-gray-400">외 {unfinished.length - 5}개</li>}
                 </ul>
-                <Button variant="outline" size="sm" disabled={carrying} onClick={carryOver} className="w-full border-amber-200 text-amber-700 hover:bg-amber-50">
-                  <CalendarPlus className="w-4 h-4 mr-1" /> 이번 주 할 일로 가져오기
-                </Button>
+                {carryable.length > 0 ? (
+                  <Button variant="outline" size="sm" disabled={carrying} onClick={carryOver} className="w-full border-amber-200 text-amber-700 hover:bg-amber-50">
+                    <CalendarPlus className="w-4 h-4 mr-1" /> {carryable.length}개 이번 주 할 일로 가져오기
+                  </Button>
+                ) : (
+                  <p className="text-xs text-green-700 text-center">이어서 할 일은 모두 이번 주에 있어요 👍</p>
+                )}
               </Card>
             )}
 
@@ -443,17 +487,10 @@ export default function Retro() {
                 aria-label="다음 주의 나에게"
               />
               {!reflectionReady && <p className="text-xs text-amber-700">아직 서버 준비 중이라 저장이 안 될 수 있어요 (관리자: 016 마이그레이션 실행)</p>}
-              <div className="flex gap-2">
-                <Button onClick={saveMine} disabled={saving || (!reflection.mood && !reflection.praise?.trim() && !reflection.next_goal?.trim())}
-                  className="flex-1 bg-amber-600 hover:bg-amber-700 text-white">
-                  {saving ? '저장 중…' : savedReflection ? '저장됨 ✓' : '저장하기'}
-                </Button>
-                {cert && (
-                  <Button variant="outline" onClick={shareToFeed} className="border-amber-200 text-amber-700">
-                    <Share2 className="w-4 h-4 mr-1" /> 소식에 자랑
-                  </Button>
-                )}
-              </div>
+              <Button onClick={saveMine} disabled={saving || (!reflection.mood && !reflection.praise?.trim() && !reflection.next_goal?.trim())}
+                className="w-full bg-amber-600 hover:bg-amber-700 text-white">
+                {saving ? '저장 중…' : savedReflection ? '저장됨 ✓' : '저장하기'}
+              </Button>
             </Card>
 
             <p className="text-center text-xs text-gray-400 pt-1">

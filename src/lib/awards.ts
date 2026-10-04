@@ -150,14 +150,35 @@ export function trackProgress(stats: LifetimeStats) {
   });
 }
 
-export async function fetchLifetimeStats(userId: string): Promise<LifetimeStats> {
-  const [{ count: doneTasks }, { data: focus }, { data: works }, { data: ach, error: achError }] = await Promise.all([
+// Supabase는 한 번에 최대 1000행만 준다 → 오래 쓴 사람도 누적이 멈추지 않게 끝까지 나눠 받는다
+const PAGE = 1000;
+async function fetchAllRows<T>(
+  page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>,
+): Promise<{ rows: T[]; error: boolean }> {
+  const rows: T[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await page(from, from + PAGE - 1);
+    if (error) return { rows, error: true };
+    rows.push(...(data || []));
+    if (!data || data.length < PAGE) return { rows, error: false };
+  }
+}
+
+/** 누적 기록. 핵심 조회가 실패하면 failed=true (그땐 트로피 판정을 건너뛴다) */
+export async function fetchLifetimeStats(userId: string): Promise<LifetimeStats & { failed: boolean }> {
+  const [done, focus, works, ach] = await Promise.all([
     supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('status', 'done'),
-    supabase.from('focus_sessions').select('duration_seconds').eq('user_id', userId).not('ended_at', 'is', null),
-    supabase.from('work_sessions').select('started_at').eq('user_id', userId),
-    supabase.from('achievements').select('office_id, week_start, code, emoji, title, detail, earned_at').eq('user_id', userId).order('week_start', { ascending: false }),
+    fetchAllRows<{ duration_seconds: number | null }>((from, to) =>
+      supabase.from('focus_sessions').select('duration_seconds').eq('user_id', userId).not('ended_at', 'is', null).order('id').range(from, to)),
+    fetchAllRows<{ started_at: string }>((from, to) =>
+      supabase.from('work_sessions').select('started_at').eq('user_id', userId).order('id').range(from, to)),
+    fetchAllRows<AchievementRow>((from, to) =>
+      supabase.from('achievements').select('office_id, week_start, code, emoji, title, detail, earned_at').eq('user_id', userId)
+        .order('week_start', { ascending: false }).order('code').range(from, to)),
   ]);
-  const achievements = achError ? [] : (ach || []) as AchievementRow[];
+  const doneTasks = done.count;
+  // 진열장 테이블은 016 전엔 없을 수 있다 → 그건 실패로 보지 않고 빈 진열장
+  const achievements = ach.error ? [] : ach.rows;
   const weeks = [...new Set(achievements.map(a => a.week_start))].sort();
   let best = 0;
   let run = 0;
@@ -166,9 +187,10 @@ export async function fetchLifetimeStats(userId: string): Promise<LifetimeStats>
     best = Math.max(best, run);
   });
   return {
+    failed: !!done.error || focus.error || works.error,
     doneTasks: doneTasks || 0,
-    focusSeconds: (focus || []).reduce((s, f) => s + (f.duration_seconds || 0), 0),
-    workDays: new Set((works || []).map(w => kstToday(new Date(w.started_at)))).size,
+    focusSeconds: focus.rows.reduce((s, f) => s + (f.duration_seconds || 0), 0),
+    workDays: new Set(works.rows.map(w => kstToday(new Date(w.started_at)))).size,
     stickers: achievements.length,
     certificates: new Set(achievements.map(a => `${a.office_id}:${a.week_start}`)).size,
     bestStreak: best,
@@ -211,8 +233,14 @@ export function templateForWeek(week: string): CertTemplate {
 }
 
 /** 연중 몇 번째 주인지 (상장 번호용) */
+/** ISO 주 연도 — 그 주 목요일이 속한 해 (12/29가 낀 주는 다음 해 1주차일 수 있다) */
+export function isoWeekYear(week: string): number {
+  return Number(addDays(week, 3).slice(0, 4));
+}
+
+/** ISO 주 번호 (상장 번호용) */
 export function weekNumber(week: string): number {
-  const year = Number(week.slice(0, 4));
+  const year = isoWeekYear(week);
   const jan4 = `${year}-01-04`;
   const [y, m, d] = jan4.split('-').map(Number);
   const dow = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7;
@@ -237,8 +265,11 @@ export const certDate = (date: string) => {
   const [y, m, d] = date.split('-').map(Number);
   return `${y}. ${m}. ${d}.`;
 };
-export const shortPeriod = (week: string) => {
-  const [, m1, d1] = week.split('-').map(Number);
-  const [, m2, d2] = addDays(week, 6).split('-').map(Number);
+/** "9.28 – 10.2" */
+export const shortRange = (from: string, to: string) => {
+  const [, m1, d1] = from.split('-').map(Number);
+  const [, m2, d2] = to.split('-').map(Number);
   return `${m1}.${d1} – ${m2}.${d2}`;
 };
+/** 월~일 한 주 "9.28 – 10.4" */
+export const shortPeriod = (week: string) => shortRange(week, addDays(week, 6));

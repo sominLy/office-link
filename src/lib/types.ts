@@ -70,6 +70,7 @@ export interface Task {
   due_date: string | null;
   due_time: string | null; // 마감 시간 "HH:MM:SS" (null = 시간 지정 없음)
   week_start: string;
+  planned_week?: string | null; // 처음 계획한 주 (016, 옮겨도 안 바뀜 — 회고의 계획 달성률용)
   sort_order: number;
   completed_at: string | null;
   routine_id: string | null; // 루틴에서 자동 생성된 할 일이면 원본 루틴 id
