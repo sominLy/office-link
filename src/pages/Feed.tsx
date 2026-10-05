@@ -15,6 +15,8 @@ import { defaultAvatar } from '@/lib/avatar';
 import { displayName } from '@/lib/callsign';
 import BottomNav from '@/components/BottomNav';
 import OfficeChat from '@/components/OfficeChat';
+import AnnouncementBoard from '@/components/AnnouncementBoard';
+import { isSubmitEnter } from '@/lib/utils';
 
 function timeAgo(iso: string): string {
   const sec = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -33,16 +35,46 @@ export default function Feed() {
   const [targetId, setTargetId] = useState<string>('all');
   const [posting, setPosting] = useState(false);
 
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const FEED_SELECT = '*, author:profiles!office_feed_user_id_fkey(nickname, avatar_url), target:profiles!office_feed_target_user_id_fkey(nickname)';
+  const PAGE = 60;
+
+  // 최신 소식 한 페이지 (더 오래된 건 '이전 소식 더 보기'로 — 예전엔 100개에서 잘려 사라졌다)
   const fetchFeed = useCallback(async () => {
     if (!office) return;
     const { data } = await supabase
       .from('office_feed')
-      .select('*, author:profiles!office_feed_user_id_fkey(nickname, avatar_url), target:profiles!office_feed_target_user_id_fkey(nickname)')
+      .select(FEED_SELECT)
       .eq('office_id', office.id)
       .order('created_at', { ascending: false })
-      .limit(100);
-    setItems((data as unknown as FeedItem[]) || []);
+      .limit(PAGE);
+    const rows = (data as unknown as FeedItem[]) || [];
+    setItems(prev => {
+      // 이미 더 불러온 이전 소식은 유지하고 최신 페이지만 갈아끼운다
+      const oldest = rows[rows.length - 1]?.created_at;
+      const older = oldest ? prev.filter(i => i.created_at < oldest) : [];
+      return [...rows, ...older];
+    });
+    setHasMore(prev => prev || rows.length === PAGE);
   }, [office]);
+
+  const loadMore = async () => {
+    if (!office || loadingMore || items.length === 0) return;
+    setLoadingMore(true);
+    const { data } = await supabase
+      .from('office_feed')
+      .select(FEED_SELECT)
+      .eq('office_id', office.id)
+      .lt('created_at', items[items.length - 1].created_at)
+      .order('created_at', { ascending: false })
+      .limit(PAGE);
+    const rows = (data as unknown as FeedItem[]) || [];
+    setItems(prev => [...prev, ...rows.filter(r => !prev.some(p => p.id === r.id))]);
+    setHasMore(rows.length === PAGE);
+    setLoadingMore(false);
+  };
 
   useEffect(() => {
     fetchFeed();
@@ -87,6 +119,7 @@ export default function Feed() {
 
   const removeItem = async (id: string) => {
     await supabase.from('office_feed').delete().eq('id', id);
+    setItems(prev => prev.filter(i => i.id !== id));
     fetchFeed();
   };
 
@@ -141,6 +174,9 @@ export default function Feed() {
         </TabsContent>
 
         <TabsContent value="board" className="space-y-4">
+        {/* 업데이트 공지 — 소식에 밀려 사라지지 않게 맨 위 고정 */}
+        <AnnouncementBoard />
+
         {/* 글쓰기 */}
         <Card className="p-4 border-amber-100/50 space-y-2">
           <div className="flex gap-2">
@@ -162,7 +198,7 @@ export default function Feed() {
               placeholder={targetId === 'all' ? '모두에게 응원 한마디!' : '칭찬이나 응원을 남겨보세요'}
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && post()}
+              onKeyDown={(e) => isSubmitEnter(e) && post()}
               maxLength={200}
             />
             <Button onClick={post} disabled={posting || !content.trim()} size="icon" className="bg-amber-600 hover:bg-amber-700 text-white flex-shrink-0">
@@ -196,13 +232,20 @@ export default function Feed() {
                   <p className="text-[11px] text-gray-400 mt-0.5">{timeAgo(item.created_at)}</p>
                 </div>
                 {item.user_id === user?.id && item.type === 'post' && (
-                  <button onClick={() => removeItem(item.id)} className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 flex-shrink-0">
+                  // 모바일엔 호버가 없으니 항상 보이게
+                  <button onClick={() => removeItem(item.id)} aria-label="글 삭제"
+                    className="text-gray-300 hover:text-red-500 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 flex-shrink-0 p-1 -m-1">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 )}
               </li>
             ))}
           </ul>
+        )}
+        {hasMore && (
+          <Button variant="ghost" onClick={loadMore} disabled={loadingMore} className="w-full text-amber-700">
+            {loadingMore ? '불러오는 중…' : '이전 소식 더 보기'}
+          </Button>
         )}
         </TabsContent>
        </Tabs>

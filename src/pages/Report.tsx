@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { kstStartOfWeekISO } from '@/lib/dates';
+import { addDays, getWeekStart, kstStartOfWeekISO } from '@/lib/dates';
 import BottomNav from '@/components/BottomNav';
 
 function formatDuration(seconds: number): string {
@@ -168,6 +168,19 @@ export default function Report() {
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
+
+        {/* 이 주의 회고·상장으로 */}
+        <button
+          onClick={() => navigate(`/retro?week=${addDays(getWeekStart(), -7 * weeksAgo)}`)}
+          className="w-full flex items-center gap-3 rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-rose-50 px-4 py-3 text-left hover:from-amber-100"
+        >
+          <span className="text-2xl">📬</span>
+          <span className="flex-1 min-w-0">
+            <span className="block text-sm font-semibold text-gray-800">{weeksAgo === 0 ? '이번 주' : '이 주'} 회고 · 상장 보기</span>
+            <span className="block text-xs text-gray-500">해낸 일, 칭찬 스티커, 매주 다른 상장까지</span>
+          </span>
+          <ChevronRight className="w-4 h-4 text-amber-600" />
+        </button>
 
         {/* Summary Cards — 근무시간 중심 */}
         <div className="grid grid-cols-2 gap-3">

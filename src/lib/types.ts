@@ -17,6 +17,8 @@ export interface Profile {
   nickname: string;
   avatar_url: string | null;
   work_start: string | null; // 근무 시작 시간 "HH:MM:SS" (미출근 알림용)
+  retro_day?: number | null; // 주간 회고 받는 요일 0=월 … 6=일 (016 마이그레이션 전엔 없음)
+  retro_time?: string | null; // 주간 회고 받는 시간 "HH:MM:SS"
   created_at: string;
 }
 
@@ -68,6 +70,7 @@ export interface Task {
   due_date: string | null;
   due_time: string | null; // 마감 시간 "HH:MM:SS" (null = 시간 지정 없음)
   week_start: string;
+  planned_week?: string | null; // 처음 계획한 주 (016, 옮겨도 안 바뀜 — 회고의 계획 달성률용)
   sort_order: number;
   completed_at: string | null;
   routine_id: string | null; // 루틴에서 자동 생성된 할 일이면 원본 루틴 id

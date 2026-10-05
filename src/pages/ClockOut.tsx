@@ -9,6 +9,8 @@ import { ArrowLeft, Clock, Target, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { kstStartOfTodayISO } from '@/lib/dates';
+import { useTasksChanged } from '@/lib/tasks';
+import LeftoverTasks from '@/components/tasks/LeftoverTasks';
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
@@ -78,6 +80,9 @@ export default function ClockOut() {
   useEffect(() => {
     fetchStats();
   }, [fetchStats]);
+
+  // 아래 '남은 할 일'에서 완료하면 완료 업무 수도 바로 반영
+  useTasksChanged(fetchStats);
 
   const handleClockOut = async () => {
     await clockOut();
@@ -150,6 +155,8 @@ export default function ClockOut() {
             </div>
           )}
         </Card>
+
+        <LeftoverTasks />
 
         <Card className="p-5 border-amber-100/50">
           <label className="text-sm font-medium text-gray-700 block mb-2">한 줄 회고 (선택)</label>

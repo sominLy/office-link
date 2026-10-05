@@ -12,6 +12,9 @@ import Profile from './pages/Profile';
 import Feed from './pages/Feed';
 import OfficeSetup from './pages/OfficeSetup';
 import Guide from './pages/Guide';
+import Retro from './pages/Retro';
+import Trophies from './pages/Trophies';
+import TrophyWatcher from '@/components/awards/TrophyWatcher';
 
 const queryClient = new QueryClient();
 
@@ -22,6 +25,8 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <BrowserRouter>
+            {/* 할 일 완료·집중·출근 때 새 트로피가 열리면 축하 */}
+            <TrophyWatcher />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/tasks" element={<Tasks />} />
@@ -31,6 +36,8 @@ const App = () => (
               <Route path="/feed" element={<Feed />} />
               <Route path="/office-setup" element={<OfficeSetup />} />
               <Route path="/guide" element={<Guide />} />
+              <Route path="/retro" element={<Retro />} />
+              <Route path="/trophies" element={<Trophies />} />
             </Routes>
           </BrowserRouter>
         </TooltipProvider>

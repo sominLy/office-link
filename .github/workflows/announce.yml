@@ -1,4 +1,7 @@
-# 커밋 메시지에 [공지] 가 있으면, 그 뒤의 내용을 모든 오피스 소식 탭에 자동 게시 + 멤버 푸시
+# 커밋 메시지에 [공지] 가 있으면, 그 뒤의 내용을 업데이트 공지로 게시 + 멤버 푸시
+# - ANNOUNCE_SECRET(저장소 Settings → Secrets → Actions)이 있으면 푸시 즉시 게시
+# - 없으면 Supabase 크론(announce_poll, 10분마다)이 같은 커밋을 찾아 게시한다
+#   두 경로가 동시에 돌아도 커밋 sha로 중복을 막으니 공지는 한 번만 올라간다
 name: "Announce update to office feeds"
 
 on:
@@ -15,20 +18,24 @@ jobs:
         env:
           ANNOUNCE_SECRET: ${{ secrets.ANNOUNCE_SECRET }}
           COMMIT_MSG: ${{ github.event.head_commit.message }}
+          COMMIT_SHA: ${{ github.event.head_commit.id }}
         run: |
-          if [ -z "$ANNOUNCE_SECRET" ]; then
-            echo "ANNOUNCE_SECRET not set - skipping"
-            exit 0
-          fi
           MARKER=$(printf '%s\n' "$COMMIT_MSG" | grep -m1 -F '[공지]' || true)
           if [ -z "$MARKER" ]; then
             echo "No announcement marker - skipping"
             exit 0
           fi
+          if [ -z "$ANNOUNCE_SECRET" ]; then
+            # 조용히 성공 처리하지 않고, 왜 여기서 안 보내는지 실행 요약에 남긴다
+            echo "::warning title=공지를 여기서 보내지 않았어요::ANNOUNCE_SECRET이 없어서 건너뜀 — Supabase 크론(announce_poll)이 켜져 있으면 10분 안에 게시돼요"
+            exit 0
+          fi
           MESSAGE=$(printf '%s' "$MARKER" | sed 's/.*\[공지\][[:space:]]*//')
           export MESSAGE
           echo "Posting: $MESSAGE"
-          BODY=$(python3 -c 'import json,os;print(json.dumps({"action":"announce","secret":os.environ["ANNOUNCE_SECRET"],"message":os.environ["MESSAGE"]}))')
-          curl -s -X POST "https://ykyocsatvnqbuwvybirw.supabase.co/functions/v1/push-notify" \
+          BODY=$(python3 -c 'import json,os;print(json.dumps({"action":"announce","secret":os.environ["ANNOUNCE_SECRET"],"message":os.environ["MESSAGE"],"sha":os.environ["COMMIT_SHA"]}))')
+          # -f: 401/500 같은 실패를 '성공'으로 넘기지 않는다
+          RESULT=$(curl -fsS -X POST "https://ykyocsatvnqbuwvybirw.supabase.co/functions/v1/push-notify" \
             -H "Content-Type: application/json" \
-            -d "$BODY"
+            -d "$BODY")
+          echo "Result: $RESULT"

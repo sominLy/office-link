@@ -7,15 +7,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, Circle, Trash2, Building2, ListTodo, Lock, Plus } from 'lucide-react';
+import { CheckCircle2, Circle, CircleDot, Trash2, Building2, ListTodo, Lock, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { getWeekStart, kstToday } from '@/lib/dates';
+import { isSubmitEnter } from '@/lib/utils';
+import { deleteWithUndo, fetchWeekTasks, sortTasks, updateTaskStatus, useTasksChanged } from '@/lib/tasks';
 
 // 마이페이지: 내가 속한 모든 오피스의 이번 주 할 일을 한눈에 보고,
 // 여러 오피스에 같은 할 일을 일괄 추가할 수 있다
 export default function MyTasksByOffice() {
   const { user } = useAuth();
-  const { offices } = useOffice();
+  const { offices, office: currentOffice } = useOffice();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTitle, setNewTitle] = useState('');
   const [selectedOffices, setSelectedOffices] = useState<Set<string>>(new Set());
@@ -24,20 +26,22 @@ export default function MyTasksByOffice() {
 
   const weekStart = getWeekStart();
 
+  // 할 일 탭과 같은 기준(이번 주에 담은 것 + 마감일이 이번 주인 것)으로 모든 오피스를 한 번에
   const fetchAll = useCallback(async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from('tasks')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('week_start', weekStart)
-      .order('sort_order');
-    setTasks(data || []);
-  }, [user, weekStart]);
+    setTasks(sortTasks(await fetchWeekTasks(user.id, null)));
+  }, [user]);
 
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
+
+  useTasksChanged(fetchAll);
+
+  // 처음엔 지금 보고 있는 오피스를 골라둔다 (아무것도 안 골라 '추가'가 막혀 있는 상황 방지)
+  useEffect(() => {
+    if (currentOffice) setSelectedOffices(prev => (prev.size === 0 ? new Set([currentOffice.id]) : prev));
+  }, [currentOffice]);
 
   const toggleOffice = (id: string) => {
     const next = new Set(selectedOffices);
@@ -62,9 +66,9 @@ export default function MyTasksByOffice() {
     }));
     const { error } = await supabase.from('tasks').insert(rows);
     if (error) {
-      toast.error('추가에 실패했어요');
+      toast.error('추가하지 못했어요. 잠시 후 다시 시도해 주세요');
     } else {
-      toast.success(`${selectedOffices.size}개 오피스에 추가되었어요`);
+      toast.success(selectedOffices.size > 1 ? `${selectedOffices.size}개 오피스에 오늘 할 일로 추가했어요` : '오늘 할 일로 추가했어요');
       setNewTitle('');
       fetchAll();
     }
@@ -72,16 +76,19 @@ export default function MyTasksByOffice() {
   };
 
   const toggleDone = async (task: Task) => {
-    const newStatus = task.status === 'done' ? 'todo' : 'done';
-    await supabase.from('tasks')
-      .update({ status: newStatus, completed_at: newStatus === 'done' ? new Date().toISOString() : null })
-      .eq('id', task.id);
-    fetchAll();
+    const status = task.status === 'done' ? 'todo' : 'done';
+    setTasks(prev => prev.map(t => (t.id === task.id ? { ...t, status } : t)));
+    if (!(await updateTaskStatus(task, status))) fetchAll();
   };
 
-  const remove = async (id: string) => {
-    await supabase.from('tasks').delete().eq('id', id);
-    fetchAll();
+  const remove = (task: Task) => {
+    deleteWithUndo({
+      table: 'tasks',
+      id: task.id,
+      message: `"${task.title}" 삭제했어요`,
+      onHide: () => setTasks(prev => prev.filter(t => t.id !== task.id)),
+      onRestore: () => setTasks(prev => sortTasks([...prev, task])),
+    });
   };
 
   return (
@@ -99,7 +106,8 @@ export default function MyTasksByOffice() {
             placeholder="예: 영어 단어 외우기"
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && bulkAdd()}
+            onKeyDown={(e) => isSubmitEnter(e) && bulkAdd()}
+            aria-label="추가할 할 일"
             maxLength={100}
           />
           <div className="flex flex-wrap gap-1.5">
@@ -107,7 +115,8 @@ export default function MyTasksByOffice() {
               <button
                 key={o.id}
                 onClick={() => toggleOffice(o.id)}
-                className={`text-xs rounded-full px-2.5 py-1 border transition-colors ${
+                aria-pressed={selectedOffices.has(o.id)}
+                className={`text-xs rounded-full px-2.5 py-1 border transition-colors max-w-full truncate ${
                   selectedOffices.has(o.id)
                     ? 'bg-amber-600 text-white border-amber-600'
                     : 'bg-white text-gray-600 border-gray-200 hover:border-amber-300'
@@ -117,6 +126,9 @@ export default function MyTasksByOffice() {
               </button>
             ))}
           </div>
+          {selectedOffices.size === 0 && (
+            <p className="text-xs text-amber-700">어느 오피스에 추가할지 하나 이상 골라주세요</p>
+          )}
           <div className="flex items-center justify-between">
             <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
               <input type="checkbox" checked={newPrivate} onChange={(e) => setNewPrivate(e.target.checked)} className="accent-amber-600" />
@@ -137,9 +149,9 @@ export default function MyTasksByOffice() {
           return (
             <div key={o.id}>
               <div className="flex items-center gap-2 mb-2">
-                <Building2 className="w-4 h-4 text-amber-500" />
-                <h4 className="text-sm font-semibold text-gray-700">{o.name}</h4>
-                <Badge variant="secondary" className="text-xs bg-amber-50 text-amber-700">{done}/{group.length}</Badge>
+                <Building2 className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                <h4 className="text-sm font-semibold text-gray-700 truncate min-w-0">{o.name}</h4>
+                <Badge variant="secondary" className="text-xs bg-amber-50 text-amber-700 flex-shrink-0">{done}/{group.length}</Badge>
               </div>
               {group.length === 0 ? (
                 <p className="text-xs text-gray-400 pl-6 pb-1">이번 주 할 일이 없어요</p>
@@ -147,19 +159,23 @@ export default function MyTasksByOffice() {
                 <ul className="space-y-1.5">
                   {group.map(task => (
                     <li key={task.id} className="flex items-center gap-2 text-sm bg-gray-50/70 rounded-lg px-3 py-2 group">
-                      <button onClick={() => toggleDone(task)}>
+                      <button onClick={() => toggleDone(task)} aria-label={task.status === 'done' ? '완료 취소' : '완료로 표시'} className="flex-shrink-0">
                         {task.status === 'done'
-                          ? <CheckCircle2 className="w-4 h-4 text-green-500" />
-                          : <Circle className="w-4 h-4 text-gray-300 hover:text-amber-400" />}
+                          ? <CheckCircle2 className="w-4 h-4 text-green-500 check-pop" />
+                          : task.status === 'in_progress'
+                            ? <CircleDot className="w-4 h-4 text-blue-500" />
+                            : <Circle className="w-4 h-4 text-gray-300 hover:text-amber-400" />}
                       </button>
-                      <span className={`flex-1 truncate ${task.status === 'done' ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                      <span className={`flex-1 min-w-0 truncate ${task.status === 'done' ? 'line-through text-gray-400' : 'text-gray-700'}`}>
                         {task.title}
                         {task.is_private && <Lock className="w-3 h-3 text-gray-400 inline ml-1" />}
                       </span>
                       {task.category && (
-                        <Badge variant="outline" className="text-[10px] bg-white text-amber-600 border-amber-200">{task.category}</Badge>
+                        <Badge variant="outline" className="text-[10px] bg-white text-amber-600 border-amber-200 max-w-[6rem] truncate">{task.category}</Badge>
                       )}
-                      <button onClick={() => remove(task.id)} className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100">
+                      {/* 모바일엔 호버가 없으니 항상 보이게, 데스크톱은 호버 시 */}
+                      <button onClick={() => remove(task)} aria-label={`${task.title} 삭제`}
+                        className="flex-shrink-0 p-1 -m-1 text-gray-300 hover:text-red-500 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </li>
