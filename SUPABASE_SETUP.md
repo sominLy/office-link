@@ -2,6 +2,9 @@
 
 - [A. 처음 연결할 때 (딱 3단계)](#a-처음-연결할-때-딱-3단계)
 - [B. 주간 회고·공지 업데이트 적용하기 (PR #1)](#b-주간-회고공지-업데이트-적용하기-pr-1)
+- [C. 자정 자동 퇴근이 안 될 때 (018)](#c-자정-자동-퇴근이-안-될-때-018)
+- [D. 크론(자동 실행)이 멈췄는지 확인하기](#d-크론자동-실행이-멈췄는지-확인하기)
+- [E. 운영 대시보드 켜기 (019)](#e-운영-대시보드-켜기-019)
 
 ## A. 처음 연결할 때 (딱 3단계)
 
@@ -19,7 +22,7 @@
 
 이 SQL이 하는 일: 테이블 7개 생성 + RLS 보안 정책(남의 데이터 접근 차단) + 중복 세션 방지 제약 + Realtime 활성화.
 
-그다음 `002`부터 `017`까지 **번호 순서대로** 같은 방법으로 하나씩 실행하세요. 웹푸시·크론까지 쓰려면 B의 4~7단계(함수 배포, 크론)도 해야 해요.
+그다음 `002`부터 `019`까지 **번호 순서대로** 같은 방법으로 하나씩 실행하세요. 웹푸시·크론까지 쓰려면 B의 4~7단계(함수 배포, 크론)도 해야 해요.
 
 ### 3단계. 앱에 키 연결
 1. Supabase 대시보드 → **Project Settings → API**에서 두 값을 복사
@@ -50,7 +53,7 @@
 1. **시간 제한이 있어요.** 새 push-notify 함수를 배포하면, 다음 회고 시간(기본 월요일 오전 7시 KST)에 "📬 주간 회고가 도착했어요" 푸시가 나가요.
    이 푸시를 누르면 열리는 회고 화면은 **새 프론트(PR #1)** 에만 있어요.
    → **4단계(함수 배포)부터 8단계(머지)까지는 한 번에** 하세요. 시간이 안 되면 3단계(마이그레이션)까지만 해 두세요. 마이그레이션만으로는 아무 일도 일어나지 않아요.
-2. **파일은 PR 브랜치(`claude/fervent-edison-6ia7y2`)에서 복사**하세요. main에는 아직 016·017이 없고, 함수도 옛날 버전이에요. (머지한 뒤라면 main에서 복사해도 돼요.)
+2. **파일은 main에서 복사**하세요. (PR #1은 머지돼서 main에 016·017과 새 함수가 들어 있어요.)
 3. **절대 하지 말 것**
    - service_role 키를 프론트(`VITE_...`)나 GitHub Secrets나 크론에 넣기
    - Edge Function Secrets의 `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` 수정·재발급 (기존 푸시 구독이 전부 끊겨요)
@@ -102,7 +105,7 @@ order by jobid;
 
 ### 1단계. 016 마이그레이션 실행 — 주간 회고·진열장
 
-1. [016_weekly_retro.sql (raw)](https://raw.githubusercontent.com/sominLy/office-link/claude/fervent-edison-6ia7y2/supabase/migrations/016_weekly_retro.sql) 열기 → Ctrl+A → Ctrl+C
+1. [016_weekly_retro.sql (raw)](https://raw.githubusercontent.com/sominLy/office-link/main/supabase/migrations/016_weekly_retro.sql) 열기 → Ctrl+A → Ctrl+C
 2. 새 스니펫에 붙여넣고 Run
 3. **"Potential issue detected / destructive operations"** 창이 뜨면 정상이에요. 파일 안의 `drop policy if exists` 같은 "있으면 지우고 다시 만들기" 줄 때문이에요. **Run query**를 누르세요.
 
@@ -110,7 +113,7 @@ order by jobid;
 
 ### 2단계. 017 마이그레이션 실행 — 업데이트 공지 고정
 
-1. [017_announcements.sql (raw)](https://raw.githubusercontent.com/sominLy/office-link/claude/fervent-edison-6ia7y2/supabase/migrations/017_announcements.sql) 복사 → 새 스니펫 → Run (같은 경고 창이 뜨면 Run query)
+1. [017_announcements.sql (raw)](https://raw.githubusercontent.com/sominLy/office-link/main/supabase/migrations/017_announcements.sql) 복사 → 새 스니펫 → Run (같은 경고 창이 뜨면 Run query)
 
 하는 일: 공지 전용 표를 만들고, 지금까지 사라졌던 지난 공지 12개를 되살려요. 두 번 실행해도 중복되지 않아요.
 
@@ -139,7 +142,7 @@ select
 
 **방법 A — 대시보드에서 (설치 없이, 추천)**
 
-1. [index.ts (raw, 새 버전)](https://raw.githubusercontent.com/sominLy/office-link/claude/fervent-edison-6ia7y2/supabase/functions/push-notify/index.ts) 열기 → Ctrl+A → Ctrl+C
+1. [index.ts (raw, 새 버전)](https://raw.githubusercontent.com/sominLy/office-link/main/supabase/functions/push-notify/index.ts) 열기 → Ctrl+A → Ctrl+C
    - 새 버전이 맞는지 확인: 안에 `publishAnnouncement`라는 글자가 있어야 해요.
 2. 대시보드 → **Edge Functions** → **push-notify** → **Code** 탭 → `index.ts` 안을 클릭 → Ctrl+A → Ctrl+V (전부 바꾸기)
 3. **Deploy updates** → 확인 창에서 다시 **Deploy updates** → "Successfully updated edge function"이 뜨면 끝
@@ -149,7 +152,7 @@ Code 탭에 "Failed to load function code"가 뜨면 방법 B를 쓰세요.
 **방법 B — 터미널(CLI)에서**
 
 ```bash
-git fetch origin && git switch claude/fervent-edison-6ia7y2 && git pull
+git switch main && git pull
 npx supabase@latest login
 npx supabase@latest functions deploy push-notify --project-ref ykyocsatvnqbuwvybirw --no-verify-jwt --use-api
 ```
@@ -335,3 +338,123 @@ from public.profiles;
 | 회고 시간 설정이 "이 기기에만 저장"으로 떠요 | 016을 아직 안 돌린 거예요. 016을 실행하면 다음에 앱을 열 때 자동으로 서버에 올라가요 |
 | 소식 탭 위 "업데이트 소식" 카드가 안 보여요 | 017을 안 돌렸거나, 앱이 아직 옛 버전이에요 |
 | 크론이 `timed_out = true` | Integrations → Cron → Jobs → 해당 작업 ⋮ → Edit → Timeout을 최대(5000)로. 그래도 안 되면 그 작업을 `select cron.unschedule('<이름>');`로 지우고 7단계 SQL(30초)로 다시 만들기 |
+
+---
+
+## C. 자정 자동 퇴근이 안 될 때 (018)
+
+증상: 멤버 카드에 **"출근 26시간"** 처럼 하루를 넘긴 출근이 남아 있어요.
+
+원래 자정 퇴근은 "크론 → 인터넷으로 push-notify 함수 호출" 한 길로만 돌았어요. 그래서 크론 작업, 키, 함수 설정 중 하나만 어긋나도 아무도 퇴근 처리가 안 됐어요.
+`018`은 **DB 안에서 SQL로 직접** 퇴근시키는 작업을 매일 00:01(KST)에 걸어 둬요. 함수나 인터넷 호출이 필요 없어요.
+push-notify의 자정 작업이 살아 있으면 그쪽이 0시에 먼저 처리하고 푸시까지 보내요. 018은 남은 것만 정리해요.
+
+1. [018_midnight_clockout_db.sql (raw)](https://raw.githubusercontent.com/sominLy/office-link/main/supabase/migrations/018_midnight_clockout_db.sql) 복사 → SQL Editor 새 스니펫 → Run
+   - 결과 `closed_now` 숫자 = **지금 바로 퇴근 처리된 근무 수**예요. 예를 들어 "출근 26시간"이 2명이었다면 `2`가 나와요.
+   - 각 근무는 **시작한 날의 자정**으로 닫혀요. 근무 시간이 26시간으로 기록되지 않아요.
+   - 오늘 0시 이후에 시작한 근무와, 여러 날 이어지는 '휴가 중' 상태는 건드리지 않아요.
+   - 여러 번 실행해도 안전해요. 두 번째부터는 `0`이 나와요.
+2. 예약이 걸렸는지 확인:
+
+```sql
+select jobname, schedule, active from cron.job where jobname = 'midnight-clockout-db';
+```
+
+`1 15 * * *`(UTC 15:01 = 한국 00:01)이고 `active = true`면 끝이에요.
+결과가 없으면 Database → Extensions에서 `pg_cron`이 켜져 있는지 확인한 뒤 018을 다시 실행하세요.
+
+3. 다음 날 아침에 잘 돌았는지 확인:
+
+```sql
+select d.status, d.return_message, d.start_time
+from cron.job_run_details d
+join cron.job j on j.jobid = d.jobid
+where j.jobname = 'midnight-clockout-db'
+order by d.start_time desc
+limit 3;
+```
+
+`succeeded`면 정상이에요. 이 작업은 SQL을 직접 실행하는 거라 `succeeded`가 곧 실제로 처리됐다는 뜻이에요.
+
+> 앱에도 안전장치가 있어요: 퇴근을 안 누른 채 날이 바뀌면, 다음에 앱을 열 때 그날 자정으로 퇴근 처리하고 알려줘요.
+> 다른 멤버 카드도 날을 넘긴 출근은 '퇴근'으로 보여줘요.
+> 018의 SQL 함수는 앱 사용자가 직접 부를 수 없게 막혀 있어요.
+> 단, push-notify 함수의 자정 작업(`midnight_clockout`)은 아직 호출한 사람을 확인하지 않아서 누구나 부를 수 있어요. 따로 보안 수정이 필요해요.
+
+## D. 크론(자동 실행)이 멈췄는지 확인하기
+
+자정 퇴근, 공지 자동 게시, 미출근·회고 푸시가 **한꺼번에** 안 되면 원인은 대개 하나예요. 크론이 push-notify 함수를 부르는 길이 끊긴 거예요.
+
+**1) 작업이 있는지**
+
+```sql
+select jobid, jobname, schedule, active,
+       substring(command from $r$action["']?\s*[:,]\s*["']([a-z_]+)$r$) as action
+from cron.job
+order by jobid;
+```
+
+`nudge`, `announce_poll`, `midnight_clockout`(또는 018의 `midnight-clockout-db`)이 `active = true`로 있어야 해요. 없으면 B의 7단계로 만드세요.
+
+**2) 실제로 성공하고 있는지** (최근 6시간 기록만 남아요)
+
+```sql
+select status_code, left(content, 80) as body, timed_out, error_msg, created
+from net._http_response
+order by created desc
+limit 10;
+```
+
+| 보이는 것 | 원인 | 고치는 법 |
+|---|---|---|
+| 아무 줄도 없음 | 크론 작업이 없거나 꺼져 있음 | 1)에서 확인 → B의 7단계 |
+| `401` | 함수의 **Verify JWT**가 켜져 있는데 크론이 키 없이 부름 (또는 예전 키가 만료됨) | Edge Functions → push-notify → Settings → Verify JWT **OFF** |
+| `404` | push-notify 함수가 없거나 이름이 다름 | B의 4단계로 다시 배포 |
+| `500` / `503` | 함수가 켜지다 실패 (대개 VAPID 시크릿 누락) | push-notify → **Logs** 탭에서 오류 확인 |
+| `timed_out = true` | 함수가 2초 안에 못 끝냄 | B의 7단계 SQL(제한 30초)로 작업을 다시 만들기 |
+| `200` | 정상 | — |
+
+## E. 운영 대시보드 켜기 (019)
+
+앱 안의 `/admin` 화면에서 방문자, 이용 시간, 기능별 사용, 가입 후 유지율, 오피스별 활동, 업데이트 전후 비교를 볼 수 있어요. **운영자로 등록한 계정만** 볼 수 있어요.
+
+### 먼저: 친구들에게 알리기
+019를 실행하는 순간부터 앱이 **이용 기록**(앱을 연 횟수, 화면별 조회 수, 화면을 본 시간·조작한 시간, 설치 앱인지 여부, 로그인 전 방문의 유입 경로)을 모으기 시작해요.
+채팅·할 일·회고의 **내용은 모으지 않아요**. 그래도 "앱 개선을 위해 이용 기록을 모은다"고 미리 알려 주세요. 공개 전에 개인정보 처리방침에도 이 내용을 적어야 해요.
+
+### 1단계. 019 실행
+[019_admin_dashboard.sql (raw)](https://raw.githubusercontent.com/sominLy/office-link/main/supabase/migrations/019_admin_dashboard.sql) 복사 → SQL Editor 새 스니펫 → Run → "Success" 확인. 여러 번 실행해도 안전해요.
+
+### 2단계. 나를 운영자로 등록
+이메일만 내 로그인 이메일로 바꿔서 한 번 실행하세요.
+
+```sql
+insert into public.app_admins (user_id)
+select id from auth.users where email = '내 로그인 이메일'
+on conflict do nothing;
+
+select count(*) as admins from public.app_admins; -- 1 이상이면 성공
+```
+
+### 3단계. 열어 보기
+앱 → **내 정보** → **📊 운영 대시보드** (또는 주소 뒤에 `/admin`). 운영자가 아니면 자물쇠 화면이 나와요.
+
+### 4단계. 공개 시작일 정하기 (공개할 때)
+대시보드 **업데이트** 탭 → **공개 시작일**에 날짜를 저장하면, 그 전에 가입한 사람(친구들)과 이후 가입한 사람을 위쪽 선택 상자에서 나눠 볼 수 있어요.
+
+### 5단계. 홍보 링크에 출처 붙이기
+링크 뒤에 `?utm_source=이름`을 붙이면 **기능** 탭에서 어디서 왔는지 나뉘어 보여요. 예:
+- 인스타 프로필 링크: `https://내도메인/?utm_source=instagram`
+- 에브리타임 글: `https://내도메인/?utm_source=everytime`
+
+### 알아둘 것
+- 출근·할 일·집중·소식·회고 숫자는 **처음부터** 다 보여요. 방문·이용 시간·화면별 조회는 019를 실행한 날부터 쌓여요.
+- 채팅은 7일 뒤 지워지기 때문에, 개수만 날짜별로 따로 남겨요 (019 실행 시 남아 있던 최근 7일치부터).
+- 업데이트 공지(🚀)는 차트에 자동으로 표시되고, **업데이트** 탭에서 전후 7일 하루 평균을 비교해 줘요. 홍보·시험 기간 같은 일은 📌 메모로 직접 추가하세요.
+- 기록이 쌓이는지 확인:
+
+```sql
+select day, count(*) as people, sum(visits) as visits, round(sum(active_sec) / 60.0) as active_min
+from public.app_usage_daily group by day order by day desc limit 7;
+```
+

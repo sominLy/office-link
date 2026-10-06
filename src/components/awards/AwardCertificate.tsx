@@ -194,7 +194,7 @@ function Ticket({ d }: { d: CertificateData }) {
             <p className={cn('border-t border-[#1f1f1f] mt-[0.8cqw] pt-[1cqw] font-bold leading-snug [word-break:keep-all]', label === 'AWARD' ? 'text-[5.8cqw]' : 'text-[3.3cqw]')}>{value}</p>
           </div>
         ))}
-        <p className="mt-auto pt-[2cqw] text-center text-[2.5cqw] uppercase">Issued by {d.issuer} · {d.serial}</p>
+        <p className="mt-auto pt-[2cqw] text-center text-[2.5cqw] uppercase leading-snug">Issued by {d.issuer} · {d.dateLabel}<br />{d.serial}</p>
       </div>
     </div>
   );
