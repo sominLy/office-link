@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,13 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // 운영자에게만 대시보드 바로가기 (019를 아직 안 돌렸으면 함수가 없어서 조용히 숨김)
+  useEffect(() => {
+    if (!user) return;
+    supabase.rpc('is_app_admin').then(({ data }) => setIsAdmin(data === true));
+  }, [user]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -199,6 +206,19 @@ export default function Profile() {
             <p className="text-xs text-gray-500">고인물 팁 14가지 + 아이폰 앱으로 설치하는 법</p>
           </span>
         </button>
+
+        {isAdmin && (
+          <button
+            onClick={() => navigate('/admin')}
+            className="w-full flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-3 hover:bg-gray-50 transition-colors"
+          >
+            <span className="text-2xl">📊</span>
+            <span className="text-left flex-1">
+              <p className="text-sm font-semibold text-gray-800">운영 대시보드</p>
+              <p className="text-xs text-gray-500">방문자·이용 시간·기능별 사용·유지율 (운영자만 보여요)</p>
+            </span>
+          </button>
+        )}
 
         {/* 주간 회고 · 진열장 */}
         <Card className="border-amber-100/50">
