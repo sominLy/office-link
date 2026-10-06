@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -14,22 +14,30 @@ import { BLUE_RAMP, fmt, longDay, Marker, shortDay } from '@/components/admin/fo
 
 // ===== 서버(admin_dashboard)가 돌려주는 모양 =====
 type Daily = {
-  day: string; dau: number; doers: number; visitors: number; anon_visitors: number; signups: number;
+  day: string; dau: number; visitors: number; anon_visitors: number; signups: number;
   clock_ins: number; work_min: number; tasks_created: number; tasks_done: number; focus_sessions: number; focus_min: number;
   chat: number; dm: number; feed_posts: number; reactions: number; retro_writes: number; active_min: number; visible_min: number;
 };
+// 지난 기간 대비: 오늘(진행 중)을 뺀 같은 길이끼리 비교. 그 기간에 기록이 없던 지표는 null
+type Cmp = {
+  days: number; from: string; to: string; prev_from: string; prev_to: string;
+  signups: number; signups_prev: number | null; active: number; active_prev: number | null;
+  dau_avg: number; dau_avg_prev: number | null; visitors: number; visitors_prev: number | null;
+  anon_visitors: number; anon_visitors_prev: number | null; clock_ins: number; clock_ins_prev: number | null;
+  tasks_done: number; tasks_done_prev: number | null;
+};
 type Kpi = {
-  users_total: number; signups: number; signups_prev: number; active: number; active_prev: number;
-  dau_avg: number; dau_avg_prev: number; wau: number; mau: number; visitors: number; visitors_prev: number;
-  anon_visitors: number; anon_visitors_prev: number; active_min_per_visit_day: number | null;
-  clock_ins: number; clock_ins_prev: number; tasks_done: number; tasks_done_prev: number; tasks_created: number;
+  users_total: number; signups: number; active: number; dau_avg: number; dau_avg_30: number; wau: number; mau: number;
+  visitors: number; anon_visitors: number; active_min_per_visit_day: number | null;
+  clock_ins: number; tasks_done: number; tasks_created: number;
   offices_total: number; offices_active_7d: number; together_week: number; together_prev_week: number; push_users: number;
+  cmp: Cmp;
 };
 type Weekly = { week: string; wau: number; active_offices: number; together_offices: number; signups: number };
-type Office = { id: string; name: string; created: string; members: number; active_7d: number; clock_days_week: number; together: boolean; last_active: string | null };
+type Office = { id: string; name: string; created: string; members: number; active_7d: number; clock_days_week: number; members_3days: number; together: boolean; last_active: string | null };
 type Dashboard = {
   generated_at: string; today: string; from: string; to: string; week: string; cohort: 'all' | 'seed' | 'new'; launch_day: string | null;
-  tracking_since: string | null; anon_since: string | null; chat_since: string | null;
+  first_day: string | null; tracking_since: string | null; anon_since: string | null; chat_since: string | null;
   kpi: Kpi; daily: Daily[]; weekly: Weekly[];
   features: { key: string; users: number; events: number }[];
   pages: { path: string; views: number; users: number; active_min: number }[];
@@ -61,7 +69,7 @@ const PAGE_LABELS: Record<string, string> = {
 const FUNNEL_LABELS: Record<string, string> = {
   signup: '가입', profile: '프로필 만듦', office: '오피스 참여', clock_in: '첫 출근', activated: '첫 주 2일+ 출근', week2: '둘째 주에도 사용',
 };
-const SOURCE_LABELS: Record<string, string> = { direct: '직접 방문·알 수 없음' };
+const SOURCE_LABELS: Record<string, string> = { direct: '직접·알 수 없음' };
 
 type ActivityMetric = { key: keyof Daily; name: string; unit: string; scale?: number };
 const ACTIVITY: ActivityMetric[] = [
@@ -106,14 +114,23 @@ function Delta({ now, prev, label = '지난 기간 대비' }: { now: number; pre
 
 function Stat({ label, value, sub, delta, hint }: { label: string; value: string; sub?: string; delta?: React.ReactNode; hint?: string }) {
   return (
-    <div className="rounded-xl border border-black/10 bg-[#fcfcfb] p-3" title={hint}>
+    <div className="rounded-xl border border-black/10 bg-[#fcfcfb] p-3 [word-break:keep-all]">
       <p className="text-xs text-[#52514e]">{label}</p>
       <p className="mt-1 text-2xl font-semibold text-[#0b0b0b] leading-tight">
         {value}{sub && <span className="text-sm font-normal text-[#52514e]"> {sub}</span>}
       </p>
-      <div className="mt-0.5 min-h-[1rem]">{delta}</div>
+      {delta && <div className="mt-0.5">{delta}</div>}
+      {hint && <p className="mt-0.5 text-[11px] leading-snug text-[#898781]">{hint}</p>}
     </div>
   );
+}
+
+// 연도가 다르면 연도까지
+function rangeLabel(from: string, to: string) {
+  const sameYear = from.slice(0, 4) === to.slice(0, 4);
+  const f = sameYear ? shortDay(from) : `${from.slice(2, 4)}.${shortDay(from)}`;
+  const t = sameYear ? shortDay(to) : `${to.slice(2, 4)}.${shortDay(to)}`;
+  return from === to ? t : `${f} ~ ${t}`;
 }
 
 const avg = (rows: Daily[], key: keyof Daily) => (rows.length ? rows.reduce((s, r) => s + Number(r[key] || 0), 0) / rows.length : null);
@@ -133,6 +150,8 @@ export default function Admin() {
   const [markerLabel, setMarkerLabel] = useState('');
   const [launchDay, setLaunchDay] = useState('');
   const [busy, setBusy] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const reqId = useRef(0);
 
   useEffect(() => {
     if (!authLoading && !user) navigate('/', { replace: true });
@@ -159,17 +178,22 @@ export default function Admin() {
 
   const load = useCallback(async () => {
     if (!user) return;
+    const id = ++reqId.current; // 기간을 빠르게 바꿔도 마지막으로 고른 것만 반영
     setLoading(true);
     const to = kstToday();
-    const from = range === 'today' ? to : range === 'all' ? '2020-01-01' : addDays(to, -(Number(range) - 1));
+    // '전체'는 시작일 없이 → 서버가 첫 기록 날부터 계산
+    const from = range === 'today' ? to : range === 'all' ? null : addDays(to, -(Number(range) - 1));
     const { data: d, error } = await supabase.rpc('admin_dashboard', { p_from: from, p_to: to, p_cohort: cohort });
+    if (id !== reqId.current) return;
     if (missingFn(error)) setProblem('missing');
     else if (error?.code === '42501' || /forbidden/.test(error?.message || '')) setProblem('forbidden');
     else if (error) {
-      toast.error('지표를 불러오지 못했어요: ' + error.message);
+      setLoadError(error.message);
+      toast.error('지표를 불러오지 못했어요');
     } else {
       const dash = d as Dashboard;
       setData(dash);
+      setLoadError(null);
       setLaunchDay(dash.launch_day || '');
     }
     setLoading(false);
@@ -205,13 +229,15 @@ export default function Admin() {
     };
     return [...data.markers].reverse().map(m => {
       const before = pick(addDays(m.day, -7), addDays(m.day, -1));
-      const after = pick(m.day, addDays(m.day, 6) < data.today ? addDays(m.day, 6) : data.today);
+      // 오늘은 아직 진행 중이라 어제까지만
+      const yesterday = addDays(data.today, -1);
+      const after = pick(m.day, addDays(m.day, 6) < yesterday ? addDays(m.day, 6) : yesterday);
       return { m, before, after, afterDays: after.length };
-    }).filter(c => c.before.length > 0 || c.after.length > 0);
+    }).filter(c => c.before.length > 0 && c.after.length > 0);
   }, [data]);
 
   const addMarker = async () => {
-    if (!markerLabel.trim()) return;
+    if (busy || !markerLabel.trim()) return;
     setBusy(true);
     const { error } = await supabase.rpc('admin_add_marker', { p_day: markerDay, p_label: markerLabel.trim() });
     setBusy(false);
@@ -266,8 +292,14 @@ export default function Admin() {
   }
 
   const k = data?.kpi;
-  const prevLabel = range === 'today' ? '어제 대비' : '지난 기간 대비';
+  // 오늘만 볼 때와 '전체'는 비교하지 않는다 (오늘은 진행 중, 전체는 앞 기간이 없음)
+  const showDelta = range !== 'today' && range !== 'all';
+  const cmp = k?.cmp;
+  const prevLabel = cmp ? `직전 ${cmp.days}일 대비${cmp.to !== data?.to ? ' (오늘 제외)' : ''}` : '';
+  const d = (key: 'signups' | 'active' | 'dau_avg' | 'visitors' | 'anon_visitors' | 'clock_ins' | 'tasks_done') =>
+    showDelta && cmp ? <Delta now={cmp[key]} prev={cmp[`${key}_prev`]} label={prevLabel} /> : undefined;
   const funnelTop = data?.funnel[0]?.users || 0;
+  const markerText = (day: string) => (data?.markers || []).filter(m => m.day === day).map(m => `${m.kind === 'release' ? '🚀' : '📌'} ${m.label}`).join(' / ');
   const week2 = data?.funnel.find(f => f.key === 'week2');
   // 이번 주가 며칠 지났는지 (월=1) — 덜 끝난 주를 지난주와 그대로 비교하면 '▼100%'처럼 보여서
   const weekDay = data ? Math.round((Date.parse(data.to) - Date.parse(data.week)) / 86_400_000) + 1 : 7;
@@ -280,7 +312,7 @@ export default function Admin() {
           <div className="min-w-0 flex-1">
             <h1 className="font-semibold text-[#0b0b0b] leading-tight">📊 운영 대시보드</h1>
             <p className="text-[11px] text-[#898781] leading-tight">
-              {data ? `${shortDay(data.from)} ~ ${shortDay(data.to)} · ${new Date(data.generated_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 기준` : '불러오는 중…'}
+              {data ? `${rangeLabel(data.from, data.to)} · ${new Date(data.generated_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 기준` : loadError ? '불러오지 못했어요' : '불러오는 중…'}
             </p>
           </div>
           <Button variant="ghost" size="icon" onClick={load} disabled={loading} aria-label="새로고침">
@@ -313,7 +345,13 @@ export default function Admin() {
       </header>
 
       <main className={cn('max-w-5xl mx-auto px-4 pt-4 space-y-4 transition-opacity', loading && data && 'opacity-60')}>
-        {!data || !k ? (
+        {!data && loadError ? (
+          <div className="rounded-xl border border-black/10 bg-white p-5 text-sm space-y-3">
+            <p className="font-semibold text-[#0b0b0b]">지표를 불러오지 못했어요</p>
+            <p className="text-xs text-[#52514e] break-all">{loadError}</p>
+            <Button size="sm" onClick={load} disabled={loading}>다시 시도</Button>
+          </div>
+        ) : !data || !k ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {Array.from({ length: 8 }).map((_, i) => <div key={i} className="h-24 rounded-xl bg-black/[0.04] animate-pulse" />)}
           </div>
@@ -341,33 +379,32 @@ export default function Admin() {
               </section>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <Stat label="활성 사용자" value={fmt(k.active)} sub="명" delta={<Delta now={k.active} prev={k.active_prev} label={prevLabel} />}
-                  hint="기간 안에 앱을 열었거나 출근·할 일·채팅 등을 한 사람" />
-                <Stat label="하루 평균 활성 (DAU)" value={fmt(k.dau_avg, 1)} sub="명" delta={<Delta now={k.dau_avg} prev={k.dau_avg_prev} label={prevLabel} />} />
+                <Stat label="활성 사용자" value={fmt(k.active)} sub="명" delta={d('active')}
+                  hint="출근·할 일·집중·채팅처럼 무언가를 한 사람" />
+                <Stat label="하루 평균 활성 (DAU)" value={fmt(k.dau_avg, 1)} sub="명" delta={d('dau_avg')} />
                 <Stat label="주간 · 월간 활성" value={`${fmt(k.wau)} · ${fmt(k.mau)}`} sub="명"
-                  delta={<span className="text-[11px] text-[#898781]">DAU/MAU {k.mau ? Math.round((k.dau_avg / k.mau) * 100) : 0}%</span>}
-                  hint="마지막 날 기준 최근 7일·30일" />
-                <Stat label="신규 가입" value={fmt(k.signups)} sub="명" delta={<Delta now={k.signups} prev={k.signups_prev} label={prevLabel} />} />
-                <Stat label="앱 방문자 (로그인)" value={fmt(k.visitors)} sub="명" delta={<Delta now={k.visitors} prev={k.visitors_prev} label={prevLabel} />}
-                  hint="로그인한 상태로 앱을 연 사람 — 기록 시작 이후만" />
-                <Stat label="로그인 전 방문자" value={fmt(k.anon_visitors)} sub="명" delta={<Delta now={k.anon_visitors} prev={k.anon_visitors_prev} label={prevLabel} />}
-                  hint="로그인 화면을 본 기기 수 — 홍보 링크로 들어온 사람" />
+                  hint={`최근 7일·30일 · 30일 평균 DAU/MAU ${k.mau ? Math.round((k.dau_avg_30 / k.mau) * 100) : 0}%`} />
+                <Stat label="신규 가입" value={fmt(k.signups)} sub="명" delta={d('signups')} />
+                <Stat label="앱 방문자 (로그인)" value={fmt(k.visitors)} sub="명" delta={d('visitors')}
+                  hint={data.tracking_since ? `앱을 연 사람 · ${shortDay(data.tracking_since)}부터 기록` : '앱을 연 사람 · 대시보드를 켠 뒤부터 기록'} />
+                <Stat label="로그인 전 방문자" value={fmt(k.anon_visitors)} sub="명" delta={d('anon_visitors')}
+                  hint="로그인 화면을 본 기기 수 (홍보 링크 유입)" />
                 <Stat label="1인 하루 이용 시간" value={k.active_min_per_visit_day == null ? '—' : fmt(k.active_min_per_visit_day, 1)} sub="분"
-                  delta={<span className="text-[11px] text-[#898781]">실제로 누르거나 스크롤한 시간</span>} />
-                <Stat label="출근" value={fmt(k.clock_ins)} sub="회" delta={<Delta now={k.clock_ins} prev={k.clock_ins_prev} label={prevLabel} />} />
-                <Stat label="할 일 완료" value={fmt(k.tasks_done)} sub="개" delta={<Delta now={k.tasks_done} prev={k.tasks_done_prev} label={prevLabel} />}
-                  hint={`같은 기간 새로 추가한 할 일 ${fmt(k.tasks_created)}개`} />
+                  hint="실제로 누르거나 입력한 시간" />
+                <Stat label="출근" value={fmt(k.clock_ins)} sub="회" delta={d('clock_ins')} />
+                <Stat label="할 일 완료" value={fmt(k.tasks_done)} sub="개" delta={d('tasks_done')}
+                  hint={`새로 추가한 할 일 ${fmt(k.tasks_created)}개`} />
                 <Stat label="전체 가입자" value={fmt(k.users_total)} sub="명" />
                 <Stat label="활성 오피스 (7일)" value={`${fmt(k.offices_active_7d)} / ${fmt(k.offices_total)}`} sub="개" />
                 <Stat label="알림 켠 사람" value={fmt(k.push_users)} sub="명"
-                  delta={<span className="text-[11px] text-[#898781]">전체의 {k.users_total ? Math.round((k.push_users / k.users_total) * 100) : 0}%</span>} />
+                  hint={`전체의 ${k.users_total ? Math.round((k.push_users / k.users_total) * 100) : 0}%`} />
               </div>
 
               <ChartCard
                 title="일별 사람 수"
-                subtitle="🚀 업데이트 공지 · 📌 내 메모 — 선 위에 올리면 내용이 보여요"
-                table={<DataTable head={['날짜', '활성 사용자', '신규 가입', '로그인 전 방문']}
-                  rows={[...chartRows].reverse().map(r => [longDay(r.day), fmt(r.dau), fmt(r.signups), fmt(r.anon_visitors)])} />}
+                subtitle={<>🚀 업데이트 공지 · 📌 내 메모 — 선 위에 올리면 내용이 보여요{data.anon_since && <><br />로그인 전 방문은 {shortDay(data.anon_since)}부터 기록돼요</>}</>}
+                table={<DataTable head={['날짜', '활성 사용자', '신규 가입', '로그인 전 방문', '메모']}
+                  rows={[...chartRows].reverse().map(r => [longDay(r.day), fmt(r.dau), fmt(r.signups), fmt(r.anon_visitors), markerText(r.day)])} />}
               >
                 <TrendChart data={chartRows} markers={data.markers}
                   series={[{ key: 'dau', name: '활성 사용자', unit: '명' }, { key: 'signups', name: '신규 가입', unit: '명' }, { key: 'anon_visitors', name: '로그인 전 방문', unit: '명' }]} />
@@ -378,7 +415,7 @@ export default function Admin() {
                 subtitle={metric.key === 'chat' || metric.key === 'dm'
                   ? `채팅은 7일 뒤 지워져서 개수는 ${data.chat_since ? shortDay(data.chat_since) : '대시보드 설치'}부터 쌓여요`
                   : metric.key === 'active_min' ? `이용 시간은 ${data.tracking_since ? shortDay(data.tracking_since) : '대시보드 설치'}부터 기록돼요` : undefined}
-                table={<DataTable head={['날짜', `${metric.name} (${metric.unit})`]} rows={[...activityRows].reverse().map(r => [longDay(r.day), fmt(r.value, 1)])} />}
+                table={<DataTable head={['날짜', `${metric.name} (${metric.unit})`, '메모']} rows={[...activityRows].reverse().map(r => [longDay(r.day), fmt(r.value, 1), markerText(r.day)])} />}
               >
                 <div className="flex flex-wrap gap-1.5 mb-3" role="radiogroup" aria-label="볼 지표">
                   {ACTIVITY.map(m => (
@@ -392,11 +429,11 @@ export default function Admin() {
               </ChartCard>
 
               <div className="grid md:grid-cols-2 gap-4">
-                <ChartCard title="주별 함께 출근한 오피스" subtitle="최근 12주 · 진한 막대가 이번 주"
+                <ChartCard title="주별 함께 출근한 오피스" subtitle="최근 12주 · 진한 막대가 이번 주(진행 중)"
                   table={<DataTable head={['주 (월요일)', '오피스']} rows={[...data.weekly].reverse().map(w => [shortDay(w.week), fmt(w.together_offices)])} />}>
                   <ColumnChart data={data.weekly} xKey="week" yKey="together_offices" name="함께 출근한 오피스" unit="개" xFormat={shortDay} highlight={w => w.week === data.week} />
                 </ChartCard>
-                <ChartCard title="주간 활성 사용자 (WAU)" subtitle="최근 12주"
+                <ChartCard title="주간 활성 사용자 (WAU)" subtitle="최근 12주 · 진한 막대가 이번 주(진행 중)"
                   table={<DataTable head={['주 (월요일)', '활성 사용자', '활성 오피스', '신규 가입']} rows={[...data.weekly].reverse().map(w => [shortDay(w.week), fmt(w.wau), fmt(w.active_offices), fmt(w.signups)])} />}>
                   <ColumnChart data={data.weekly} xKey="week" yKey="wau" name="주간 활성 사용자" unit="명" xFormat={shortDay} highlight={w => w.week === data.week} />
                 </ChartCard>
@@ -443,28 +480,32 @@ export default function Admin() {
             {/* ===== 가입·유지 ===== */}
             <TabsContent value="retention" className="space-y-4 mt-4">
               <ChartCard title="가입 후 어디까지 왔나" subtitle="기간 안에 가입한 사람 기준 · 앞 단계를 통과한 사람만 다음 단계에 셈"
-                table={<DataTable head={['단계', '사람', '가입 대비']} rows={data.funnel.map(f => [FUNNEL_LABELS[f.key] || f.key, fmt(f.users), funnelTop ? `${Math.round((f.users / funnelTop) * 100)}%` : '—'])} />}>
-                <BarList max={Math.max(1, funnelTop)} rows={data.funnel.map(f => ({
-                  label: FUNNEL_LABELS[f.key] || f.key, value: f.users,
-                  sub: f.key === 'week2' && !f.eligible ? '판단 전' : funnelTop ? `${Math.round((f.users / funnelTop) * 100)}%` : undefined,
-                }))} valueLabel={v => `${fmt(v)}명`} />
-                {week2 && week2.eligible != null && (
-                  <p className="mt-3 text-[11px] text-[#898781]">
-                    {week2.eligible > 0
-                      ? `'둘째 주에도 사용'은 가입한 지 14일이 지난 ${fmt(week2.eligible)}명 중에서만 셀 수 있어요`
-                      : "'둘째 주에도 사용'은 가입하고 14일이 지나야 알 수 있어요 — 아직 해당하는 사람이 없어요"}
-                  </p>
-                )}
+                table={<DataTable head={['단계', '사람', '비율', '기준 인원']} rows={data.funnel.map(f => {
+                  const base = f.eligible != null ? f.eligible : funnelTop;
+                  return [FUNNEL_LABELS[f.key] || f.key, fmt(f.users), base ? `${Math.round((f.users / base) * 100)}%` : '—', fmt(base)];
+                })} />}>
+                <BarList max={Math.max(1, funnelTop)} rows={data.funnel.map(f => {
+                  const judged = f.eligible != null; // '첫 주 2일+'·'둘째 주'는 판단할 수 있는 사람 중에서만
+                  const base = judged ? f.eligible ?? 0 : funnelTop;
+                  return {
+                    label: FUNNEL_LABELS[f.key] || f.key,
+                    value: f.users,
+                    sub: judged && !base ? '판단 전' : base ? `${Math.round((f.users / base) * 100)}%${judged ? ` (${fmt(base)}명 중)` : ''}` : undefined,
+                  };
+                })} valueLabel={v => `${fmt(v)}명`} />
+                <p className="mt-3 text-[11px] text-[#898781] [word-break:keep-all]">
+                  '첫 주 2일+ 출근'은 가입한 지 7일, '둘째 주에도 사용'은 14일이 지난 사람만 셀 수 있어서 그 사람들 중 비율로 보여요.
+                </p>
               </ChartCard>
 
-              <ChartCard title="가입 주차별 유지율" subtitle="그 주에 가입한 사람 중 n주 뒤에도 무언가를 한 사람 비율 · 진할수록 높음">
+              <ChartCard title="가입 주차별 유지율" subtitle="그 주에 가입한 사람 중 n주 뒤에도 무언가를 한 사람 비율 · 진할수록 높음 · 아직 안 끝난 주는 비워 둬요">
                 {data.retention.length === 0 ? <p className="text-xs text-[#898781] py-4 text-center">최근 10주 안에 가입한 사람이 없어요</p> : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs border-separate" style={{ borderSpacing: 2 }}>
                       <thead>
                         <tr>
-                          <th className="text-left font-medium text-[#52514e] px-1 whitespace-nowrap">가입 주</th>
-                          {Array.from({ length: 8 }).map((_, i) => <th key={i} className="font-medium text-[#52514e] px-1 whitespace-nowrap">{i === 0 ? '가입 주' : `${i}주 뒤`}</th>)}
+                          <th className="text-left font-medium text-[#52514e] px-1 whitespace-nowrap">가입한 주 (인원)</th>
+                          {Array.from({ length: 8 }).map((_, i) => <th key={i} className="font-medium text-[#52514e] px-1 whitespace-nowrap">{i === 0 ? '그 주' : `${i}주 뒤`}</th>)}
                         </tr>
                       </thead>
                       <tbody>
@@ -493,10 +534,10 @@ export default function Admin() {
 
             {/* ===== 오피스 ===== */}
             <TabsContent value="offices" className="space-y-4 mt-4">
-              <ChartCard title={`오피스 ${fmt(data.offices.length)}개`} subtitle="최근 7일에 활동한 멤버가 많은 순 · ✅ = 이번 주 함께 출근 조건 달성">
+              <ChartCard title={`오피스 ${fmt(data.offices.length)}개`} subtitle="최근 7일에 활동한 멤버가 많은 순 · ✅ = 이번 주 2명 이상이 3일+ 출근 (함께 출근 달성)">
                 <div className="overflow-x-auto">
-                  <DataTable head={['오피스', '멤버', '7일 활동', '이번 주 출근일', '함께 출근', '마지막 활동', '만든 날']}
-                    rows={data.offices.map(o => [o.name, fmt(o.members), fmt(o.active_7d), fmt(o.clock_days_week), o.together ? '✅' : '', o.last_active ? shortDay(o.last_active) : '—', shortDay(o.created)])} />
+                  <DataTable head={['오피스', '멤버', '7일 활동', '이번 주 3일+ 출근', '함께 출근', '마지막 활동', '만든 날']}
+                    rows={data.offices.map(o => [o.name, `${fmt(o.members)}명`, `${fmt(o.active_7d)}명`, `${fmt(o.members_3days)}명`, o.together ? '✅' : '', o.last_active ? shortDay(o.last_active) : '—', shortDay(o.created)])} />
                 </div>
               </ChartCard>
             </TabsContent>

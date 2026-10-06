@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase, SUPABASE_ANON_KEY, SUPABASE_URL } from '@/lib/supabase';
 import { kstToday } from '@/lib/dates';
 
 // 운영 대시보드용 이용 기록 — 019_admin_dashboard.sql의 track_usage / track_anon_visit에 보낸다.
@@ -52,8 +52,6 @@ function missingFunction(error: { code?: string; message?: string } | null): boo
 
 export async function sendUsage(visit: boolean, pages: Record<string, PageUsage>): Promise<void> {
   if (disabled) return;
-  const hasData = visit || Object.values(pages).some(p => p.v > 0 || p.s > 0);
-  if (!hasData) return;
   try {
     const { error } = await supabase.rpc('track_usage', {
       p_visit: visit,
@@ -76,6 +74,26 @@ const KNOWN_SOURCES: [RegExp, string][] = [
 export function sourceFromHost(host: string): string {
   for (const [re, name] of KNOWN_SOURCES) if (re.test(host)) return name;
   return host;
+}
+
+/**
+ * 탭을 닫거나 다른 앱으로 갈 때 — 페이지가 사라져도 끝까지 가도록 keepalive로 바로 보낸다.
+ * (supabase-js는 보내기 전에 세션을 확인하느라 기다릴 수 있어서, 닫히는 순간에는 놓칠 수 있다)
+ */
+export function beaconUsage(token: string, visit: boolean, pages: Record<string, PageUsage>): void {
+  if (disabled || !token) return;
+  try {
+    void fetch(`${SUPABASE_URL}/rest/v1/rpc/track_usage`, {
+      method: 'POST',
+      keepalive: true,
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_visit: visit, p_pages: pages, p_standalone: isStandalone(), p_device: deviceId() }),
+    }).then(res => {
+      if (res.status === 404) disabled = true;
+    }).catch(() => { /* 무시 */ });
+  } catch {
+    // 무시
+  }
 }
 
 /** 로그인 전 방문 — 하루에 한 번만, 어디서 왔는지(utm_source 또는 링크한 사이트)와 함께 */

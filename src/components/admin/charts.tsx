@@ -74,6 +74,8 @@ export function TrendChart<T extends { day: string }>({
   const byDay = new Map<string, Marker[]>();
   markers.forEach(m => byDay.set(m.day, [...(byDay.get(m.day) || []), m]));
   const days = new Set(data.map(d => d.day));
+  // 날이 많으면(90일·전체) 아이콘이 겹쳐서 선만 긋고, 내용은 툴팁·표에서
+  const showGlyphs = data.length <= 45;
   return (
     <>
       {series.length > 1 && <Legend items={series.map((s, i) => ({ name: s.name, color: SERIES[i] }))} />}
@@ -85,7 +87,7 @@ export function TrendChart<T extends { day: string }>({
             <YAxis allowDecimals={false} tick={{ fill: INK.muted, fontSize: 11 }} axisLine={false} tickLine={false} width={44} tickFormatter={v => fmt(v)} />
             {[...byDay.entries()].filter(([day]) => days.has(day)).map(([day, ms]) => (
               <ReferenceLine key={day} x={day} stroke={INK.axis} strokeWidth={1}
-                label={{ value: ms.map(markerGlyph).join(''), position: 'top', fontSize: 11 }} />
+                label={showGlyphs ? { value: ms.map(markerGlyph).join(''), position: 'top', fontSize: 11 } : undefined} />
             ))}
             <Tooltip
               cursor={{ stroke: INK.muted, strokeWidth: 1 }}
@@ -159,8 +161,8 @@ export function BarList({
   return (
     <ul className="space-y-2">
       {rows.map(r => (
-        <li key={r.label} className="grid grid-cols-[6rem_minmax(0,1fr)_auto] sm:grid-cols-[8rem_minmax(0,1fr)_auto] items-center gap-2" title={r.sub ? `${r.label}: ${r.sub}` : undefined}>
-          <span className="text-xs text-[#52514e] truncate">{r.label}</span>
+        <li key={r.label} className="grid grid-cols-[6rem_minmax(0,1fr)_auto] sm:grid-cols-[8rem_minmax(0,1fr)_auto] items-center gap-2" title={r.sub ? `${r.label}: ${r.sub}` : r.label}>
+          <span className="text-xs text-[#52514e] leading-tight [word-break:keep-all] break-words">{r.label}</span>
           <span className="h-3 block">
             <span className="h-3 block rounded-r-[4px]" style={{ width: `${r.value > 0 ? Math.max(2, (r.value / top) * 100) : 0}%`, background: color }} />
           </span>
@@ -177,7 +179,7 @@ export function BarList({
 /** 표 */
 export function DataTable({ head, rows }: { head: string[]; rows: (string | number | ReactNode)[][] }) {
   return (
-    <table className="w-full text-xs">
+    <table className="w-full text-xs [word-break:keep-all]">
       <thead className="sticky top-0 bg-[#fcfcfb]">
         <tr className="border-b border-black/10">
           {head.map((h, i) => <th key={h} className={cn('py-1.5 px-1 font-medium text-[#52514e] whitespace-nowrap', i === 0 ? 'text-left' : 'text-right')}>{h}</th>)}
@@ -186,7 +188,7 @@ export function DataTable({ head, rows }: { head: string[]; rows: (string | numb
       <tbody>
         {rows.map((r, ri) => (
           <tr key={ri} className="border-b border-black/5 last:border-0">
-            {r.map((c, ci) => <td key={ci} className={cn('py-1.5 px-1 tabular-nums text-[#0b0b0b]', ci === 0 ? 'text-left' : 'text-right whitespace-nowrap')}>{c}</td>)}
+            {r.map((c, ci) => <td key={ci} className={cn('py-1.5 px-1 tabular-nums text-[#0b0b0b]', ci === 0 ? 'text-left min-w-[5.5rem]' : 'text-right whitespace-nowrap')}>{c}</td>)}
           </tr>
         ))}
       </tbody>
