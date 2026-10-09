@@ -7,9 +7,9 @@ These rules describe how the code *actually* looks today, so a Figma design can 
 ## Must-know rules (read first)
 
 1. **Colors are raw Tailwind palette classes, not shadcn tokens.** Brand = `amber-*` (+ `orange-*`/`rose-*` in gradients), text = `gray-*`. Semantic token classes (`bg-primary`, `text-muted-foreground`, …) appear only twice in feature code. `--primary` is `hsl(25 70% 45%)` ≈ `#c36522`, *not* the brand amber-600 `#d97706`.
-2. **Primary CTA** = shadcn `<Button className="bg-amber-600 hover:bg-amber-700 text-white">` (the default `bg-primary` variant is overridden everywhere). Secondary = `variant="outline" className="border-amber-200 text-amber-700"`. Icon/toolbar = `variant="ghost" size="icon"`.
+2. **Primary CTA** = shadcn `<Button className="bg-amber-600 hover:bg-amber-700 text-white">` (the default `bg-primary` variant is overridden with amber everywhere in the main app; only the Admin island and the unused AuthError page leave it as `bg-primary`). Secondary = `variant="outline" className="border-amber-200 text-amber-700"`. Icon/toolbar = `variant="ghost" size="icon"`.
 3. **Light mode only.** `.dark` vars exist in `src/index.css` but no ThemeProvider is mounted, nothing toggles it, and app code has 0 `dark:` classes. Don't add dark variants unless asked.
-4. **Mobile-first, single column.** Content is `max-w-lg` (most pages) or `max-w-5xl` (Home, Tasks, Admin) with `mx-auto px-4`. Very few breakpoints (`sm:`/`md:` only).
+4. **Mobile-first, single column.** Content is `max-w-lg` (most pages) or `max-w-5xl` (Home, Tasks, Admin) with `mx-auto px-4`. Very few breakpoints (mostly `sm:`/`md:`; a single `lg:grid-cols-3` on the Home member grid).
 5. **Pages with `<BottomNav />` need `pb-24`/`pb-28` on `<main>`.** Layers: sticky header `z-10`, BottomNav `z-20`, FAB `z-30`, dialogs `z-50`. Toasts are offset above the nav.
 6. **Icons: `lucide-react` only**, named imports, sized with `w-4 h-4` classes (no `size` prop). **Emoji are part of the design language** (logo 🏢, headings, awards, stickers, default avatars) — write them as Unicode, never export as images.
 7. **Copy is Korean 해요체** with light emoji (e.g. `할 일을 추가했어요`). Use `[word-break:keep-all]`/`break-keep` (+ `[overflow-wrap:anywhere]` for user text) on Korean text that wraps.
@@ -56,18 +56,18 @@ There is **no token build/transform pipeline** (no Style Dictionary, no Figma va
 | Brand text, links, active tab | `text-amber-700` (`text-amber-600` for icons/accents) |
 | Tinted surface / pill | `bg-amber-50`, `bg-amber-100`; borders `border-amber-100/50…/70`, `border-amber-200` |
 | Selected chip | `bg-amber-500 text-white border-amber-500` |
-| Accent gradient (progress, FAB) | `bg-gradient-to-r from-amber-400 to-orange-500` |
+| Accent gradient (progress, FAB) | `from-amber-400 to-orange-500` (`bg-gradient-to-r` on progress bars, `bg-gradient-to-br` on the round FAB) |
 | Page background | `bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50` (semi-transparent so the body radial background shows) |
 | Onboarding background | `bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50` |
 | Title / body / meta text | `text-gray-800` / `text-gray-700` / `text-gray-500`, `text-gray-400` |
 | Positive / danger | `green-*` (e.g. 출근하기 `bg-green-600`), `red-*` (destructive, overdue) |
-| Card surface | white (`<Card>` or `bg-white`), `rounded-xl`/`rounded-2xl`, `border-amber-100/50`, `shadow-sm` |
+| Card surface | white: `<Card>` (built-in `rounded-lg` = 10px, never overridden) or hand-rolled `bg-white` blocks with `rounded-lg`/`rounded-xl` (`rounded-2xl` for hero sections/skeletons), `border-amber-100/50`, `shadow-sm` |
 | Spacing | 4px grid: `gap-2`, `gap-1.5`, `p-4`/`p-5` cards, `px-4` gutters, `space-y-4` (pages) / `space-y-6` (Home) |
 | Type scale | body `text-sm`, meta `text-xs` / `text-[11px]`, page `h1` `font-bold text-gray-800` (base size), section `h2/h3` `text-sm font-semibold text-gray-800`, numbers `text-2xl`–`text-3xl font-bold` |
 | Shadow | `shadow-sm` (cards), `shadow-lg` (FAB, popovers, auth card) |
 
 Status/priority colors are **domain maps — reuse, don't invent**:
-- Task status/priority/due chips: `STATUS_META`, `PRIORITY_META`, `DUE_CLS` in `src/lib/tasks.ts` (pattern `bg-X-50 text-X-600 border-X-200`).
+- Task status/priority/due chips: `STATUS_META`, `PRIORITY_META` (exported) and due-date classes via `dueInfo(task).cls` (backed by the private `DUE_CLS`) in `src/lib/tasks.ts` (pattern `bg-X-50 text-X-600 border-X-200`).
 - Member presence status (출근/업무 중/집중 중/휴식 중…): `statusColors`/`statusDots` in `src/components/MemberCard.tsx` (a near-duplicate exists in `src/pages/Home.tsx:35`).
 
 ```ts
@@ -97,7 +97,7 @@ The owner wants future UI polish to reference **SEED Design** (Karrot's design s
 | `dimension.x1…x16` | 4px steps (x4 = 16px gutter) | spacing |
 | `radius.r1…r6`, `full` | 4,8(r2),12(r3),16(r4),20(r5),24(r6)px | corners |
 | `font-size.t1…t14` | 11,12,13,14,16,18,20,22,24,26,28,32,40,48px | type scale (weights 400/500/700) |
-| ActionButton sizes | 32 / 36 / 40 / 52px tall | small / medium / large / xlarge |
+| ActionButton sizes | 32 / 36 / 40 / 52px tall | xsmall / small / medium / large |
 SEED principles to follow when polishing: one brand-solid primary action per screen, critical (red) only for destructive actions, neutral gray text hierarchy, white surfaces on a light gray page, minimal decoration (no competing gradients/colored borders), consistent 4px spacing and fixed radius steps. If `.claude/skills/seed-design/` exists in the repo, its instructions take precedence.
 
 ---
@@ -105,7 +105,7 @@ SEED principles to follow when polishing: one brand-solid primary action per scr
 ## 2. Component library
 
 ### shadcn/ui primitives — `src/components/ui/` (50 files, kebab-case)
-Stock shadcn on Radix, merged with `cn()` from `src/lib/utils.ts` (`clsx` + `tailwind-merge`). Only **18** are used by app code — prefer these:
+Stock shadcn on Radix, merged with `cn()` from `src/lib/utils.ts` (`clsx` + `tailwind-merge`). Only **16** are used by app code (plus `tooltip`, whose `TooltipProvider` is mounted but never renders a tooltip) — prefer these:
 
 | Component | Usage | Notes |
 |---|---|---|
@@ -170,14 +170,14 @@ const chipPicked = 'bg-amber-500 text-white border-amber-500';
 - **Forms**: `useState` + `<form onSubmit>` + native `required`/`maxLength`; Enter-to-submit outside forms uses `isSubmitEnter(e)` from `@/lib/utils` (Korean IME-safe). react-hook-form/zod are installed but unused.
 
 ### Documentation
-No Storybook, no component docs, no tests. Components carry a one-line Korean JSDoc (e.g. `/** 할 일 카드 — 동그라미로 완료, … */`).
+No Storybook, no component docs, no tests. Newer components (tasks/, retro/, awards/, MyTasks, OverdueTasksDialog, …) carry a one-line Korean JSDoc (e.g. `/** 할 일 카드 — 동그라미로 완료, … */`); many older root components have none. Add one to new components.
 
 ---
 
 ## 3. Frameworks & libraries
 - **UI**: React 18.3, react-router-dom 6.30 (`BrowserRouter`, flat routes in `src/App.tsx`), Radix via shadcn, `lucide-react` 0.462, `sonner` 1.7, `recharts` 2.15 (admin only, lazy chunk), `date-fns` (calendar locale only).
 - **Styling**: Tailwind 3.4 + `tailwindcss-animate`, `@tailwindcss/typography` (blog only), `tailwind-merge` + `clsx` (`cn`), `class-variance-authority` (shadcn only).
-- **Data**: `@supabase/supabase-js` 2.x (auth, PostgREST, realtime, storage). `@tanstack/react-query` provider is mounted but **unused** — fetch with `useState` + `useCallback(async)` + `useEffect`, queries in `src/lib/<feature>.ts`.
+- **Data**: `@supabase/supabase-js` 2.x (auth, PostgREST, realtime, storage). `@tanstack/react-query` provider is mounted but **unused** — fetch with `useState` + `useCallback(async)` + `useEffect`. Newer features (tasks, retro, awards, analytics) keep queries in `src/lib/<feature>.ts`, but many pages, components and both contexts still call `supabase.from()`/`.rpc()` inline. Put new queries in `src/lib/<feature>.ts`.
 - **Build**: Vite 5 with `@vitejs/plugin-react-swc`; alias `@` → `src` (`vite.config.ts`, `tsconfig*.json`). Platform plugins from `@metagptx/*` (dev-only source locator adding `data-mgx-*`; `atoms()` injects a 404 route at build — **don't add your own `path="*"` route without intent**, and keep `viteSourceLocator` before `react()`). `manualChunks` splits vendor bundles; `/admin` is `lazy()`.
 - **TS/Lint**: `strict: false`, `strictNullChecks: false`; ESLint flat config with `--quiet`; no Prettier, no Tailwind class-order rule.
 - **Scripts**: `npm run dev | build | lint | preview` (pnpm also configured; both lockfiles committed).
@@ -190,7 +190,7 @@ No Storybook, no component docs, no tests. Components carry a one-line Korean JS
 - Hosting/CDN: Vercel; `vercel.json` has only the SPA rewrite (no headers/caching). Don't edit `<title>`/description/favicon tags in `index.html` (managed by `data-mgx-overview` markers, see `README.md`).
 
 ## 5. Icons
-- **lucide-react only** (78 icons used). Named imports, bare PascalCase, no `Icon` suffix, no aliases, no `size` prop:
+- **lucide-react only** (~71 distinct icons in app code). Named imports, bare PascalCase, no `Icon` suffix, no aliases, no `size` prop:
 ```ts
 // src/components/tasks/TaskItem.tsx
 import { CalendarDays, CalendarClock, CheckCircle2, Circle, CircleDot, Flag, Lock, MoreVertical, Pencil, Repeat, Trash2 } from 'lucide-react';
@@ -202,7 +202,7 @@ import { CalendarDays, CalendarClock, CheckCircle2, Circle, CircleDot, Flag, Loc
 - **Emoji = personality layer**: brand logo is 🏢 in `w-12 h-12 bg-amber-100 rounded-xl` tile; headings/Dialog titles often start with an emoji (`📬 주간 회고`, `🏆 내 진열장`); awards, stickers, reactions and default avatars are emoji (`src/lib/awards.ts`, `src/lib/avatar.ts`). Rule: lucide for controls/navigation/status, emoji for brand/headings/rewards.
 
 ## 6. Styling approach
-- **Utility-first Tailwind** in `className`, merged with `cn()`; no CSS Modules / styled-components. Inline `style={{}}` only for dynamic values (chart widths, certificate art).
+- **Utility-first Tailwind** in `className`, merged with `cn()`; no CSS Modules / styled-components. Inline `style={{}}` mostly for dynamic values (chart/progress widths, series colors, animation delays), plus a few static decorative gradients (Trophies shelf, certificate art).
 - **Global CSS** (`src/index.css`):
   - `* { @apply border-border }`, body with layered fixed radial warm background, `h1–h4` `letter-spacing: -0.02em; text-wrap: balance`, `tabular-nums` for `[class*="tabular"]`, warm scrollbar, `prefers-reduced-motion` handling.
   - **Every enabled `<button>` scales to 0.97 on `:active`** (global).
@@ -215,7 +215,7 @@ import { CalendarDays, CalendarClock, CheckCircle2, Circle, CircleDot, Flag, Loc
 src/
   main.tsx, App.tsx          entry; providers (QueryClient > Auth > Office > Tooltip) + router + headless TrophyWatcher/UsageTracker
   index.css                  tokens + global styles + custom utilities
-  pages/                     one PascalCase file per route (Home, Tasks, Feed, Report, ClockOut, Profile, Guide, Retro, Trophies, Admin, Login, ProfileSetup, OfficeSetup, Index)
+  pages/                     PascalCase page files: routed (Index, Tasks, Feed, Report, ClockOut, Profile, OfficeSetup, Guide, Retro, Trophies, Admin), gate screens rendered by AuthenticatedApp under / (Login, ProfileSetup, OfficeSetup, Home), unused template leftovers (AuthCallback, AuthError), blog/ (dormant)
   components/                feature components (+ tasks/, retro/, awards/, admin/, blog/) and ui/ (shadcn)
   contexts/                  AuthContext (user, profile, session), OfficeContext (office, members, sessions, clockIn/Out, realtime)
   lib/                       camelCase helpers: supabase, dates (KST), tasks, retro, awards, analytics, push, avatar, utils, types
@@ -223,11 +223,11 @@ src/
 supabase/migrations/         0NN_name.sql, applied by hand in the SQL editor (see SUPABASE_SETUP.md); idempotent
 supabase/functions/push-notify/   Deno edge function (web push, cron actions)
 ```
-- **Routes** (`src/App.tsx`): `/` (gated: Login → ProfileSetup → OfficeSetup → Home via `AuthenticatedApp`), `/tasks`, `/feed`, `/report`, `/profile`, `/clock-out`, `/office-setup`, `/guide`, `/retro`, `/trophies`, `/admin` (lazy, operator-only). Other routes have no guards — pages early-return when `user`/`office` is null.
+- **Routes** (`src/App.tsx`): `/` (gated: Login → ProfileSetup → OfficeSetup → Home via `AuthenticatedApp`), `/tasks`, `/feed`, `/report`, `/profile`, `/clock-out`, `/office-setup`, `/guide`, `/retro`, `/trophies`, `/admin` (lazy, operator-only). Other routes have no guards: the page still renders, and its data loaders/handlers early-return when `user`/`office` is null.
 - **Adding a route**: update `src/App.tsx`, `KNOWN_PATHS` in `src/lib/analytics.ts`, `PAGE_LABELS` in `src/pages/Admin.tsx`, and the path whitelist in `analytics_path()` (`supabase/migrations/019_admin_dashboard.sql`, via a new migration); add to `TABS` in `BottomNav.tsx` if it's a tab.
 - **Feature split**: `pages/<Feature>.tsx` + `components/<feature>/*` + `lib/<feature>.ts` (queries, derived data, Korean error toasts) + `supabase/migrations/0NN_*.sql` + a `SUPABASE_SETUP.md` step. Client must degrade gracefully when a migration isn't applied yet (check PostgREST `PGRST202`/`42883`).
 - **Cross-component refresh**: after task mutations call `notifyTasksChanged()`; after achievement-worthy actions call `requestTrophyCheck()` (window events `office-link:tasks-changed`, `office-link:check-trophies`).
-- **Conventions**: Korean comments explaining *why*; components `export default function`; constants `UPPER_SNAKE`; `@/` imports; localStorage keys prefixed `office-link:` and wrapped in try/catch.
+- **Conventions**: Korean comments explaining *why*; components `export default function`; constants `UPPER_SNAKE`; `@/` imports. localStorage key naming is inconsistent (most are unprefixed like `tasks_view`, `retro_prefs`; only analytics/UsageTracker use `office-link:`) — for new keys use the `office-link:` prefix and wrap access in try/catch.
 
 ---
 
