@@ -2,6 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   SEED 브랜드 램프를 연결오피스 앰버로 교체
+
+   SEED의 fg-brand·bg-brand-solid는 carrot-600(#f60), 당근 캐럿 오렌지다.
+   구조 토큰(중립색·의미색·간격·반경·타이포)은 SEED를 그대로 쓰고 브랜드 색만 덮는다.
+   팔레트를 덮으면 brand-weak·stroke-brand 같은 파생 토큰까지 한 번에 따라온다.
+
+   어느 레이어에도 넣지 않는다. base.css가 레이어 없는 스타일이라 @layer 안에 두면
+   레이어 밖 스타일에 밀린다. 레이어 밖에 두고 main.tsx에서 base.css보다 나중에
+   불러서 순서로 이긴다.
+
+   carrot-600 = #b45309. 이 토큰이 bg-brand-solid와 fg-brand를 함께 움직이는데,
+   기존 브랜드색 #d97706은 흰 글씨를 얹으면 대비 3.18:1, 흰 배경에 글씨로 쓰면
+   같은 3.18:1로 본문 기준 4.5:1에 못 미친다. #b45309는 5.02:1이다.
+   기존 #d97706은 carrot-500으로 옮겨 그래픽·강조용으로 쓴다.
+   ───────────────────────────────────────────────────────────────────────────── */
+:root {
+  --seed-color-palette-carrot-100: #fffbeb;
+  --seed-color-palette-carrot-200: #fef3c7;
+  --seed-color-palette-carrot-300: #fde68a;
+  --seed-color-palette-carrot-400: #fcd34d;
+  --seed-color-palette-carrot-500: #d97706;
+  --seed-color-palette-carrot-600: #b45309;
+  --seed-color-palette-carrot-700: #92400e;
+  --seed-color-palette-carrot-800: #78350f;
+  --seed-color-palette-carrot-900: #601f09;
+  --seed-color-palette-carrot-1000: #451a03;
+}
+
 @layer base {
   :root {
     --background: 35 30% 98%;

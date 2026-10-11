@@ -1,5 +1,7 @@
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
+// SEED 토큰 변수가 먼저 깔려야 index.css에서 브랜드 램프를 덮어쓸 수 있다.
+import '@seed-design/css/base.css';
 import './index.css';
 
 // Prerendered blog pages are served as pure static HTML for SEO.

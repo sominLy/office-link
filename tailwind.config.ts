@@ -2,6 +2,7 @@ import type { Config } from 'tailwindcss';
 import tailwindcssAnimate from 'tailwindcss-animate';
 import tailwindcssAspectRatio from '@tailwindcss/aspect-ratio';
 import tailwindcssTypography from '@tailwindcss/typography';
+import seedPlugin from '@seed-design/tailwind3-plugin';
 
 export default {
   darkMode: ['class'],
@@ -95,5 +96,5 @@ export default {
       },
     },
   },
-  plugins: [tailwindcssAnimate, tailwindcssAspectRatio, tailwindcssTypography],
+  plugins: [tailwindcssAnimate, tailwindcssAspectRatio, tailwindcssTypography, seedPlugin],
 } satisfies Config;
