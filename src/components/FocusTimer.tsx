@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Play, Square, Timer } from 'lucide-react';
 import { toast } from 'sonner';
 import { kstStartOfTodayISO } from '@/lib/dates';
+import { track } from '@/lib/analytics';
 
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -43,10 +44,13 @@ export default function FocusTimer() {
       .single();
     // 방치된(12시간 초과) 세션은 자동 종료해 타이머가 비정상 복원되지 않게 한다
     if (data && (Date.now() - new Date(data.started_at).getTime()) / 1000 > MAX_FOCUS_SECONDS) {
-      await supabase
+      const { error } = await supabase
         .from('focus_sessions')
         .update({ ended_at: new Date().toISOString(), duration_seconds: MAX_FOCUS_SECONDS })
         .eq('id', data.id);
+      // 화면을 띄우는 중에 벌어지는 정리라 토스트는 사용자가 할 수 있는 일이 없는 소음이다.
+      // 실패해도 다음 조회에서 다시 시도되므로 흔적만 남기고 타이머는 비운다.
+      if (error) console.error('방치된 집중 세션 종료 실패', data.id, error);
       setActiveFocus(null);
       return;
     }
@@ -101,18 +105,19 @@ export default function FocusTimer() {
   const startFocus = async () => {
     if (!user || !office || starting) return;
     setStarting(true);
-    const now = new Date().toISOString();
+    // started_at은 보내지 않는다. 컬럼 기본값 now()로 DB 시계에서 받아야
+    // 016 트리거의 duration 계산이 기기 시계와 무관해진다.
     const { error } = await supabase.from('focus_sessions').insert({
       office_id: office.id,
       user_id: user.id,
       task_id: selectedTaskId === 'none' ? null : selectedTaskId,
-      started_at: now,
     });
     if (error) {
       // 23505 = DB unique 제약(one_open_focus) 위반: 다른 탭에서 이미 집중 시작함
       toast.error(error.code === '23505' ? '이미 집중 중입니다' : '집중 시작 실패');
       await fetchActiveFocus();
     } else {
+      track('focus_started');
       await changeStatus('집중 중');
       await fetchActiveFocus();
       toast.success('집중 시작!');
@@ -139,7 +144,9 @@ export default function FocusTimer() {
     await changeStatus('업무 중');
     setActiveFocus(null);
     await fetchTodayTotal();
-    toast.success(`${formatDuration(duration)} 집중 완료!`);
+    // 저장되는 값은 12시간으로 끊긴다. 상한을 안 걸고 보여주면 탭을 13시간 열어둔 뒤
+    // "13:00:00 집중 완료"라고 띄우고 바로 아래 합계는 12:00:00으로 나와 어긋난다.
+    toast.success(`${formatDuration(Math.min(MAX_FOCUS_SECONDS, duration))} 집중 완료!`);
   };
 
   return (
