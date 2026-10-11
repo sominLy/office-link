@@ -73,14 +73,22 @@ export default function MyTasksByOffice() {
 
   const toggleDone = async (task: Task) => {
     const newStatus = task.status === 'done' ? 'todo' : 'done';
-    await supabase.from('tasks')
+    const { error } = await supabase.from('tasks')
       .update({ status: newStatus, completed_at: newStatus === 'done' ? new Date().toISOString() : null })
       .eq('id', task.id);
+    if (error) {
+      toast.error('할 일 상태를 바꾸지 못했어요');
+      return;
+    }
     fetchAll();
   };
 
   const remove = async (id: string) => {
-    await supabase.from('tasks').delete().eq('id', id);
+    const { error } = await supabase.from('tasks').delete().eq('id', id);
+    if (error) {
+      toast.error('할 일을 삭제하지 못했어요');
+      return;
+    }
     fetchAll();
   };
 

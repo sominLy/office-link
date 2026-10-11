@@ -63,16 +63,24 @@ export default function OverdueTasksDialog({ open, onClose }: { open: boolean; o
   };
 
   const complete = async (task: Task) => {
-    await supabase
+    const { error } = await supabase
       .from('tasks')
       .update({ status: 'done', completed_at: new Date().toISOString() })
       .eq('id', task.id);
+    if (error) {
+      toast.error('완료 처리하지 못했어요');
+      return;
+    }
     setTasks(prev => prev.filter(t => t.id !== task.id));
     toast.success('완료 처리했어요 🎉');
   };
 
   const remove = async (task: Task) => {
-    await supabase.from('tasks').delete().eq('id', task.id);
+    const { error } = await supabase.from('tasks').delete().eq('id', task.id);
+    if (error) {
+      toast.error('삭제하지 못했어요');
+      return;
+    }
     setTasks(prev => prev.filter(t => t.id !== task.id));
     toast.success('삭제했어요');
   };

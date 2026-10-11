@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Circle, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { formatTimeLabel, getWeekEnd, getWeekStart } from '@/lib/dates';
 
 const priorityColors = {
@@ -44,13 +45,17 @@ export default function MyTasks({ compact = false }: { compact?: boolean }) {
   const toggleComplete = async (task: Task) => {
     const newStatus = task.status === 'done' ? 'todo' : 'done';
     const now = new Date().toISOString();
-    await supabase
+    const { error } = await supabase
       .from('tasks')
       .update({
         status: newStatus,
         completed_at: newStatus === 'done' ? now : null,
       })
       .eq('id', task.id);
+    if (error) {
+      toast.error('할 일 상태를 바꾸지 못했어요');
+      return;
+    }
     fetchTasks();
   };
 
