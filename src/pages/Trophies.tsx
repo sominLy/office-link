@@ -75,20 +75,20 @@ export default function Trophies() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
-      <header className="glass sticky top-0 z-10 border-b border-amber-100/70">
+      <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-2.5 flex items-center gap-1">
           <Button variant="ghost" size="icon" onClick={() => ((window.history.state?.idx ?? 0) > 0 ? navigate(-1) : navigate('/'))} aria-label="뒤로">
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div className="min-w-0 flex-1">
-            <h1 className="font-bold text-gray-800 leading-tight">🏆 내 진열장</h1>
+            <h1 className="font-bold text-fg-neutral leading-tight">🏆 내 진열장</h1>
             {stats && (
-              <p className="text-[11px] text-gray-400 leading-tight">
+              <p className="text-[11px] text-fg-neutral-muted leading-tight">
                 트로피 {trophies.length} · 스티커 {stats.stickers} · 상장 {stats.certificates}
               </p>
             )}
           </div>
-          <Button variant="ghost" size="sm" className="text-amber-700" onClick={() => navigate('/retro')}>
+          <Button variant="ghost" size="sm" className="text-fg-brand" onClick={() => navigate('/retro')}>
             📬 회고
           </Button>
         </div>
@@ -97,19 +97,19 @@ export default function Trophies() {
       <main className="max-w-lg mx-auto px-4 py-5 pb-28 space-y-5">
         {!stats ? (
           <div className="space-y-3">
-            <Skeleton className="h-48 rounded-2xl bg-amber-100/60" />
-            <Skeleton className="h-40 rounded-2xl bg-amber-100/40" />
+            <Skeleton className="h-48 rounded-2xl bg-bg-brand-weak" />
+            <Skeleton className="h-40 rounded-2xl bg-bg-brand-weak" />
           </div>
         ) : (
           <>
             {/* 트로피 선반 */}
-            <section className="rounded-2xl p-4 pb-2 shadow-sm border border-amber-200/60" style={{ background: 'linear-gradient(180deg, #fff7ea 0%, #fbe9cf 100%)' }}>
-              <h2 className="text-sm font-semibold text-amber-900 mb-1">트로피 선반</h2>
+            <section className="rounded-2xl p-4 pb-2 shadow-sm border border-stroke-neutral-subtle" style={{ background: 'linear-gradient(180deg, #fff7ea 0%, #fbe9cf 100%)' }}>
+              <h2 className="text-sm font-semibold text-fg-brand-contrast mb-1">트로피 선반</h2>
               {trophies.length === 0 ? (
                 <div className="text-center py-6">
                   <p className="text-4xl opacity-40">🏆</p>
-                  <p className="text-sm text-gray-600 mt-2">아직 비어 있어요</p>
-                  <p className="text-xs text-gray-400">출근하고, 할 일을 체크하고, 집중하면 하나씩 채워져요</p>
+                  <p className="text-sm text-fg-neutral-muted mt-2">아직 비어 있어요</p>
+                  <p className="text-xs text-fg-neutral-muted">출근하고, 할 일을 체크하고, 집중하면 하나씩 채워져요</p>
                 </div>
               ) : (
                 shelves.map((row, r) => (
@@ -121,7 +121,7 @@ export default function Trophies() {
                             {t.emoji}
                             {newIds.has(t.id) && <span className="absolute -top-1 -right-3 text-[9px] font-bold text-white bg-rose-500 rounded-full px-1">NEW</span>}
                           </span>
-                          <span className="mt-1 text-[11px] font-medium text-amber-900 leading-tight [word-break:keep-all]">{t.title}</span>
+                          <span className="mt-1 text-[11px] font-medium text-fg-brand-contrast leading-tight [word-break:keep-all]">{t.title}</span>
                         </div>
                       ))}
                     </div>
@@ -133,18 +133,18 @@ export default function Trophies() {
             </section>
 
             {/* 다음 목표 */}
-            <Card className="p-4 border-amber-100/60">
-              <h2 className="text-sm font-semibold text-gray-800 mb-3">다음 트로피까지</h2>
+            <Card className="p-4 border-stroke-neutral-subtle">
+              <h2 className="text-sm font-semibold text-fg-neutral mb-3">다음 트로피까지</h2>
               <ul className="space-y-3">
                 {progress.map(({ track, value, next, pct }) => (
                   <li key={track.key}>
                     <div className="flex items-center justify-between text-sm gap-2">
-                      <span className="text-gray-700">{track.name} <b className="text-gray-900 tabular-nums">{value}{track.unit}</b></span>
-                      <span className="text-xs text-gray-500 flex-shrink-0">
-                        {next ? <>{next.emoji} {next.title}까지 <b className="text-amber-700">{next.at - value}{track.unit}</b></> : '🎉 모두 달성!'}
+                      <span className="text-fg-neutral-muted">{track.name} <b className="text-fg-neutral tabular-nums">{value}{track.unit}</b></span>
+                      <span className="text-xs text-fg-neutral-muted flex-shrink-0">
+                        {next ? <>{next.emoji} {next.title}까지 <b className="text-fg-brand">{next.at - value}{track.unit}</b></> : '🎉 모두 달성!'}
                       </span>
                     </div>
-                    <div className="mt-1 h-2 rounded-full bg-amber-100 overflow-hidden" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={`${track.name} 다음 트로피 진행률`}>
+                    <div className="mt-1 h-2 rounded-full bg-bg-brand-weak overflow-hidden" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={`${track.name} 다음 트로피 진행률`}>
                       <div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500" style={{ width: `${pct}%` }} />
                     </div>
                   </li>
@@ -153,34 +153,34 @@ export default function Trophies() {
             </Card>
 
             {/* 스티커북 */}
-            <Card className="p-4 border-amber-100/60">
+            <Card className="p-4 border-stroke-neutral-subtle">
               <div className="flex items-baseline justify-between mb-3">
-                <h2 className="text-sm font-semibold text-gray-800">칭찬 스티커북</h2>
-                <span className="text-xs text-gray-400">{stickerCounts.size}/{STICKERS.length} 종류</span>
+                <h2 className="text-sm font-semibold text-fg-neutral">칭찬 스티커북</h2>
+                <span className="text-xs text-fg-neutral-muted">{stickerCounts.size}/{STICKERS.length} 종류</span>
               </div>
               <div className="grid grid-cols-5 gap-2">
                 {STICKERS.map(s => {
                   const n = stickerCounts.get(s.code) || 0;
                   return (
-                    <div key={s.code} className={cn('relative flex flex-col items-center rounded-xl border p-1.5 text-center', n > 0 ? 'bg-amber-50/70 border-amber-200' : 'bg-gray-50 border-dashed border-gray-200')}>
+                    <div key={s.code} className={cn('relative flex flex-col items-center rounded-xl border p-1.5 text-center', n > 0 ? 'bg-bg-brand-weak border-stroke-brand-weak' : 'bg-bg-neutral-muted border-dashed border-stroke-neutral-subtle')}>
                       <span className={cn('text-2xl leading-tight', n === 0 && 'grayscale opacity-30')}>{s.emoji}</span>
-                      <span className={cn('mt-0.5 text-[10px] leading-tight [word-break:keep-all]', n > 0 ? 'text-gray-700' : 'text-gray-400')}>{n > 0 ? s.title : '???'}</span>
-                      {n > 1 && <span className="absolute -top-1.5 -right-1.5 text-[10px] font-bold text-white bg-amber-500 rounded-full min-w-[1.1rem] px-1">×{n}</span>}
-                      {n === 0 && <Lock className="absolute top-1 right-1 w-2.5 h-2.5 text-gray-300" />}
+                      <span className={cn('mt-0.5 text-[10px] leading-tight [word-break:keep-all]', n > 0 ? 'text-fg-neutral-muted' : 'text-fg-neutral-muted')}>{n > 0 ? s.title : '???'}</span>
+                      {n > 1 && <span className="absolute -top-1.5 -right-1.5 text-[10px] font-bold text-white bg-bg-brand-solid rounded-full min-w-[1.1rem] px-1">×{n}</span>}
+                      {n === 0 && <Lock className="absolute top-1 right-1 w-2.5 h-2.5 text-fg-disabled" />}
                     </div>
                   );
                 })}
               </div>
-              <p className="mt-3 text-xs text-gray-400">매주 회고를 열면 그 주에 해낸 만큼 스티커가 붙어요</p>
+              <p className="mt-3 text-xs text-fg-neutral-muted">매주 회고를 열면 그 주에 해낸 만큼 스티커가 붙어요</p>
             </Card>
 
             {/* 상장 모음 */}
-            <Card className="p-4 border-amber-100/60">
-              <h2 className="text-sm font-semibold text-gray-800 mb-2">받은 상장 {certificates.length}장</h2>
+            <Card className="p-4 border-stroke-neutral-subtle">
+              <h2 className="text-sm font-semibold text-fg-neutral mb-2">받은 상장 {certificates.length}장</h2>
               {certificates.length === 0 ? (
                 <div className="text-center py-4">
-                  <p className="text-sm text-gray-500">아직 받은 상장이 없어요</p>
-                  <Button size="sm" variant="outline" className="mt-2 border-amber-200 text-amber-700" onClick={() => navigate('/retro')}>
+                  <p className="text-sm text-fg-neutral-muted">아직 받은 상장이 없어요</p>
+                  <Button size="sm" variant="outline" className="mt-2 border-stroke-brand-weak text-fg-brand" onClick={() => navigate('/retro')}>
                     📬 회고 열어보기
                   </Button>
                 </div>
@@ -188,15 +188,15 @@ export default function Trophies() {
                 <ul className="divide-y divide-amber-100">
                   {certificates.map(c => (
                     <li key={c.key}>
-                      <button onClick={() => openCertificate(c)} className="w-full flex items-center gap-3 py-2.5 text-left hover:bg-amber-50/50 rounded-lg px-1">
+                      <button onClick={() => openCertificate(c)} className="w-full flex items-center gap-3 py-2.5 text-left hover:bg-bg-brand-weak rounded-lg px-1">
                         <span className="text-2xl">{c.award.emoji}</span>
                         <span className="flex-1 min-w-0">
-                          <span className="block text-sm font-medium text-gray-800">{c.award.title}</span>
-                          <span className="block text-xs text-gray-400 truncate">
+                          <span className="block text-sm font-medium text-fg-neutral">{c.award.title}</span>
+                          <span className="block text-xs text-fg-neutral-muted truncate">
                             {shortPeriod(c.week)}{offices.length > 1 && ` · ${offices.find(o => o.id === c.officeId)?.name || ''}`} · 스티커 {c.rows.length}개
                           </span>
                         </span>
-                        <span className="text-xs text-amber-700 flex items-center">{loadingCert === c.key ? '여는 중…' : <>보기 <ChevronRight className="w-3.5 h-3.5" /></>}</span>
+                        <span className="text-xs text-fg-brand flex items-center">{loadingCert === c.key ? '여는 중…' : <>보기 <ChevronRight className="w-3.5 h-3.5" /></>}</span>
                       </button>
                     </li>
                   ))}

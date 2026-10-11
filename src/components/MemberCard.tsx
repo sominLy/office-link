@@ -7,11 +7,11 @@ import { displayName } from '@/lib/callsign';
 import { useOffice } from '@/contexts/OfficeContext';
 
 const statusColors: Record<StatusPreset, string> = {
-  '출근': 'bg-green-100 text-green-700',
-  '집중 중': 'bg-red-100 text-red-700',
-  '업무 중': 'bg-blue-100 text-blue-700',
+  '출근': 'bg-bg-positive-weak text-fg-positive',
+  '집중 중': 'bg-bg-critical-weak text-fg-critical',
+  '업무 중': 'bg-bg-informative-weak text-fg-informative',
   '휴식 중': 'bg-yellow-100 text-yellow-700',
-  '자리 비움': 'bg-gray-100 text-gray-600',
+  '자리 비움': 'bg-bg-neutral-muted text-fg-neutral-muted',
   '스터디/회의 중': 'bg-purple-100 text-purple-700',
   '점심 먹는 중': 'bg-orange-100 text-orange-700',
   '저녁 먹는 중': 'bg-rose-100 text-rose-700',
@@ -59,10 +59,10 @@ export default function MemberCard({ member }: { member: MemberStatus }) {
   const shownName = displayName(member.nickname, office?.title_mode, member.rank_index);
 
   return (
-    <Card className={`p-4 border transition-all ${isOffline ? 'opacity-50 border-slate-100' : 'border-amber-100/50 shadow-sm'}`}>
+    <Card className={`p-4 border transition-all ${isOffline ? 'opacity-50 border-slate-100' : 'border-stroke-neutral-subtle shadow-sm'}`}>
       <div className="flex items-center gap-3">
         <div className="relative">
-          <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-lg border border-amber-100">
+          <div className="w-10 h-10 rounded-full bg-bg-brand-weak flex items-center justify-center text-lg border border-stroke-brand-weak">
             {member.avatar_url ? (
               <img src={member.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
             ) : (
@@ -72,17 +72,17 @@ export default function MemberCard({ member }: { member: MemberStatus }) {
           <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${statusDots[member.current_status]}`} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-gray-800 text-sm truncate">{shownName}</p>
+          <p className="font-medium text-fg-neutral text-sm truncate">{shownName}</p>
           <div className="flex items-center gap-2 mt-0.5">
             <Badge variant="secondary" className={`text-xs px-1.5 py-0 ${statusColors[member.current_status]}`}>
               {member.current_status}
             </Badge>
             {!isOffline && (
-              <span className="text-xs text-gray-400">{elapsed}</span>
+              <span className="text-xs text-fg-neutral-muted">{elapsed}</span>
             )}
           </div>
           {member.is_focusing && (
-            <p className="text-xs text-red-500 mt-1 truncate">
+            <p className="text-xs text-fg-critical mt-1 truncate">
               🎯 {member.focus_task_title || '자유 집중'} 집중 중
             </p>
           )}

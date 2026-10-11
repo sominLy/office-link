@@ -38,8 +38,8 @@ interface TaskFormDialogProps {
 }
 
 const chipBase = 'rounded-full border px-2.5 py-1 text-xs font-medium transition-colors';
-const chipIdle = 'bg-white text-gray-600 border-gray-200 hover:border-amber-300';
-const chipPicked = 'bg-amber-500 text-white border-amber-500';
+const chipIdle = 'bg-bg-layer-default text-fg-neutral-muted border-stroke-neutral-subtle hover:border-stroke-brand-weak';
+const chipPicked = 'bg-bg-brand-solid text-white border-stroke-brand-solid';
 
 /** 할 일 추가·수정 공용 폼 — 자주 쓰는 날짜는 칩 한 번, 나머지는 선택 */
 export default function TaskFormDialog({ open, mode, initial, categories, onClose, onSubmit }: TaskFormDialogProps) {
@@ -92,7 +92,7 @@ export default function TaskFormDialog({ open, mode, initial, categories, onClos
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="task-category">카테고리 <span className="text-gray-400 font-normal">(선택)</span></Label>
+            <Label htmlFor="task-category">카테고리 <span className="text-fg-neutral-muted font-normal">(선택)</span></Label>
             <div className="relative">
               <Input
                 id="task-category"
@@ -104,7 +104,7 @@ export default function TaskFormDialog({ open, mode, initial, categories, onClos
               />
               {draft.category && (
                 <button type="button" onClick={() => set('category', '')} aria-label="카테고리 지우기"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-300 hover:text-gray-500">
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-fg-disabled hover:text-fg-neutral-muted">
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
@@ -113,7 +113,7 @@ export default function TaskFormDialog({ open, mode, initial, categories, onClos
               <div className="flex flex-wrap gap-1.5">
                 {categories.map((c) => (
                   <button key={c} type="button" onClick={() => set('category', draft.category === c ? '' : c)}
-                    className={cn(chipBase, 'max-w-[10rem] truncate', draft.category === c ? chipPicked : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100')}>
+                    className={cn(chipBase, 'max-w-[10rem] truncate', draft.category === c ? chipPicked : 'bg-bg-brand-weak text-fg-brand border-stroke-brand-weak hover:bg-bg-brand-weak')}>
                     {c}
                   </button>
                 ))}
@@ -141,11 +141,11 @@ export default function TaskFormDialog({ open, mode, initial, categories, onClos
               <Input type="time" value={draft.due_time} onChange={(e) => set('due_time', e.target.value)}
                 disabled={!draft.due_date} aria-label="마감 시간" className="w-32 flex-shrink-0" />
             </div>
-            <p className="text-xs text-gray-400 flex items-center gap-1 min-h-[1rem]">
+            <p className="text-xs text-fg-neutral-muted flex items-center gap-1 min-h-[1rem]">
               {draft.due_date
                 ? <>📅 {formatDateLabel(draft.due_date)}{timeLabel ? ` ${timeLabel}까지` : '까지'}
                     {draft.due_time && (
-                      <button type="button" onClick={() => set('due_time', '')} className="ml-1 text-amber-600 underline underline-offset-2">시간 빼기</button>
+                      <button type="button" onClick={() => set('due_time', '')} className="ml-1 text-fg-brand underline underline-offset-2">시간 빼기</button>
                     )}
                   </>
                 : '날짜 없이 이번 주 할 일로 담겨요'}
@@ -153,11 +153,11 @@ export default function TaskFormDialog({ open, mode, initial, categories, onClos
             {/* 수정할 때: 지금 마감일에서 며칠 미루기 */}
             {mode === 'edit' && draft.due_date && (
               <div className="flex items-center gap-1.5 pt-0.5">
-                <span className="text-xs text-gray-500 flex-shrink-0">미루기</span>
+                <span className="text-xs text-fg-neutral-muted flex-shrink-0">미루기</span>
                 <div className="grid grid-cols-4 gap-1.5 flex-1">
                   {[1, 2, 3, 7].map(n => (
                     <button key={n} type="button" onClick={() => set('due_date', addDays(draft.due_date, n))}
-                      className="rounded-lg border border-amber-200 bg-white py-1 text-xs font-medium text-amber-700 hover:bg-amber-50">
+                      className="rounded-lg border border-stroke-brand-weak bg-bg-layer-default py-1 text-xs font-medium text-fg-brand hover:bg-bg-brand-weak">
                       {n === 7 ? '+일주일' : `+${n}일`}
                     </button>
                   ))}
@@ -173,23 +173,23 @@ export default function TaskFormDialog({ open, mode, initial, categories, onClos
                 <button key={p} type="button" role="radio" aria-checked={draft.priority === p}
                   onClick={() => set('priority', p)}
                   className={cn('rounded-lg border py-2 text-sm font-medium transition-colors',
-                    draft.priority === p ? PRIORITY_META[p].picked : 'bg-white text-gray-600 border-gray-200 hover:border-amber-300')}>
+                    draft.priority === p ? PRIORITY_META[p].picked : 'bg-bg-layer-default text-fg-neutral-muted border-stroke-neutral-subtle hover:border-stroke-brand-weak')}>
                   {PRIORITY_META[p].label}
                 </button>
               ))}
             </div>
           </div>
 
-          <label htmlFor="task-private" className="flex items-center gap-3 rounded-lg border border-gray-100 bg-gray-50/60 px-3 py-2.5 cursor-pointer">
-            <Lock className="w-4 h-4 text-gray-400 flex-shrink-0" />
+          <label htmlFor="task-private" className="flex items-center gap-3 rounded-lg border border-stroke-neutral-subtle bg-gray-50/60 px-3 py-2.5 cursor-pointer">
+            <Lock className="w-4 h-4 text-fg-neutral-muted flex-shrink-0" />
             <span className="flex-1">
-              <span className="block text-sm text-gray-700">비공개</span>
-              <span className="block text-xs text-gray-400">켜면 오피스 멤버에게 안 보이고 나만 볼 수 있어요</span>
+              <span className="block text-sm text-fg-neutral-muted">비공개</span>
+              <span className="block text-xs text-fg-neutral-muted">켜면 오피스 멤버에게 안 보이고 나만 볼 수 있어요</span>
             </span>
             <Switch id="task-private" checked={draft.is_private} onCheckedChange={(v) => set('is_private', v)} />
           </label>
 
-          <Button type="submit" disabled={!draft.title.trim() || saving} className="w-full bg-amber-600 hover:bg-amber-700 text-white">
+          <Button type="submit" disabled={!draft.title.trim() || saving} className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
             {saving ? '저장 중…' : mode === 'create' ? '추가하기' : '저장'}
           </Button>
         </form>

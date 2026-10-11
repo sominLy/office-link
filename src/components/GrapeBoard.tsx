@@ -71,7 +71,7 @@ export default function GrapeBoard() {
                     className={`w-7 h-7 rounded-full flex items-center justify-center text-sm transition-all ${
                       filled
                         ? 'bg-gradient-to-br from-purple-400 to-purple-600 shadow-sm scale-100'
-                        : 'bg-white border-2 border-dashed border-purple-200 scale-90'
+                        : 'bg-bg-layer-default border-2 border-dashed border-purple-200 scale-90'
                     }`}
                   >
                     {filled ? '🍇' : ''}
@@ -83,11 +83,11 @@ export default function GrapeBoard() {
         </div>
 
         <div className="text-center space-y-1">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-fg-neutral-muted">
             {loaded ? (
               <>
                 <b className="text-purple-700">{current}</b> / {BOARD_SIZE}알
-                <span className="text-gray-400 text-xs ml-2">(출근 {workDays}일 · 할 일 완료 {doneTasks}개)</span>
+                <span className="text-fg-neutral-muted text-xs ml-2">(출근 {workDays}일 · 할 일 완료 {doneTasks}개)</span>
               </>
             ) : '세는 중...'}
           </p>
@@ -98,11 +98,11 @@ export default function GrapeBoard() {
 
         {/* 완성한 판 = 상장 */}
         {completedBoards > 0 && (
-          <div className="flex items-center justify-between bg-white/80 border border-amber-200 rounded-lg px-3 py-2">
-            <p className="text-sm text-gray-700">
-              🏆 완성한 포도판 <b className="text-amber-700">{completedBoards}개</b>
+          <div className="flex items-center justify-between bg-white/80 border border-stroke-brand-weak rounded-lg px-3 py-2">
+            <p className="text-sm text-fg-neutral-muted">
+              🏆 완성한 포도판 <b className="text-fg-brand">{completedBoards}개</b>
             </p>
-            <Button size="sm" variant="outline" className="border-amber-300 text-amber-700" onClick={() => { setCertNo(completedBoards); setCertOpen(true); }}>
+            <Button size="sm" variant="outline" className="border-stroke-brand-weak text-fg-brand" onClick={() => { setCertNo(completedBoards); setCertOpen(true); }}>
               <Award className="w-3.5 h-3.5 mr-1" /> 상장 보기
             </Button>
           </div>
@@ -130,13 +130,13 @@ export default function GrapeBoard() {
                 <Button variant="ghost" size="icon" disabled={certNo <= 1} onClick={() => setCertNo(n => n - 1)} aria-label="이전 상장">
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
-                <span className="text-sm text-gray-600">{certNo} / {completedBoards}</span>
+                <span className="text-sm text-fg-neutral-muted">{certNo} / {completedBoards}</span>
                 <Button variant="ghost" size="icon" disabled={certNo >= completedBoards} onClick={() => setCertNo(n => n + 1)} aria-label="다음 상장">
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               </div>
             )}
-            <p className="text-center text-[11px] text-gray-400">판을 채울 때마다 다른 디자인의 상장이 나와요 · 캡처해서 자랑해 보세요!</p>
+            <p className="text-center text-[11px] text-fg-neutral-muted">판을 채울 때마다 다른 디자인의 상장이 나와요 · 캡처해서 자랑해 보세요!</p>
           </DialogContent>
         </Dialog>
       </CardContent>

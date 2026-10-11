@@ -136,7 +136,7 @@ export default function Feed() {
     const name = nameOf(item.user_id, item.author?.nickname);
     switch (item.type) {
       case 'clock_in':
-        return <span><b>{name}</b>이(가) 출근했습니다 <Sun className="w-3.5 h-3.5 inline text-amber-500" /></span>;
+        return <span><b>{name}</b>이(가) 출근했습니다 <Sun className="w-3.5 h-3.5 inline text-fg-brand" /></span>;
       case 'clock_out':
         return <span><b>{name}</b>이(가) 퇴근했습니다 <Moon className="w-3.5 h-3.5 inline text-indigo-400" /></span>;
       case 'wave':
@@ -146,7 +146,7 @@ export default function Feed() {
           <span>
             <b>{name}</b>
             {item.target_user_id && <> → <b>{nameOf(item.target_user_id, item.target?.nickname)}</b></>}
-            <span className="text-gray-700"> : {item.content}</span>
+            <span className="text-fg-neutral-muted"> : {item.content}</span>
           </span>
         );
     }
@@ -154,13 +154,13 @@ export default function Feed() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
-      <header className="glass sticky top-0 z-10 border-b border-amber-100/70">
+      <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <h1 className="font-bold text-gray-800 flex items-center gap-1.5">
-            <MessageCircleHeart className="w-4 h-4 text-amber-600" /> 소식
+          <h1 className="font-bold text-fg-neutral flex items-center gap-1.5">
+            <MessageCircleHeart className="w-4 h-4 text-fg-brand" /> 소식
           </h1>
         </div>
       </header>
@@ -181,7 +181,7 @@ export default function Feed() {
         <AnnouncementBoard />
 
         {/* 글쓰기 */}
-        <Card className="p-4 border-amber-100/50 space-y-2">
+        <Card className="p-4 border-stroke-neutral-subtle space-y-2">
           <div className="flex gap-2">
             <Select value={targetId} onValueChange={setTargetId}>
               <SelectTrigger className="w-32 flex-shrink-0">
@@ -204,7 +204,7 @@ export default function Feed() {
               onKeyDown={(e) => isSubmitEnter(e) && post()}
               maxLength={200}
             />
-            <Button onClick={post} disabled={posting || !content.trim()} size="icon" className="bg-amber-600 hover:bg-amber-700 text-white flex-shrink-0">
+            <Button onClick={post} disabled={posting || !content.trim()} size="icon" className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white flex-shrink-0">
               <Send className="w-4 h-4" />
             </Button>
           </div>
@@ -212,32 +212,32 @@ export default function Feed() {
 
         {/* 피드 */}
         {items.length === 0 ? (
-          <p className="text-center text-gray-400 text-sm py-8">아직 소식이 없어요. 첫 응원을 남겨보세요!</p>
+          <p className="text-center text-fg-neutral-muted text-sm py-8">아직 소식이 없어요. 첫 응원을 남겨보세요!</p>
         ) : (
           <ul className="space-y-2">
             {items.map(item => (
               <li key={item.id} className={`flex items-start gap-2.5 rounded-xl px-3.5 py-2.5 border group ${
                 item.type === 'post'
-                  ? 'bg-white border-amber-100 shadow-sm'
+                  ? 'bg-bg-layer-default border-stroke-brand-weak shadow-sm'
                   : 'bg-white/50 border-transparent'
               }`}>
-                <span className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-base overflow-hidden flex-shrink-0 mt-0.5">
+                <span className="w-8 h-8 rounded-full bg-bg-brand-weak flex items-center justify-center text-base overflow-hidden flex-shrink-0 mt-0.5">
                   {item.author?.avatar_url ? (
                     <img src={item.author.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover" />
                   ) : item.type === 'wave' ? (
-                    <Hand className="w-4 h-4 text-amber-500" />
+                    <Hand className="w-4 h-4 text-fg-brand" />
                   ) : (
                     defaultAvatar(item.author?.nickname)
                   )}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-600 break-words">{renderLine(item)}</p>
-                  <p className="text-[11px] text-gray-400 mt-0.5">{timeAgo(item.created_at)}</p>
+                  <p className="text-sm text-fg-neutral-muted break-words">{renderLine(item)}</p>
+                  <p className="text-[11px] text-fg-neutral-muted mt-0.5">{timeAgo(item.created_at)}</p>
                 </div>
                 {item.user_id === user?.id && item.type === 'post' && (
                   // 모바일엔 호버가 없으니 항상 보이게
                   <button onClick={() => removeItem(item.id)} aria-label="글 삭제"
-                    className="text-gray-300 hover:text-red-500 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 flex-shrink-0 p-1 -m-1">
+                    className="text-fg-disabled hover:text-fg-critical sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 flex-shrink-0 p-1 -m-1">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 )}
@@ -246,7 +246,7 @@ export default function Feed() {
           </ul>
         )}
         {hasMore && (
-          <Button variant="ghost" onClick={loadMore} disabled={loadingMore} className="w-full text-amber-700">
+          <Button variant="ghost" onClick={loadMore} disabled={loadingMore} className="w-full text-fg-brand">
             {loadingMore ? '불러오는 중…' : '이전 소식 더 보기'}
           </Button>
         )}

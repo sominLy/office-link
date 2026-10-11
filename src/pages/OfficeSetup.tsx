@@ -37,10 +37,10 @@ export default function OfficeSetup() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 p-4">
       <Card className="w-full max-w-md shadow-lg border-0">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-3 w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
+          <div className="mx-auto mb-3 w-12 h-12 bg-bg-brand-weak rounded-xl flex items-center justify-center">
             <span className="text-2xl">🏢</span>
           </div>
-          <CardTitle className="text-xl font-bold text-gray-800">오피스 참여</CardTitle>
+          <CardTitle className="text-xl font-bold text-fg-neutral">오피스 참여</CardTitle>
           <CardDescription>오피스에 가입하거나 새로 만들어 보세요</CardDescription>
         </CardHeader>
         <CardContent>
@@ -62,7 +62,7 @@ export default function OfficeSetup() {
                     maxLength={6}
                   />
                 </div>
-                <Button type="submit" className="w-full bg-amber-600 hover:bg-amber-700 text-white" disabled={loading}>
+                <Button type="submit" className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" disabled={loading}>
                   {loading ? '처리 중...' : '가입하기'}
                 </Button>
               </form>
@@ -80,7 +80,7 @@ export default function OfficeSetup() {
                     maxLength={30}
                   />
                 </div>
-                <Button type="submit" className="w-full bg-amber-600 hover:bg-amber-700 text-white" disabled={loading}>
+                <Button type="submit" className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" disabled={loading}>
                   {loading ? '처리 중...' : '만들기'}
                 </Button>
               </form>

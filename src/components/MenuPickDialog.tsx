@@ -47,7 +47,7 @@ export default function MenuPickDialog({ open, onClose }: { open: boolean; onClo
       <DialogContent className="max-w-xs text-center">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-center gap-2">
-            <UtensilsCrossed className="w-4 h-4 text-amber-600" /> 메뉴 추천
+            <UtensilsCrossed className="w-4 h-4 text-fg-brand" /> 메뉴 추천
           </DialogTitle>
         </DialogHeader>
         <Tabs value={tab} onValueChange={changeTab}>
@@ -58,12 +58,12 @@ export default function MenuPickDialog({ open, onClose }: { open: boolean; onClo
           </TabsList>
         </Tabs>
         <div className="py-6">
-          <p className="text-sm text-gray-400 mb-2">{TAB_LABELS[tab].title}</p>
-          <p className={`text-3xl font-bold ${rolling ? 'text-amber-400' : 'text-gray-800'}`}>
+          <p className="text-sm text-fg-neutral-muted mb-2">{TAB_LABELS[tab].title}</p>
+          <p className={`text-3xl font-bold ${rolling ? 'text-amber-400' : 'text-fg-neutral'}`}>
             {pick || '🎲'}
           </p>
         </div>
-        <Button onClick={roll} disabled={rolling} className="w-full bg-amber-600 hover:bg-amber-700 text-white">
+        <Button onClick={roll} disabled={rolling} className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
           <Dices className="w-4 h-4 mr-1" />
           {pick ? '다시 뽑기' : '뽑기!'}
         </Button>

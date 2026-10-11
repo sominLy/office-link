@@ -126,17 +126,17 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
-      <header className="glass sticky top-0 z-10 border-b border-amber-100/70">
+      <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <h1 className="font-bold text-gray-800">내 계정</h1>
+          <h1 className="font-bold text-fg-neutral">내 계정</h1>
         </div>
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-6 pb-24 space-y-4">
-        <Card className="border-amber-100/50">
+        <Card className="border-stroke-neutral-subtle">
           <CardHeader>
             <CardTitle className="text-base">프로필</CardTitle>
             <CardDescription>{user?.email}</CardDescription>
@@ -145,7 +145,7 @@ export default function Profile() {
             {/* 프로필 사진 */}
             <div className="flex items-center gap-4">
               <div className="relative">
-                <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center text-3xl overflow-hidden">
+                <div className="w-20 h-20 rounded-full bg-bg-brand-weak flex items-center justify-center text-3xl overflow-hidden">
                   {profile?.avatar_url ? (
                     <img src={profile.avatar_url} alt="" className="w-20 h-20 object-cover" />
                   ) : (
@@ -156,7 +156,7 @@ export default function Profile() {
                   type="button"
                   onClick={() => fileRef.current?.click()}
                   disabled={uploading}
-                  className="absolute -bottom-1 -right-1 w-8 h-8 bg-amber-600 hover:bg-amber-700 text-white rounded-full flex items-center justify-center shadow"
+                  className="absolute -bottom-1 -right-1 w-8 h-8 bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white rounded-full flex items-center justify-center shadow"
                   title="사진 변경"
                 >
                   <Camera className="w-4 h-4" />
@@ -164,11 +164,11 @@ export default function Profile() {
                 <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
               </div>
               <div className="space-y-1.5">
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-fg-neutral-muted">
                   {uploading ? '업로드 중...' : '카메라 버튼을 눌러 사진을 변경하세요 (5MB 이하)'}
                 </p>
                 {profile?.avatar_url && (
-                  <Button type="button" variant="ghost" size="sm" onClick={handleAvatarRemove} className="text-gray-400 hover:text-red-500 h-7 px-2">
+                  <Button type="button" variant="ghost" size="sm" onClick={handleAvatarRemove} className="text-fg-neutral-muted hover:text-fg-critical h-7 px-2">
                     <X className="w-3.5 h-3.5 mr-1" />
                     사진 삭제 (기본 이미지로)
                   </Button>
@@ -187,7 +187,7 @@ export default function Profile() {
                   maxLength={20}
                   required
                 />
-                <Button type="submit" disabled={saving || nickname.trim() === profile?.nickname} className="bg-amber-600 hover:bg-amber-700 text-white">
+                <Button type="submit" disabled={saving || nickname.trim() === profile?.nickname} className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
                   {saving ? '저장 중...' : '저장'}
                 </Button>
               </div>
@@ -198,30 +198,30 @@ export default function Profile() {
         {/* 공략집 바로가기 */}
         <button
           onClick={() => navigate('/guide')}
-          className="w-full flex items-center gap-3 bg-gradient-to-r from-amber-100 to-orange-100 border border-amber-200 rounded-xl px-4 py-3 hover:from-amber-200 hover:to-orange-200 transition-colors"
+          className="w-full flex items-center gap-3 bg-gradient-to-r from-amber-100 to-orange-100 border border-stroke-brand-weak rounded-xl px-4 py-3 hover:from-amber-200 hover:to-orange-200 transition-colors"
         >
           <span className="text-2xl">📖</span>
           <span className="text-left flex-1">
-            <p className="text-sm font-semibold text-gray-800">200% 활용 공략집</p>
-            <p className="text-xs text-gray-500">고인물 팁 14가지 + 아이폰 앱으로 설치하는 법</p>
+            <p className="text-sm font-semibold text-fg-neutral">200% 활용 공략집</p>
+            <p className="text-xs text-fg-neutral-muted">고인물 팁 14가지 + 아이폰 앱으로 설치하는 법</p>
           </span>
         </button>
 
         {isAdmin && (
           <button
             onClick={() => navigate('/admin')}
-            className="w-full flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-3 hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center gap-3 bg-bg-layer-default border border-stroke-neutral-subtle rounded-xl px-4 py-3 hover:bg-bg-neutral-muted transition-colors"
           >
             <span className="text-2xl">📊</span>
             <span className="text-left flex-1">
-              <p className="text-sm font-semibold text-gray-800">운영 대시보드</p>
-              <p className="text-xs text-gray-500">방문자·이용 시간·기능별 사용·유지율 (운영자만 보여요)</p>
+              <p className="text-sm font-semibold text-fg-neutral">운영 대시보드</p>
+              <p className="text-xs text-fg-neutral-muted">방문자·이용 시간·기능별 사용·유지율 (운영자만 보여요)</p>
             </span>
           </button>
         )}
 
         {/* 주간 회고 · 진열장 */}
-        <Card className="border-amber-100/50">
+        <Card className="border-stroke-neutral-subtle">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">📬 주간 회고 · 🏆 진열장</CardTitle>
             <CardDescription>
@@ -229,9 +229,9 @@ export default function Profile() {
             </CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-3 gap-2">
-            <Button variant="outline" size="sm" className="border-amber-200 text-amber-700" onClick={() => setRetroSettingsOpen(true)}>시간 바꾸기</Button>
-            <Button variant="outline" size="sm" className="border-amber-200 text-amber-700" onClick={() => navigate('/retro')}>회고 보기</Button>
-            <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white" onClick={() => navigate('/trophies')}>진열장</Button>
+            <Button variant="outline" size="sm" className="border-stroke-brand-weak text-fg-brand" onClick={() => setRetroSettingsOpen(true)}>시간 바꾸기</Button>
+            <Button variant="outline" size="sm" className="border-stroke-brand-weak text-fg-brand" onClick={() => navigate('/retro')}>회고 보기</Button>
+            <Button size="sm" className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" onClick={() => navigate('/trophies')}>진열장</Button>
           </CardContent>
         </Card>
         <RetroSettingsDialog open={retroSettingsOpen} onClose={() => setRetroSettingsOpen(false)} />
@@ -243,10 +243,10 @@ export default function Profile() {
         <MyTasksByOffice />
 
         {/* 근무 시간 알림 */}
-        <Card className="border-amber-100/50">
+        <Card className="border-stroke-neutral-subtle">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <BellRing className="w-4 h-4 text-amber-600" />
+              <BellRing className="w-4 h-4 text-fg-brand" />
               근무 시간 알림
             </CardTitle>
             <CardDescription>
@@ -256,7 +256,7 @@ export default function Profile() {
           <CardContent>
             <div className="flex gap-2">
               <Input type="time" value={workStart} onChange={(e) => setWorkStart(e.target.value)} className="flex-1" />
-              <Button onClick={handleSaveWorkStart} disabled={savingTime} className="bg-amber-600 hover:bg-amber-700 text-white">
+              <Button onClick={handleSaveWorkStart} disabled={savingTime} className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
                 {savingTime ? '저장 중...' : '저장'}
               </Button>
             </div>
@@ -264,9 +264,9 @@ export default function Profile() {
         </Card>
 
         {/* 계정 삭제 */}
-        <Card className="border-red-100">
+        <Card className="border-stroke-critical-weak">
           <CardHeader>
-            <CardTitle className="text-base text-red-600">계정 삭제</CardTitle>
+            <CardTitle className="text-base text-fg-critical">계정 삭제</CardTitle>
             <CardDescription>
               프로필, 출퇴근 기록, 할 일, 집중 기록이 모두 삭제되며 되돌릴 수 없어요.
             </CardDescription>
@@ -274,7 +274,7 @@ export default function Profile() {
           <CardContent>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline" className="border-red-200 text-red-600 hover:bg-red-50">
+                <Button variant="outline" className="border-stroke-critical-weak text-fg-critical hover:bg-bg-critical-weak">
                   <Trash2 className="w-4 h-4 mr-1" />
                   계정 삭제하기
                 </Button>
@@ -288,7 +288,7 @@ export default function Profile() {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>취소</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDeleteAccount} disabled={deleting} className="bg-red-600 hover:bg-red-700">
+                  <AlertDialogAction onClick={handleDeleteAccount} disabled={deleting} className="bg-bg-critical-solid hover:bg-bg-critical-solid">
                     {deleting ? '삭제 중...' : '삭제'}
                   </AlertDialogAction>
                 </AlertDialogFooter>

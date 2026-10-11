@@ -51,7 +51,7 @@ export function Legend({ items }: { items: { name: string; color: string }[] }) 
 
 function TooltipBox({ title, rows, notes }: { title: string; rows: { name: string; value: string; color?: string }[]; notes?: string[] }) {
   return (
-    <div className="rounded-lg border border-black/10 bg-white px-3 py-2 shadow-md text-xs min-w-[8rem]">
+    <div className="rounded-lg border border-black/10 bg-bg-layer-default px-3 py-2 shadow-md text-xs min-w-[8rem]">
       <p className="text-[#52514e] mb-1">{title}</p>
       {rows.map(r => (
         <p key={r.name} className="flex items-center gap-2 leading-5">

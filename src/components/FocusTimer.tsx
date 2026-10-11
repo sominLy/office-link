@@ -181,24 +181,24 @@ export default function FocusTimer() {
   };
 
   return (
-    <Card className="p-5 border-amber-100/50 shadow-sm">
+    <Card className="p-5 border-stroke-neutral-subtle shadow-sm">
       <div className="flex items-center gap-2 mb-3">
-        <Timer className="w-4 h-4 text-amber-600" />
-        <h3 className="font-semibold text-gray-800 text-sm">집중 타이머</h3>
-        <span className="text-xs text-gray-400 ml-auto">오늘 총 {formatDuration(todayTotal + (activeFocus ? elapsed : 0))}</span>
+        <Timer className="w-4 h-4 text-fg-brand" />
+        <h3 className="font-semibold text-fg-neutral text-sm">집중 타이머</h3>
+        <span className="text-xs text-fg-neutral-muted ml-auto">오늘 총 {formatDuration(todayTotal + (activeFocus ? elapsed : 0))}</span>
       </div>
 
       {activeFocus ? (
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-3xl font-mono font-bold text-red-600">{formatDuration(elapsed)}</p>
+            <p className="text-3xl font-mono font-bold text-fg-critical">{formatDuration(elapsed)}</p>
             {activeFocus.task_id && (
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-fg-neutral-muted mt-1">
                 {tasks.find(t => t.id === activeFocus.task_id)?.title || '업무'}
               </p>
             )}
           </div>
-          <Button onClick={stopFocus} variant="outline" className="border-red-200 text-red-600 hover:bg-red-50">
+          <Button onClick={stopFocus} variant="outline" className="border-stroke-critical-weak text-fg-critical hover:bg-bg-critical-weak">
             <Square className="w-4 h-4 mr-1" />
             종료
           </Button>
@@ -216,7 +216,7 @@ export default function FocusTimer() {
               ))}
             </SelectContent>
           </Select>
-          <Button onClick={startFocus} disabled={starting} className="bg-red-600 hover:bg-red-700 text-white">
+          <Button onClick={startFocus} disabled={starting} className="bg-bg-critical-solid hover:bg-bg-critical-solid text-white">
             <Play className="w-4 h-4 mr-1" />
             집중 시작
           </Button>

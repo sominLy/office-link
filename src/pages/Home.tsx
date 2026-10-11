@@ -33,11 +33,11 @@ import { isSubmitEnter } from '@/lib/utils';
 const STATUS_OPTIONS: StatusPreset[] = ['출근', '집중 중', '업무 중', '휴식 중', '자리 비움', '스터디/회의 중', '점심 먹는 중', '저녁 먹는 중', '야식 먹는 중'];
 
 const statusColors: Record<StatusPreset, string> = {
-  '출근': 'bg-green-100 text-green-700 border-green-200',
-  '집중 중': 'bg-red-100 text-red-700 border-red-200',
-  '업무 중': 'bg-blue-100 text-blue-700 border-blue-200',
+  '출근': 'bg-bg-positive-weak text-fg-positive border-stroke-positive-weak',
+  '집중 중': 'bg-bg-critical-weak text-fg-critical border-stroke-critical-weak',
+  '업무 중': 'bg-bg-informative-weak text-fg-informative border-stroke-informative-weak',
   '휴식 중': 'bg-yellow-100 text-yellow-700 border-yellow-200',
-  '자리 비움': 'bg-gray-100 text-gray-700 border-gray-200',
+  '자리 비움': 'bg-bg-neutral-muted text-fg-neutral-muted border-stroke-neutral-subtle',
   '스터디/회의 중': 'bg-purple-100 text-purple-700 border-purple-200',
   '점심 먹는 중': 'bg-orange-100 text-orange-700 border-orange-200',
   '저녁 먹는 중': 'bg-rose-100 text-rose-700 border-rose-200',
@@ -211,31 +211,31 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
       {/* Header */}
-      <header className="glass sticky top-0 z-10 border-b border-amber-100/70">
+      <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <span className="text-xl flex-shrink-0">🏢</span>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-1 font-bold text-gray-800 hover:text-amber-700 min-w-0">
+                <button className="flex items-center gap-1 font-bold text-fg-neutral hover:text-fg-brand min-w-0">
                   <span className="truncate">{office?.name || '연결오피스'}</span>
-                  <ChevronDown className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                  <ChevronDown className="w-3.5 h-3.5 text-fg-neutral-muted flex-shrink-0" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="max-w-[min(16rem,calc(100vw-2rem))]">
                 {offices.map(o => (
                   <DropdownMenuItem key={o.id} onClick={() => switchOffice(o.id)} className="cursor-pointer">
-                    <Building2 className="w-4 h-4 mr-2 text-amber-500 flex-shrink-0" />
+                    <Building2 className="w-4 h-4 mr-2 text-fg-brand flex-shrink-0" />
                     <span className="truncate">{o.name}</span>
-                    {o.id === office?.id && <Check className="w-4 h-4 ml-auto flex-shrink-0 text-amber-600" />}
+                    {o.id === office?.id && <Check className="w-4 h-4 ml-auto flex-shrink-0 text-fg-brand" />}
                   </DropdownMenuItem>
                 ))}
-                <DropdownMenuItem onClick={() => navigate('/office-setup')} className="cursor-pointer text-amber-600">
+                <DropdownMenuItem onClick={() => navigate('/office-setup')} className="cursor-pointer text-fg-brand">
                   <Plus className="w-4 h-4 mr-2" /> 오피스 만들기 / 참여
                 </DropdownMenuItem>
                 {myRole === 'admin' && (
                   <DropdownMenuItem onClick={() => setTitleDialogOpen(true)} className="cursor-pointer">
-                    <Tag className="w-4 h-4 mr-2 text-gray-400" /> 호칭 설정
+                    <Tag className="w-4 h-4 mr-2 text-fg-neutral-muted" /> 호칭 설정
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
@@ -246,7 +246,7 @@ export default function Home() {
                   navigator.clipboard.writeText(office.invite_code);
                   toast.success(`초대 코드 ${office.invite_code} 복사됨! 친구에게 공유하세요`);
                 }}
-                className="flex items-center gap-1 text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-full px-2.5 py-1 transition-colors flex-shrink-0"
+                className="flex items-center gap-1 text-xs bg-bg-brand-weak hover:bg-bg-brand-weak text-fg-brand border border-stroke-brand-weak rounded-full px-2.5 py-1 transition-colors flex-shrink-0"
                 title="초대 코드 복사"
               >
                 <Copy className="w-3 h-3 flex-shrink-0" />
@@ -260,12 +260,12 @@ export default function Home() {
 
       <main className="max-w-5xl mx-auto px-4 py-6 pb-24 space-y-6">
         {/* 오늘의 응원 한마디 — 🔄 새로고침으로 다른 글귀, ✏️ 로 제보 */}
-        <div className="rise-in flex items-center gap-2 bg-gradient-to-r from-amber-100/80 to-orange-100/60 border border-amber-200/60 rounded-xl px-4 py-2.5 shadow-sm">
+        <div className="rise-in flex items-center gap-2 bg-gradient-to-r from-amber-100/80 to-orange-100/60 border border-stroke-neutral-subtle rounded-xl px-4 py-2.5 shadow-sm">
           <span className="text-lg animate-pulse flex-shrink-0">💌</span>
-          <p className="text-sm text-amber-800 leading-snug flex-1 min-w-0">{quote}</p>
+          <p className="text-sm text-fg-brand-contrast leading-snug flex-1 min-w-0">{quote}</p>
           <button
             onClick={() => setShuffledQuote(randomQuoteFrom(userQuotes, quote))}
-            className="text-amber-500 hover:text-amber-700 flex-shrink-0 p-1"
+            className="text-fg-brand hover:text-fg-brand flex-shrink-0 p-1"
             aria-label="다른 응원 보기"
             title="다른 응원 보기"
           >
@@ -273,7 +273,7 @@ export default function Home() {
           </button>
           <button
             onClick={() => setQuoteDialogOpen(true)}
-            className="text-amber-500 hover:text-amber-700 flex-shrink-0 p-1"
+            className="text-fg-brand hover:text-fg-brand flex-shrink-0 p-1"
             aria-label="응원 글귀 제보"
             title="응원 글귀 제보"
           >
@@ -285,12 +285,12 @@ export default function Home() {
         <RetroBanner />
 
         {/* My Status Control */}
-        <section className="bg-white rounded-2xl p-5 shadow-sm border border-amber-100/50">
+        <section className="bg-bg-layer-default rounded-2xl p-5 shadow-sm border border-stroke-neutral-subtle">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => navigate('/profile')}
-                className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-lg hover:ring-2 hover:ring-amber-300 transition-shadow"
+                className="w-10 h-10 rounded-full bg-bg-brand-weak flex items-center justify-center text-lg hover:ring-2 hover:ring-amber-300 transition-shadow"
                 title="내 계정 관리"
               >
                 {profile?.avatar_url ? (
@@ -300,7 +300,7 @@ export default function Home() {
                 )}
               </button>
               <div>
-                <p className="font-semibold text-gray-800">{myDisplay}</p>
+                <p className="font-semibold text-fg-neutral">{myDisplay}</p>
                 <Badge variant="outline" className={`text-xs ${statusColors[currentStatus]}`}>
                   {currentStatus}
                 </Badge>
@@ -314,7 +314,7 @@ export default function Home() {
                   setClockInBase(now);
                   setOffTarget(now); // 기본값 = 출근한 지금 시각
                   setClockInOpen(true);
-                }} className="bg-green-600 hover:bg-green-700 text-white flex-1 sm:flex-none">
+                }} className="bg-bg-positive-solid hover:bg-bg-positive-solid text-white flex-1 sm:flex-none">
                   <Clock className="w-4 h-4 mr-1" />
                   출근하기
                 </Button>
@@ -340,7 +340,7 @@ export default function Home() {
                 <>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="flex-1 sm:flex-none border-amber-200">
+                      <Button variant="outline" className="flex-1 sm:flex-none border-stroke-brand-weak">
                         상태 변경 <ChevronDown className="w-4 h-4 ml-1" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -353,7 +353,7 @@ export default function Home() {
                       ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  <Button onClick={() => navigate('/clock-out')} variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 flex-1 sm:flex-none">
+                  <Button onClick={() => navigate('/clock-out')} variant="outline" className="border-stroke-critical-weak text-fg-critical hover:bg-bg-critical-weak flex-1 sm:flex-none">
                     퇴근하기
                   </Button>
                 </>
@@ -370,7 +370,7 @@ export default function Home() {
 
         {/* Office Members */}
         <section>
-          <h2 className="text-sm font-medium text-gray-500 mb-3 px-1">오피스 멤버 <span className="text-gray-300">· 카드를 누르면 기록이 보여요</span></h2>
+          <h2 className="text-sm font-medium text-fg-neutral-muted mb-3 px-1">오피스 멤버 <span className="text-fg-disabled">· 카드를 누르면 기록이 보여요</span></h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {members.map((member) => (
               <button key={member.user_id} onClick={() => setSelectedMember(member)} className="lift text-left rounded-xl">
@@ -378,7 +378,7 @@ export default function Home() {
               </button>
             ))}
             {members.length === 0 && (
-              <p className="text-gray-400 text-sm col-span-full text-center py-8">
+              <p className="text-fg-neutral-muted text-sm col-span-full text-center py-8">
                 아직 멤버가 없습니다
               </p>
             )}
@@ -389,55 +389,55 @@ export default function Home() {
       {/* ✨ 더보기 플로팅 버튼 — 부가 기능 모음 (헤더에서 이동) */}
       <div className="fixed right-4 bottom-20 z-30 flex flex-col items-end gap-2">
         {moreOpen && (
-          <div className="w-60 max-h-[calc(100dvh-10rem)] overflow-y-auto bg-white rounded-2xl shadow-lg border border-amber-100 rise-in">
-            <div className="px-4 pt-3 pb-1 text-xs font-semibold text-amber-600 flex items-center gap-1">
+          <div className="w-60 max-h-[calc(100dvh-10rem)] overflow-y-auto bg-bg-layer-default rounded-2xl shadow-lg border border-stroke-brand-weak rise-in">
+            <div className="px-4 pt-3 pb-1 text-xs font-semibold text-fg-brand flex items-center gap-1">
               <Sparkles className="w-3.5 h-3.5" /> 숨은 기능 · 꿀팁
             </div>
-            <button onClick={() => { setMoreOpen(false); navigate('/guide'); }} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-amber-50 text-left">
-              <BookOpenText className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-              <span><span className="text-sm text-gray-800 font-medium">200% 활용 공략집</span><br/><span className="text-xs text-gray-400">앱 200% 쓰는 법 + 앱 설치</span></span>
+            <button onClick={() => { setMoreOpen(false); navigate('/guide'); }} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-bg-brand-weak text-left">
+              <BookOpenText className="w-4 h-4 text-fg-brand mt-0.5 flex-shrink-0" />
+              <span><span className="text-sm text-fg-neutral font-medium">200% 활용 공략집</span><br/><span className="text-xs text-fg-neutral-muted">앱 200% 쓰는 법 + 앱 설치</span></span>
             </button>
-            <button onClick={() => { setMoreOpen(false); navigate('/retro'); }} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-amber-50 text-left">
+            <button onClick={() => { setMoreOpen(false); navigate('/retro'); }} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-bg-brand-weak text-left">
               <span className="text-base leading-none mt-0.5 flex-shrink-0">📬</span>
-              <span><span className="text-sm text-gray-800 font-medium">주간 회고 · 상장</span><br/><span className="text-xs text-gray-400">한 주 돌아보고 스스로 칭찬하기</span></span>
+              <span><span className="text-sm text-fg-neutral font-medium">주간 회고 · 상장</span><br/><span className="text-xs text-fg-neutral-muted">한 주 돌아보고 스스로 칭찬하기</span></span>
             </button>
-            <button onClick={() => { setMoreOpen(false); navigate('/trophies'); }} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-amber-50 text-left">
+            <button onClick={() => { setMoreOpen(false); navigate('/trophies'); }} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-bg-brand-weak text-left">
               <span className="text-base leading-none mt-0.5 flex-shrink-0">🏆</span>
-              <span><span className="text-sm text-gray-800 font-medium">내 진열장</span><br/><span className="text-xs text-gray-400">모은 스티커 · 트로피 · 상장</span></span>
+              <span><span className="text-sm text-fg-neutral font-medium">내 진열장</span><br/><span className="text-xs text-fg-neutral-muted">모은 스티커 · 트로피 · 상장</span></span>
             </button>
-            <button onClick={() => { setMoreOpen(false); setFocusOpen(true); }} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-amber-50 text-left">
+            <button onClick={() => { setMoreOpen(false); setFocusOpen(true); }} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-bg-brand-weak text-left">
               <span className="text-base leading-none mt-0.5 flex-shrink-0">🍅</span>
-              <span><span className="text-sm text-gray-800 font-medium">집중 모드</span><br/><span className="text-xs text-gray-400">뽀모도로 · 감시 · 퇴근 알림</span></span>
+              <span><span className="text-sm text-fg-neutral font-medium">집중 모드</span><br/><span className="text-xs text-fg-neutral-muted">뽀모도로 · 감시 · 퇴근 알림</span></span>
             </button>
-            <button onClick={() => { setMoreOpen(false); setMenuOpen(true); }} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-amber-50 text-left">
-              <UtensilsCrossed className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-              <span><span className="text-sm text-gray-800 font-medium">점메추 · 저메추</span><br/><span className="text-xs text-gray-400">메뉴 고민 3초 컷 룰렛</span></span>
+            <button onClick={() => { setMoreOpen(false); setMenuOpen(true); }} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-bg-brand-weak text-left">
+              <UtensilsCrossed className="w-4 h-4 text-fg-brand mt-0.5 flex-shrink-0" />
+              <span><span className="text-sm text-fg-neutral font-medium">점메추 · 저메추</span><br/><span className="text-xs text-fg-neutral-muted">메뉴 고민 3초 컷 룰렛</span></span>
             </button>
-            <a href="https://bapsimi.vercel.app" target="_blank" rel="noopener noreferrer" onClick={() => setMoreOpen(false)} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-amber-50 text-left">
-              <NotebookPen className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-              <span><span className="text-sm text-gray-800 font-medium">밥시미</span><br/><span className="text-xs text-gray-400">먹은 곳 사진으로 기록하기</span></span>
+            <a href="https://bapsimi.vercel.app" target="_blank" rel="noopener noreferrer" onClick={() => setMoreOpen(false)} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-bg-brand-weak text-left">
+              <NotebookPen className="w-4 h-4 text-fg-brand mt-0.5 flex-shrink-0" />
+              <span><span className="text-sm text-fg-neutral font-medium">밥시미</span><br/><span className="text-xs text-fg-neutral-muted">먹은 곳 사진으로 기록하기</span></span>
             </a>
-            <button onClick={() => { setMoreOpen(false); setQuoteDialogOpen(true); }} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-amber-50 text-left">
-              <MessageSquarePlus className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-              <span><span className="text-sm text-gray-800 font-medium">응원 글귀 제보</span><br/><span className="text-xs text-gray-400">내 한마디가 모두의 홈에</span></span>
+            <button onClick={() => { setMoreOpen(false); setQuoteDialogOpen(true); }} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-bg-brand-weak text-left">
+              <MessageSquarePlus className="w-4 h-4 text-fg-brand mt-0.5 flex-shrink-0" />
+              <span><span className="text-sm text-fg-neutral font-medium">응원 글귀 제보</span><br/><span className="text-xs text-fg-neutral-muted">내 한마디가 모두의 홈에</span></span>
             </button>
-            <button onClick={toggleNotifications} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-amber-50 text-left">
-              {notifOn ? <Bell className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" /> : <BellOff className="w-4 h-4 text-gray-300 mt-0.5 flex-shrink-0" />}
-              <span><span className="text-sm text-gray-800 font-medium">알림 {notifOn ? '끄기' : '켜기'}</span><br/><span className="text-xs text-gray-400">출근·응원 소식 푸시</span></span>
+            <button onClick={toggleNotifications} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-bg-brand-weak text-left">
+              {notifOn ? <Bell className="w-4 h-4 text-fg-brand mt-0.5 flex-shrink-0" /> : <BellOff className="w-4 h-4 text-fg-disabled mt-0.5 flex-shrink-0" />}
+              <span><span className="text-sm text-fg-neutral font-medium">알림 {notifOn ? '끄기' : '켜기'}</span><br/><span className="text-xs text-fg-neutral-muted">출근·응원 소식 푸시</span></span>
             </button>
-            <button onClick={forceRefresh} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-amber-50 text-left">
-              <RotateCw className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-              <span><span className="text-sm text-gray-800 font-medium">앱 새로고침</span><br/><span className="text-xs text-gray-400">최신 버전이 안 보일 때 눌러요</span></span>
+            <button onClick={forceRefresh} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-bg-brand-weak text-left">
+              <RotateCw className="w-4 h-4 text-fg-brand mt-0.5 flex-shrink-0" />
+              <span><span className="text-sm text-fg-neutral font-medium">앱 새로고침</span><br/><span className="text-xs text-fg-neutral-muted">최신 버전이 안 보일 때 눌러요</span></span>
             </button>
-            <button onClick={() => { setMoreOpen(false); signOut(); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-red-50 text-left border-t border-gray-100">
-              <LogOut className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="text-sm text-gray-500">로그아웃</span>
+            <button onClick={() => { setMoreOpen(false); signOut(); }} className="w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-bg-critical-weak text-left border-t border-stroke-neutral-subtle">
+              <LogOut className="w-4 h-4 text-fg-neutral-muted flex-shrink-0" />
+              <span className="text-sm text-fg-neutral-muted">로그아웃</span>
             </button>
           </div>
         )}
         <button
           onClick={() => setMoreOpen(o => !o)}
-          className={`w-[52px] h-[52px] rounded-full shadow-lg flex items-center justify-center transition-transform ${moreOpen ? 'bg-amber-600 rotate-45' : 'bg-gradient-to-br from-amber-400 to-orange-500'}`}
+          className={`w-[52px] h-[52px] rounded-full shadow-lg flex items-center justify-center transition-transform ${moreOpen ? 'bg-bg-brand-solid rotate-45' : 'bg-gradient-to-br from-amber-400 to-orange-500'}`}
           aria-label="더보기"
         >
           <Sparkles className="w-5 h-5 text-white" />
@@ -450,9 +450,9 @@ export default function Home() {
       <Dialog open={quoteDialogOpen} onOpenChange={setQuoteDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><MessageSquarePlus className="w-4 h-4 text-amber-600" /> 응원 글귀 제보</DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><MessageSquarePlus className="w-4 h-4 text-fg-brand" /> 응원 글귀 제보</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-gray-500 -mt-1">모두의 홈에 뜨는 "오늘의 한마디"를 함께 채워요. 따뜻한 응원 한마디를 남겨주세요 💛</p>
+          <p className="text-sm text-fg-neutral-muted -mt-1">모두의 홈에 뜨는 "오늘의 한마디"를 함께 채워요. 따뜻한 응원 한마디를 남겨주세요 💛</p>
           <Input
             value={quoteText}
             onChange={(e) => setQuoteText(e.target.value)}
@@ -460,8 +460,8 @@ export default function Home() {
             placeholder="예: 오늘도 조용히 애쓰는 당신을 응원해요 🌱"
             maxLength={60}
           />
-          <p className="text-xs text-gray-400">비속어·차별 표현은 자동으로 걸러져요. {quoteText.length}/60</p>
-          <Button onClick={submitQuote} disabled={!quoteText.trim()} className="w-full bg-amber-600 hover:bg-amber-700 text-white">등록하기</Button>
+          <p className="text-xs text-fg-neutral-muted">비속어·차별 표현은 자동으로 걸러져요. {quoteText.length}/60</p>
+          <Button onClick={submitQuote} disabled={!quoteText.trim()} className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">등록하기</Button>
         </DialogContent>
       </Dialog>
 
@@ -476,11 +476,11 @@ export default function Home() {
             <DialogTitle>🟢 출근하기</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <p className="text-sm text-gray-500">예상 퇴근 시간을 정해두면, 그 시간에 <b>"아직 일하고 계신가요?"</b> 알림을 보내드려요.</p>
+            <p className="text-sm text-fg-neutral-muted">예상 퇴근 시간을 정해두면, 그 시간에 <b>"아직 일하고 계신가요?"</b> 알림을 보내드려요.</p>
             <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-amber-500 flex-shrink-0" />
+              <Clock className="w-4 h-4 text-fg-brand flex-shrink-0" />
               <input type="time" value={offTarget} onChange={(e) => setOffTarget(e.target.value)}
-                className="border border-gray-200 rounded-lg px-3 py-2 text-sm flex-1" />
+                className="border border-stroke-neutral-subtle rounded-lg px-3 py-2 text-sm flex-1" />
             </div>
             {/* 출근 시각 기준 빠른 설정 */}
             <div className="grid grid-cols-4 gap-1.5">
@@ -489,18 +489,18 @@ export default function Home() {
                 const target = `${String((bh + h) % 24).padStart(2, '0')}:${String(bm).padStart(2, '0')}`;
                 return (
                   <button key={h} onClick={() => setOffTarget(target)}
-                    className={`rounded-lg border py-1.5 text-xs font-medium ${offTarget === target ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-gray-600 border-gray-200'}`}>
+                    className={`rounded-lg border py-1.5 text-xs font-medium ${offTarget === target ? 'bg-bg-brand-solid text-white border-stroke-brand-solid' : 'bg-bg-layer-default text-fg-neutral-muted border-stroke-neutral-subtle'}`}>
                     +{h}시간
                   </button>
                 );
               })}
             </div>
-            <label className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer">
+            <label className="flex items-center gap-2 text-sm text-fg-neutral-muted cursor-pointer">
               <input type="checkbox" checked={offTarget === ''} onChange={(e) => setOffTarget(e.target.checked ? '' : clockInBase)} className="accent-amber-500" />
               일단 퇴근 시간 설정하지 않음
             </label>
             <Button
-              className="w-full bg-green-600 hover:bg-green-700 text-white"
+              className="w-full bg-bg-positive-solid hover:bg-bg-positive-solid text-white"
               onClick={() => {
                 if (offTarget) { localStorage.setItem(CLOCKOUT_KEY, offTarget); localStorage.removeItem(`clockout_fired-${kstToday()}`); }
                 else { localStorage.removeItem(CLOCKOUT_KEY); }
@@ -520,9 +520,9 @@ export default function Home() {
       <Dialog open={titleDialogOpen} onOpenChange={setTitleDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Tag className="w-4 h-4 text-amber-600" /> 오피스 호칭 설정</DialogTitle>
+            <DialogTitle className="flex items-center gap-2"><Tag className="w-4 h-4 text-fg-brand" /> 오피스 호칭 설정</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-gray-500 -mt-1">멤버들을 어떻게 부를까요? 모든 화면에 적용돼요.</p>
+          <p className="text-sm text-fg-neutral-muted -mt-1">멤버들을 어떻게 부를까요? 모든 화면에 적용돼요.</p>
           <div className="space-y-2">
             {TITLE_MODES.map(m => (
               <button
@@ -530,20 +530,20 @@ export default function Home() {
                 onClick={() => { updateTitleMode(m.value); setTitleDialogOpen(false); }}
                 className={`w-full text-left rounded-lg border px-3.5 py-2.5 transition-colors ${
                   office?.title_mode === m.value
-                    ? 'border-amber-400 bg-amber-50'
-                    : 'border-gray-150 hover:border-amber-200'
+                    ? 'border-amber-400 bg-bg-brand-weak'
+                    : 'border-gray-150 hover:border-stroke-brand-weak'
                 }`}
               >
-                <p className="text-sm font-medium text-gray-800 flex items-center">
+                <p className="text-sm font-medium text-fg-neutral flex items-center">
                   {m.label}
-                  {office?.title_mode === m.value && <Check className="w-4 h-4 ml-auto text-amber-600" />}
+                  {office?.title_mode === m.value && <Check className="w-4 h-4 ml-auto text-fg-brand" />}
                 </p>
-                <p className="text-xs text-gray-400 mt-0.5">예: {m.example}</p>
+                <p className="text-xs text-fg-neutral-muted mt-0.5">예: {m.example}</p>
               </button>
             ))}
           </div>
           {office?.title_mode === 'rank' && (
-            <p className="text-xs text-amber-600 bg-amber-50 rounded-lg p-2">💡 직급은 오피스에 먼저 들어온 순서대로! 1호 멤버가 사장이에요.</p>
+            <p className="text-xs text-fg-brand bg-bg-brand-weak rounded-lg p-2">💡 직급은 오피스에 먼저 들어온 순서대로! 1호 멤버가 사장이에요.</p>
           )}
         </DialogContent>
       </Dialog>

@@ -148,22 +148,22 @@ export default function Report() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
-      <header className="glass sticky top-0 z-10 border-b border-amber-100/70">
+      <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <h1 className="font-bold text-gray-800">리포트</h1>
+          <h1 className="font-bold text-fg-neutral">리포트</h1>
         </div>
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-6 pb-24 space-y-4">
         {/* 주간 이동 — 지난 주로 넘겨서 과거 기록 확인 */}
-        <div className="flex items-center justify-between bg-white rounded-xl border border-amber-100/50 px-2 py-1.5 shadow-sm">
+        <div className="flex items-center justify-between bg-bg-layer-default rounded-xl border border-stroke-neutral-subtle px-2 py-1.5 shadow-sm">
           <Button variant="ghost" size="icon" onClick={() => setWeeksAgo(w => w + 1)} aria-label="지난 주">
             <ChevronLeft className="w-4 h-4" />
           </Button>
-          <span className="text-sm font-semibold text-gray-700">{stats.rangeLabel}</span>
+          <span className="text-sm font-semibold text-fg-neutral-muted">{stats.rangeLabel}</span>
           <Button variant="ghost" size="icon" disabled={weeksAgo === 0} onClick={() => setWeeksAgo(w => Math.max(0, w - 1))} aria-label="다음 주" className="disabled:opacity-30">
             <ChevronRight className="w-4 h-4" />
           </Button>
@@ -172,52 +172,52 @@ export default function Report() {
         {/* 이 주의 회고·상장으로 */}
         <button
           onClick={() => navigate(`/retro?week=${addDays(getWeekStart(), -7 * weeksAgo)}`)}
-          className="w-full flex items-center gap-3 rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-rose-50 px-4 py-3 text-left hover:from-amber-100"
+          className="w-full flex items-center gap-3 rounded-xl border border-stroke-brand-weak bg-gradient-to-r from-amber-50 to-rose-50 px-4 py-3 text-left hover:from-amber-100"
         >
           <span className="text-2xl">📬</span>
           <span className="flex-1 min-w-0">
-            <span className="block text-sm font-semibold text-gray-800">{weeksAgo === 0 ? '이번 주' : '이 주'} 회고 · 상장 보기</span>
-            <span className="block text-xs text-gray-500">해낸 일, 칭찬 스티커, 매주 다른 상장까지</span>
+            <span className="block text-sm font-semibold text-fg-neutral">{weeksAgo === 0 ? '이번 주' : '이 주'} 회고 · 상장 보기</span>
+            <span className="block text-xs text-fg-neutral-muted">해낸 일, 칭찬 스티커, 매주 다른 상장까지</span>
           </span>
-          <ChevronRight className="w-4 h-4 text-amber-600" />
+          <ChevronRight className="w-4 h-4 text-fg-brand" />
         </button>
 
         {/* Summary Cards — 근무시간 중심 */}
         <div className="grid grid-cols-2 gap-3">
-          <Card className="p-4 border-amber-100/50">
+          <Card className="p-4 border-stroke-neutral-subtle">
             <div className="flex items-center gap-2 mb-1">
-              <Clock className="w-4 h-4 text-amber-500" />
-              <span className="text-xs text-gray-500">총 근무시간</span>
+              <Clock className="w-4 h-4 text-fg-brand" />
+              <span className="text-xs text-fg-neutral-muted">총 근무시간</span>
             </div>
-            <p className="text-2xl font-bold text-gray-800">{formatDuration(stats.totalWork)}</p>
+            <p className="text-2xl font-bold text-fg-neutral">{formatDuration(stats.totalWork)}</p>
           </Card>
-          <Card className="p-4 border-amber-100/50">
+          <Card className="p-4 border-stroke-neutral-subtle">
             <div className="flex items-center gap-2 mb-1">
-              <Calendar className="w-4 h-4 text-blue-500" />
-              <span className="text-xs text-gray-500">출근 일수</span>
+              <Calendar className="w-4 h-4 text-fg-informative" />
+              <span className="text-xs text-fg-neutral-muted">출근 일수</span>
             </div>
-            <p className="text-2xl font-bold text-gray-800">{stats.workDays}일</p>
+            <p className="text-2xl font-bold text-fg-neutral">{stats.workDays}일</p>
           </Card>
-          <Card className="p-4 border-amber-100/50">
+          <Card className="p-4 border-stroke-neutral-subtle">
             <div className="flex items-center gap-2 mb-1">
-              <Target className="w-4 h-4 text-red-500" />
-              <span className="text-xs text-gray-500">총 집중시간</span>
+              <Target className="w-4 h-4 text-fg-critical" />
+              <span className="text-xs text-fg-neutral-muted">총 집중시간</span>
             </div>
-            <p className="text-2xl font-bold text-gray-800">{formatDuration(stats.totalFocus)}</p>
+            <p className="text-2xl font-bold text-fg-neutral">{formatDuration(stats.totalFocus)}</p>
           </Card>
-          <Card className="p-4 border-amber-100/50">
+          <Card className="p-4 border-stroke-neutral-subtle">
             <div className="flex items-center gap-2 mb-1">
-              <CheckCircle2 className="w-4 h-4 text-green-500" />
-              <span className="text-xs text-gray-500">완료 업무</span>
+              <CheckCircle2 className="w-4 h-4 text-fg-positive" />
+              <span className="text-xs text-fg-neutral-muted">완료 업무</span>
             </div>
-            <p className="text-2xl font-bold text-gray-800">{stats.completedTasks}/{stats.totalTasks}</p>
-            <p className="text-xs text-gray-400">{completionRate}% 완료</p>
+            <p className="text-2xl font-bold text-fg-neutral">{stats.completedTasks}/{stats.totalTasks}</p>
+            <p className="text-xs text-fg-neutral-muted">{completionRate}% 완료</p>
           </Card>
         </div>
 
         {/* 요일별 근무시간 차트 */}
-        <Card className="p-5 border-amber-100/50">
-          <h3 className="font-semibold text-gray-800 text-sm mb-4">요일별 근무시간</h3>
+        <Card className="p-5 border-stroke-neutral-subtle">
+          <h3 className="font-semibold text-fg-neutral text-sm mb-4">요일별 근무시간</h3>
           <div className="flex items-end justify-between gap-2 h-32">
             {stats.dailyWork.map((seconds, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-1">
@@ -227,9 +227,9 @@ export default function Report() {
                     style={{ height: `${(seconds / maxDailyWork) * 100}%`, minHeight: seconds > 0 ? '4px' : '0' }}
                   />
                 </div>
-                <span className="text-xs text-gray-500">{DAY_LABELS[i]}</span>
+                <span className="text-xs text-fg-neutral-muted">{DAY_LABELS[i]}</span>
                 {seconds > 0 && (
-                  <span className="text-[10px] text-gray-400">
+                  <span className="text-[10px] text-fg-neutral-muted">
                     {seconds >= 3600 ? `${(seconds / 3600).toFixed(1)}h` : `${Math.round(seconds / 60)}분`}
                   </span>
                 )}
@@ -239,26 +239,26 @@ export default function Report() {
         </Card>
 
         {/* 출퇴근 기록 (수정 가능) */}
-        <Card className="p-5 border-amber-100/50">
-          <h3 className="font-semibold text-gray-800 text-sm mb-1">{stats.rangeLabel} 출퇴근 기록</h3>
-          <p className="text-xs text-gray-400 mb-3">잘못 찍은 기록은 연필 버튼으로 고칠 수 있어요</p>
+        <Card className="p-5 border-stroke-neutral-subtle">
+          <h3 className="font-semibold text-fg-neutral text-sm mb-1">{stats.rangeLabel} 출퇴근 기록</h3>
+          <p className="text-xs text-fg-neutral-muted mb-3">잘못 찍은 기록은 연필 버튼으로 고칠 수 있어요</p>
           {sessions.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-3">기록이 없어요</p>
+            <p className="text-sm text-fg-neutral-muted text-center py-3">기록이 없어요</p>
           ) : (
             <ul className="space-y-1.5">
               {sessions.map(s => (
                 <li key={s.id} className="flex items-center gap-2 text-sm bg-gray-50/70 rounded-lg px-3 py-2">
-                  <span className="text-gray-600">
+                  <span className="text-fg-neutral-muted">
                     {new Date(s.started_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', weekday: 'short' })}
                   </span>
-                  <span className="text-gray-800 font-medium">
+                  <span className="text-fg-neutral font-medium">
                     {new Date(s.started_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
                     {' ~ '}
                     {s.ended_at
                       ? new Date(s.ended_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
                       : '근무 중'}
                   </span>
-                  <button onClick={() => openEditSession(s)} className="ml-auto text-gray-300 hover:text-amber-600">
+                  <button onClick={() => openEditSession(s)} className="ml-auto text-fg-disabled hover:text-fg-brand">
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                 </li>
@@ -268,7 +268,7 @@ export default function Report() {
         </Card>
 
         {stats.totalWork === 0 && stats.totalTasks === 0 && (
-          <p className="text-center text-gray-400 text-sm py-4">
+          <p className="text-center text-fg-neutral-muted text-sm py-4">
             {weeksAgo === 0 ? '이번 주 활동 기록이 없습니다. 출근해서 시작해 보세요!' : '이 주에는 활동 기록이 없어요.'}
           </p>
         )}
@@ -287,7 +287,7 @@ export default function Report() {
               <Label>퇴근 시간 (비우면 "근무 중"으로)</Label>
               <Input type="datetime-local" value={editEnd} onChange={(e) => setEditEnd(e.target.value)} />
             </div>
-            <Button onClick={saveSession} className="w-full bg-amber-600 hover:bg-amber-700 text-white">저장</Button>
+            <Button onClick={saveSession} className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">저장</Button>
           </div>
         </DialogContent>
       </Dialog>

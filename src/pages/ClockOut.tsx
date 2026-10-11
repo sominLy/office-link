@@ -103,55 +103,55 @@ export default function ClockOut() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
-      <header className="glass sticky top-0 z-10 border-b border-amber-100/70">
+      <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <h1 className="font-bold text-gray-800">퇴근 보고</h1>
+          <h1 className="font-bold text-fg-neutral">퇴근 보고</h1>
         </div>
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-4">
-        <Card className="p-5 border-amber-100/50">
-          <h2 className="font-semibold text-gray-800 mb-4">오늘의 기록</h2>
+        <Card className="p-5 border-stroke-neutral-subtle">
+          <h2 className="font-semibold text-fg-neutral mb-4">오늘의 기록</h2>
           <div className="grid grid-cols-2 gap-4">
             <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-amber-500" />
+              <Clock className="w-4 h-4 text-fg-brand" />
               <div>
-                <p className="text-xs text-gray-500">출근</p>
+                <p className="text-xs text-fg-neutral-muted">출근</p>
                 <p className="font-medium text-sm">{formatTime(stats.clockInTime)}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-orange-500" />
               <div>
-                <p className="text-xs text-gray-500">체류시간</p>
+                <p className="text-xs text-fg-neutral-muted">체류시간</p>
                 <p className="font-medium text-sm">{formatDuration(stayDuration)}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Target className="w-4 h-4 text-red-500" />
+              <Target className="w-4 h-4 text-fg-critical" />
               <div>
-                <p className="text-xs text-gray-500">집중시간</p>
+                <p className="text-xs text-fg-neutral-muted">집중시간</p>
                 <p className="font-medium text-sm">{formatDuration(stats.totalFocus)}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-green-500" />
+              <CheckCircle2 className="w-4 h-4 text-fg-positive" />
               <div>
-                <p className="text-xs text-gray-500">완료 업무</p>
+                <p className="text-xs text-fg-neutral-muted">완료 업무</p>
                 <p className="font-medium text-sm">{stats.completedTasks}개</p>
               </div>
             </div>
           </div>
 
           {stats.focusedTasks.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <p className="text-xs text-gray-500 mb-2">집중한 업무</p>
+            <div className="mt-4 pt-4 border-t border-stroke-neutral-subtle">
+              <p className="text-xs text-fg-neutral-muted mb-2">집중한 업무</p>
               <div className="flex flex-wrap gap-1">
                 {stats.focusedTasks.map((t, i) => (
-                  <span key={i} className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded">{t}</span>
+                  <span key={i} className="text-xs bg-bg-brand-weak text-fg-brand px-2 py-0.5 rounded">{t}</span>
                 ))}
               </div>
             </div>
@@ -160,8 +160,8 @@ export default function ClockOut() {
 
         <LeftoverTasks />
 
-        <Card className="p-5 border-amber-100/50">
-          <label className="text-sm font-medium text-gray-700 block mb-2">한 줄 회고 (선택)</label>
+        <Card className="p-5 border-stroke-neutral-subtle">
+          <label className="text-sm font-medium text-fg-neutral-muted block mb-2">한 줄 회고 (선택)</label>
           <Input
             placeholder="오늘 하루를 한 줄로 정리해 보세요"
             value={memo}
@@ -170,7 +170,7 @@ export default function ClockOut() {
           />
         </Card>
 
-        <Button onClick={handleClockOut} className="w-full bg-amber-600 hover:bg-amber-700 text-white h-12 text-base">
+        <Button onClick={handleClockOut} className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white h-12 text-base">
           퇴근하기
         </Button>
       </main>

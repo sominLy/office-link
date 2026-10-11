@@ -269,7 +269,7 @@ export default function Admin() {
       <div className="min-h-screen bg-[#f9f9f7] px-4 py-6">
         <div className="max-w-lg mx-auto space-y-4">
           <Button variant="ghost" size="sm" onClick={back}><ArrowLeft className="w-4 h-4 mr-1" />뒤로</Button>
-          <div className="rounded-xl border border-black/10 bg-white p-5 space-y-3 text-sm text-[#0b0b0b]">
+          <div className="rounded-xl border border-black/10 bg-bg-layer-default p-5 space-y-3 text-sm text-[#0b0b0b]">
             {problem === 'missing' && (
               <>
                 <h1 className="font-semibold">📊 대시보드를 켜려면 SQL을 한 번 실행해야 해요</h1>
@@ -321,7 +321,7 @@ export default function Admin() {
         </div>
         {/* 필터: 기간이 먼저, 모든 차트에 같이 적용 */}
         <div className="max-w-5xl mx-auto px-4 pb-2.5 flex flex-wrap items-center gap-2">
-          <div className="inline-flex rounded-lg border border-black/10 bg-white p-0.5" role="radiogroup" aria-label="기간">
+          <div className="inline-flex rounded-lg border border-black/10 bg-bg-layer-default p-0.5" role="radiogroup" aria-label="기간">
             {RANGES.map(r => (
               <button key={r.key} type="button" role="radio" aria-checked={range === r.key} onClick={() => setRange(r.key)}
                 className={cn('px-2.5 py-1 text-xs rounded-md', range === r.key ? 'bg-[#0b0b0b] text-white font-medium' : 'text-[#52514e] hover:bg-black/[0.04]')}>
@@ -333,7 +333,7 @@ export default function Admin() {
             value={cohort}
             onChange={e => setCohort(e.target.value as Cohort)}
             disabled={!data?.launch_day}
-            className="h-8 rounded-lg border border-black/10 bg-white px-2 text-xs text-[#0b0b0b] disabled:text-[#898781]"
+            className="h-8 rounded-lg border border-black/10 bg-bg-layer-default px-2 text-xs text-[#0b0b0b] disabled:text-[#898781]"
             aria-label="사용자 묶음"
             title={data?.launch_day ? undefined : "'기록·메모' 탭에서 공개 시작일을 정하면 기존/새 사용자를 나눠 볼 수 있어요"}
           >
@@ -346,7 +346,7 @@ export default function Admin() {
 
       <main className={cn('max-w-5xl mx-auto px-4 pt-4 space-y-4 transition-opacity', loading && data && 'opacity-60')}>
         {!data && loadError ? (
-          <div className="rounded-xl border border-black/10 bg-white p-5 text-sm space-y-3">
+          <div className="rounded-xl border border-black/10 bg-bg-layer-default p-5 text-sm space-y-3">
             <p className="font-semibold text-[#0b0b0b]">지표를 불러오지 못했어요</p>
             <p className="text-xs text-[#52514e] break-all">{loadError}</p>
             <Button size="sm" onClick={load} disabled={loading}>다시 시도</Button>
@@ -548,7 +548,7 @@ export default function Admin() {
                 {comparisons.length === 0 ? <p className="text-xs text-[#898781] py-4 text-center">비교할 업데이트나 메모가 없어요</p> : (
                   <ul className="space-y-3 max-h-[36rem] overflow-auto pr-1">
                     {comparisons.map(({ m, before, after, afterDays }) => (
-                      <li key={m.id} className="rounded-lg border border-black/5 bg-white p-3">
+                      <li key={m.id} className="rounded-lg border border-black/5 bg-bg-layer-default p-3">
                         <p className="text-xs text-[#0b0b0b] flex gap-2 min-w-0">
                           <span className="text-[#898781] flex-shrink-0">{shortDay(m.day)}</span>
                           <span className="truncate" title={m.label}>{m.kind === 'release' ? '🚀' : '📌'} {m.label}</span>

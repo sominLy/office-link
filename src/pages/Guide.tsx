@@ -34,43 +34,43 @@ export default function Guide() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
-      <header className="glass sticky top-0 z-10 border-b border-amber-100/70">
+      <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <h1 className="font-bold text-gray-800 flex items-center gap-1.5">
-            <BookOpenText className="w-4 h-4 text-amber-600" /> 200% 활용 공략집
+          <h1 className="font-bold text-fg-neutral flex items-center gap-1.5">
+            <BookOpenText className="w-4 h-4 text-fg-brand" /> 200% 활용 공략집
           </h1>
         </div>
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-6 pb-24 space-y-4">
         {/* 아이폰 앱 설치 */}
-        <Card className="p-5 border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50">
-          <h2 className="font-semibold text-gray-800 mb-1 flex items-center gap-1.5">
+        <Card className="p-5 border-stroke-brand-weak bg-gradient-to-br from-amber-50 to-orange-50">
+          <h2 className="font-semibold text-fg-neutral mb-1 flex items-center gap-1.5">
             📱 앱처럼 설치하기 (강력 추천!)
           </h2>
-          <p className="text-xs text-gray-500 mb-3">
+          <p className="text-xs text-fg-neutral-muted mb-3">
             홈 화면에 추가하면 진짜 앱처럼 아이콘으로 실행돼요.
             특히 <b>아이폰은 이렇게 해야 푸시 알림을 받을 수 있어요!</b>
           </p>
           <div className="space-y-2">
-            <p className="text-sm font-medium text-gray-700">🍎 아이폰 (Safari)</p>
+            <p className="text-sm font-medium text-fg-neutral-muted">🍎 아이폰 (Safari)</p>
             <ol className="space-y-1.5">
               {IPHONE_STEPS.map(s => (
-                <li key={s.step} className="flex items-center gap-2 text-sm text-gray-600 bg-white/70 rounded-lg px-3 py-2">
-                  <span className="w-5 h-5 rounded-full bg-amber-600 text-white text-xs flex items-center justify-center flex-shrink-0">{s.step}</span>
+                <li key={s.step} className="flex items-center gap-2 text-sm text-fg-neutral-muted bg-white/70 rounded-lg px-3 py-2">
+                  <span className="w-5 h-5 rounded-full bg-bg-brand-solid text-white text-xs flex items-center justify-center flex-shrink-0">{s.step}</span>
                   {s.text}
-                  {s.icon && <s.icon className="w-4 h-4 text-amber-500 ml-auto flex-shrink-0" />}
+                  {s.icon && <s.icon className="w-4 h-4 text-fg-brand ml-auto flex-shrink-0" />}
                 </li>
               ))}
             </ol>
-            <p className="text-xs text-amber-700 bg-amber-100/70 rounded-lg p-2">
+            <p className="text-xs text-fg-brand bg-bg-brand-weak rounded-lg p-2">
               💡 설치 후엔 <b>홈 화면 아이콘으로 실행</b>해서 홈의 종(🔔) 버튼으로 알림을 허용하세요. 그래야 아이폰에서도 푸시가 와요!
             </p>
-            <p className="text-sm font-medium text-gray-700 pt-1">🤖 안드로이드 (크롬)</p>
-            <p className="text-sm text-gray-600 bg-white/70 rounded-lg px-3 py-2">
+            <p className="text-sm font-medium text-fg-neutral-muted pt-1">🤖 안드로이드 (크롬)</p>
+            <p className="text-sm text-fg-neutral-muted bg-white/70 rounded-lg px-3 py-2">
               오른쪽 위 ⋮ 메뉴 → <b>"홈 화면에 추가"</b> (또는 "앱 설치") 한 번이면 끝! 알림은 그냥 허용만 하면 돼요.
             </p>
           </div>
@@ -78,16 +78,16 @@ export default function Guide() {
 
         {/* 공략 팁 */}
         <div className="space-y-2">
-          <h2 className="text-sm font-medium text-gray-500 px-1">🏆 고인물처럼 쓰는 법 {TIPS.length}가지</h2>
+          <h2 className="text-sm font-medium text-fg-neutral-muted px-1">🏆 고인물처럼 쓰는 법 {TIPS.length}가지</h2>
           {TIPS.map((tip, i) => (
-            <Card key={i} className="p-4 border-amber-100/50">
-              <p className="text-sm font-semibold text-gray-800 mb-1">{tip.emoji} {tip.title}</p>
-              <p className="text-sm text-gray-500 leading-relaxed">{tip.body}</p>
+            <Card key={i} className="p-4 border-stroke-neutral-subtle">
+              <p className="text-sm font-semibold text-fg-neutral mb-1">{tip.emoji} {tip.title}</p>
+              <p className="text-sm text-fg-neutral-muted leading-relaxed">{tip.body}</p>
             </Card>
           ))}
         </div>
 
-        <p className="text-center text-xs text-gray-400 pt-2">
+        <p className="text-center text-xs text-fg-neutral-muted pt-2">
           더 궁금한 건 소식 탭에 남겨주세요! 🐥
         </p>
       </main>

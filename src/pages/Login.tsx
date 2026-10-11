@@ -49,11 +49,11 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 p-4">
       <Card className="w-full max-w-md shadow-lg border-0">
         <CardHeader className="text-center pb-2">
-          <div className="mx-auto mb-3 w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
+          <div className="mx-auto mb-3 w-12 h-12 bg-bg-brand-weak rounded-xl flex items-center justify-center">
             <span className="text-2xl">🏢</span>
           </div>
-          <CardTitle className="text-2xl font-bold text-gray-800">연결오피스</CardTitle>
-          <CardDescription className="text-gray-500">함께 일하는 가상 오피스</CardDescription>
+          <CardTitle className="text-2xl font-bold text-fg-neutral">연결오피스</CardTitle>
+          <CardDescription className="text-fg-neutral-muted">함께 일하는 가상 오피스</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
@@ -85,7 +85,7 @@ export default function Login() {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full bg-amber-600 hover:bg-amber-700 text-white" disabled={loading}>
+                <Button type="submit" className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" disabled={loading}>
                   {loading ? '처리 중...' : '로그인'}
                 </Button>
               </form>
@@ -115,7 +115,7 @@ export default function Login() {
                     minLength={6}
                   />
                 </div>
-                <Button type="submit" className="w-full bg-amber-600 hover:bg-amber-700 text-white" disabled={loading}>
+                <Button type="submit" className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" disabled={loading}>
                   {loading ? '처리 중...' : '회원가입'}
                 </Button>
               </form>
