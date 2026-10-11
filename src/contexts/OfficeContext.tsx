@@ -4,7 +4,14 @@ import { toast } from 'sonner';
 import { useAuth } from './AuthContext';
 import { Office, OfficeMember, StatusSession, WorkSession, MemberStatus, StatusPreset } from '@/lib/types';
 import { notify } from '@/lib/notify';
-import { track } from '@/lib/analytics';
+import { track } from '@/lib/funnel';
+import { requestTrophyCheck } from '@/lib/awards';
+import { addDays, kstStartOfTodayISO, kstToday } from '@/lib/dates';
+
+// 한국시간 오늘 0시 전에 시작했는데 아직 열린 세션 = 자정 자동 퇴근이 안 된 것
+const isStaleSession = (startedAt: string) => new Date(startedAt).getTime() < new Date(kstStartOfTodayISO()).getTime();
+// 그 세션이 시작한 날의 자정(다음 날 0시, KST)
+const midnightAfter = (startedAt: string) => new Date(`${addDays(kstToday(new Date(startedAt)), 1)}T00:00:00+09:00`).toISOString();
 
 interface OfficeContextType {
   office: Office | null;
@@ -124,7 +131,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
         .is('ended_at', null)
         .order('started_at', { ascending: false }),
       supabase.from('work_sessions')
-        .select('user_id')
+        .select('user_id, started_at')
         .eq('office_id', office.id)
         .is('ended_at', null),
       supabase.from('focus_sessions')
@@ -133,9 +140,12 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
         .is('ended_at', null),
     ]);
 
+    // 자정을 넘겨 아직 열린 근무·상태는 퇴근한 것으로 보여준다 ('출근 26시간' 방지, '휴가 중'은 여러 날 유지)
     const statusMap = new Map<string, { status: string; started_at: string }>();
-    (openStatuses || []).forEach(s => { if (!statusMap.has(s.user_id)) statusMap.set(s.user_id, s); });
-    const workingSet = new Set((openWorks || []).map(w => w.user_id));
+    (openStatuses || [])
+      .filter(s => s.status === '휴가 중' || !isStaleSession(s.started_at))
+      .forEach(s => { if (!statusMap.has(s.user_id)) statusMap.set(s.user_id, s); });
+    const workingSet = new Set((openWorks || []).filter(w => !isStaleSession(w.started_at)).map(w => w.user_id));
     const focusMap = new Map<string, string | null>();
     (openFocuses || []).forEach(f => {
       focusMap.set(f.user_id, (f.tasks as unknown as { title: string } | null)?.title || null);
@@ -161,7 +171,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
 
   const fetchMySession = useCallback(async () => {
     if (!user || !office) return;
-    const { data: workData } = await supabase
+    let { data: workData } = await supabase
       .from('work_sessions')
       .select('*')
       .eq('user_id', user.id)
@@ -169,6 +179,29 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       .is('ended_at', null)
       .limit(1)
       .single();
+
+    // 자정 자동 퇴근이 서버에서 안 됐으면(크론 중단 등) 앱을 열 때라도 그날 자정으로 퇴근 처리
+    if (workData && isStaleSession(workData.started_at)) {
+      const endedAt = midnightAfter(workData.started_at);
+      const todayStart = kstStartOfTodayISO();
+      const { data: closed } = await supabase
+        .from('work_sessions')
+        .update({ ended_at: endedAt })
+        .eq('id', workData.id)
+        .is('ended_at', null)
+        .select('id');
+      await supabase.from('focus_sessions').update({ ended_at: endedAt })
+        .eq('user_id', user.id).eq('office_id', office.id).is('ended_at', null).lt('started_at', todayStart);
+      await supabase.from('status_sessions').update({ ended_at: endedAt })
+        .eq('user_id', user.id).eq('office_id', office.id).is('ended_at', null).lt('started_at', todayStart)
+        .neq('status', '휴가 중');
+      // 다른 탭이 먼저 닫았으면 기록·안내는 한 번만
+      if (closed && closed.length > 0) {
+        supabase.from('office_feed').insert({ office_id: office.id, user_id: user.id, type: 'clock_out', created_at: endedAt }).then(() => {});
+        toast('🌙 지난번에 퇴근을 안 눌러서 그날 자정에 자동 퇴근 처리했어요');
+      }
+      workData = null;
+    }
     setMyWorkSession(workData);
 
     const { data: statusData } = await supabase
@@ -261,6 +294,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
     const statusOk = await changeStatus('출근');
     await fetchMySession();
     await fetchMembers();
+    requestTrophyCheck(); // 출근 7일·30일… 트로피
     // work_session은 이미 들어갔으니 출근 자체는 유효하다. 다만 상태 반영이 실패했으면
     // 멤버들에게 알리지 않는다. 카드에는 이전 상태가 그대로인데 "출근했어요" 푸시만 가면
     // 받는 쪽에서 확인할 방법이 없다. 실패 안내는 changeStatus가 이미 띄웠다.

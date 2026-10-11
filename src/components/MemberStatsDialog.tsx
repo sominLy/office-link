@@ -10,7 +10,7 @@ import { displayName } from '@/lib/callsign';
 import { useOffice } from '@/contexts/OfficeContext';
 import { Clock, Target, CheckCircle2, Circle, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
-import { track } from '@/lib/analytics';
+import { track } from '@/lib/funnel';
 
 interface Props {
   member: MemberStatus | null;

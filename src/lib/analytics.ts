@@ -1,134 +1,133 @@
-// 퍼널 계측. 실패해도 사용자 흐름을 막지 않는다(fire-and-forget).
-// 적재 테이블은 supabase/migrations/017_events.sql, 조회는 대시보드 SQL Editor에서만 된다.
-import { supabase, isSupabaseConfigured } from './supabase';
+import { supabase, SUPABASE_ANON_KEY, SUPABASE_URL } from '@/lib/supabase';
+import { kstToday } from '@/lib/dates';
 
-export type EventName =
-  | 'app_open'
-  | 'page_view'
-  | 'landing_view'
-  | 'signup_start'
-  | 'signup_complete'
-  | 'office_joined'
-  | 'clock_in'
-  | 'task_created'
-  | 'focus_started'
-  | 'reaction_sent';
+// 운영 대시보드용 이용 기록 — 019_admin_dashboard.sql의 track_usage / track_anon_visit에 보낸다.
+// 무엇을 했는지(내용)는 보내지 않고, 화면 이름·횟수·시간만 보낸다.
+// 019를 아직 실행하지 않았으면 함수가 없다는 오류가 나는데, 그때는 조용히 기록을 멈춘다.
 
-const VISITOR_KEY = 'ol_visitor_id';
-const SOURCE_KEY = 'ol_source';
+const KNOWN_PATHS = ['/', '/tasks', '/feed', '/report', '/profile', '/retro', '/trophies', '/guide', '/clock-out', '/office-setup', '/admin'];
+const DEVICE_KEY = 'office-link:device-id';
+const ANON_DAY_KEY = 'office-link:anon-visit-day';
 
-// 프라이빗 모드·사이트 데이터 차단 환경에서는 접근 자체가 throw한다.
-// 계측이 끊기는 건 괜찮지만 앱이 죽어서는 안 되므로 전부 감싼다.
-function readStored(key: string): string | null {
+let disabled = false;
+
+export type PageUsage = { v: number; s: number; a: number };
+
+export function normalizePath(pathname: string): string {
+  const p = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
+  return KNOWN_PATHS.includes(p) ? p : 'other';
+}
+
+function randomId(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
+  // 오래된 브라우저용
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = (Math.random() * 16) | 0;
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
+/** 이 브라우저의 무작위 번호 — 로그인 전 방문과 가입을 이어 유입 경로를 알기 위해 */
+export function deviceId(): string | null {
   try {
-    return localStorage.getItem(key);
+    let id = localStorage.getItem(DEVICE_KEY);
+    if (!id || !/^[0-9a-f-]{36}$/i.test(id)) {
+      id = randomId();
+      localStorage.setItem(DEVICE_KEY, id);
+    }
+    return id;
   } catch {
     return null;
   }
 }
 
-function writeStored(key: string, value: string): void {
+export function isStandalone(): boolean {
+  return window.matchMedia?.('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
+}
+
+function missingFunction(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  return error.code === 'PGRST202' || error.code === '42883' || /could not find the function/i.test(error.message || '');
+}
+
+export async function sendUsage(visit: boolean, pages: Record<string, PageUsage>): Promise<void> {
+  if (disabled) return;
   try {
-    localStorage.setItem(key, value);
+    const { error } = await supabase.rpc('track_usage', {
+      p_visit: visit,
+      p_pages: pages,
+      p_standalone: isStandalone(),
+      p_device: deviceId(),
+    });
+    if (missingFunction(error)) disabled = true;
   } catch {
-    // 저장에 실패하면 매번 새 방문자로 집계된다. 그래도 적재는 계속한다.
+    // 네트워크 오류 등은 무시 — 앱 사용을 방해하지 않는다
   }
 }
 
-function randomId(): string {
-  // globalThis.crypto로 받는다. 전역 crypto를 그냥 참조하면 @types/node가 끼어들어
-  // 타입이 흔들리고(= 이 함수에서 났던 타입 에러 2건), 없는 환경도 걸러지지 않는다.
-  const webCrypto: Crypto | undefined =
-    typeof globalThis === 'undefined' ? undefined : globalThis.crypto;
-
-  if (webCrypto && typeof webCrypto.randomUUID === 'function') return webCrypto.randomUUID();
-
-  // randomUUID가 없는 환경(구형 사파리 등) 대비. visitor_id 제약은 8~64자 16진수다.
-  const hex: string[] = [];
-  if (webCrypto && typeof webCrypto.getRandomValues === 'function') {
-    const bytes = webCrypto.getRandomValues(new Uint8Array(16));
-    for (let i = 0; i < bytes.length; i += 1) hex.push(bytes[i].toString(16).padStart(2, '0'));
-  } else {
-    // crypto 자체가 없는 환경. 계측용 식별자라 암호학적 강도는 필요 없다.
-    for (let i = 0; i < 16; i += 1) {
-      hex.push(Math.floor(Math.random() * 256).toString(16).padStart(2, '0'));
-    }
-  }
-  return hex.join('');
+// 링크를 건 사이트 주소를 알아보기 쉬운 이름으로 (instagram.com과 l.instagram.com을 같은 곳으로)
+const KNOWN_SOURCES: [RegExp, string][] = [
+  [/(^|\.)instagram\.com$/, 'instagram'], [/(^|\.)threads\.(net|com)$/, 'threads'], [/(^|\.)everytime\.kr$/, 'everytime'],
+  [/(^|\.)kakao\.com$/, 'kakao'], [/(^|\.)facebook\.com$/, 'facebook'], [/^t\.co$|(^|\.)x\.com$|(^|\.)twitter\.com$/, 'x'],
+  [/(^|\.)google\./, 'google'], [/(^|\.)linkedin\.com$/, 'linkedin'], [/(^|\.)youtube\.com$/, 'youtube'],
+];
+export function sourceFromHost(host: string): string {
+  for (const [re, name] of KNOWN_SOURCES) if (re.test(host)) return name;
+  return host;
 }
 
-// localStorage 쓰기가 막힌 환경(카카오톡·인스타 인앱, 사파리 프라이빗)에서는 저장이 실패한다.
-// 메모이즈가 없으면 track() 호출마다 새 id가 발급돼 한 번의 방문 안에서도 퍼널이 끊긴다.
-// 캐시해 두면 최소한 페이지 로드 단위로는 같은 방문자로 이어진다.
-let cachedVisitorId: string | null = null;
-let cachedSource: string | null = null;
-
-function visitorId(): string {
-  if (cachedVisitorId) return cachedVisitorId;
-  const existing = readStored(VISITOR_KEY);
-  if (existing) {
-    cachedVisitorId = existing;
-    return existing;
+/**
+ * 탭을 닫거나 다른 앱으로 갈 때 — 페이지가 사라져도 끝까지 가도록 keepalive로 바로 보낸다.
+ * (supabase-js는 보내기 전에 세션을 확인하느라 기다릴 수 있어서, 닫히는 순간에는 놓칠 수 있다)
+ */
+export function beaconUsage(token: string, visit: boolean, pages: Record<string, PageUsage>): void {
+  if (disabled || !token) return;
+  try {
+    void fetch(`${SUPABASE_URL}/rest/v1/rpc/track_usage`, {
+      method: 'POST',
+      keepalive: true,
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_visit: visit, p_pages: pages, p_standalone: isStandalone(), p_device: deviceId() }),
+    }).then(res => {
+      if (res.status === 404) disabled = true;
+    }).catch(() => { /* 무시 */ });
+  } catch {
+    // 무시
   }
-  const id = randomId();
-  writeStored(VISITOR_KEY, id);
-  cachedVisitorId = id;
-  return id;
 }
 
-// 첫 방문의 유입 채널을 영구 보관한다. 이후 가입·출근까지 같은 값이 따라붙어야
-// "어느 채널에서 온 사람이 더 오래 쓰는가"를 볼 수 있다.
-function resolveSource(): string | null {
-  if (cachedSource) return cachedSource;
-  const existing = readStored(SOURCE_KEY);
-  if (existing) {
-    cachedSource = existing;
-    return existing;
+/** 로그인 전 방문 — 하루에 한 번만, 어디서 왔는지(utm_source 또는 링크한 사이트)와 함께 */
+export async function trackAnonVisitOnce(): Promise<void> {
+  if (disabled) return;
+  const today = kstToday();
+  try {
+    if (localStorage.getItem(ANON_DAY_KEY) === today) return;
+  } catch {
+    return;
   }
+  const device = deviceId();
+  if (!device) return;
 
-  let resolved: string | null = null;
+  let source: string | null = null;
   try {
     const params = new URLSearchParams(window.location.search);
-    resolved = params.get('from') || params.get('utm_source');
-    if (!resolved && document.referrer) {
-      const host = new URL(document.referrer).hostname;
-      // 같은 사이트 내 이동은 유입이 아니다
-      if (host && host !== window.location.hostname) resolved = host;
+    source = params.get('utm_source') || params.get('ref');
+    if (!source && document.referrer) {
+      const host = new URL(document.referrer).hostname.replace(/^(www|m|l|lm)\./, '');
+      if (host && host !== window.location.hostname) source = sourceFromHost(host);
     }
   } catch {
-    resolved = null;
+    source = null;
   }
-  // 카카오톡·디스코드 같은 앱 내 이동은 referrer가 비어 온다. 그래서 ?from= 링크를 쓰는 게 중요하다.
-  const value = (resolved || 'direct').slice(0, 64);
-  writeStored(SOURCE_KEY, value);
-  cachedSource = value;
-  return value;
-}
 
-// AuthContext가 로그인/로그아웃 시 불러준다. track()마다 비동기로 세션을 조회하지 않기 위한 것.
-let currentUserId: string | null = null;
-
-export function setAnalyticsUser(userId: string | null): void {
-  currentUserId = userId;
-}
-
-export function track(name: EventName, props?: Record<string, unknown>): void {
-  if (!isSupabaseConfigured()) return;
-  // crypto 부재 등 동기 throw까지 삼킨다. 계측은 어떤 경우에도 호출부를 끊지 않는다.
   try {
-    supabase
-      .from('events')
-      .insert({
-        user_id: currentUserId,
-        visitor_id: visitorId(),
-        name,
-        source: resolveSource(),
-        props: props ?? null,
-      })
-      .then(({ error }) => {
-        if (error) console.warn('[analytics] 적재 실패', name, error.message);
-      });
-  } catch (e) {
-    console.warn('[analytics] 호출 실패', name, e);
+    const { error } = await supabase.rpc('track_anon_visit', { p_device: device, p_source: source });
+    if (missingFunction(error)) {
+      disabled = true;
+      return;
+    }
+    if (!error) localStorage.setItem(ANON_DAY_KEY, today);
+  } catch {
+    // 무시
   }
 }

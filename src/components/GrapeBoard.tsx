@@ -4,7 +4,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Award } from 'lucide-react';
+import { Award, ChevronLeft, ChevronRight } from 'lucide-react';
+import AwardCertificate from '@/components/awards/AwardCertificate';
+import { certDate, templateAt } from '@/lib/awards';
+import { kstToday } from '@/lib/dates';
 
 // 포도 스티커판: 출근한 날 1알 + 할 일 3개 완료마다 1알. 30알 = 한 판 완성 → 상장!
 const BOARD_SIZE = 30;
@@ -17,6 +20,7 @@ export default function GrapeBoard() {
   const [doneTasks, setDoneTasks] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [certOpen, setCertOpen] = useState(false);
+  const [certNo, setCertNo] = useState(1); // 몇 번째 판의 상장을 보고 있는지
 
   const fetchCounts = useCallback(async () => {
     if (!user) return;
@@ -98,33 +102,41 @@ export default function GrapeBoard() {
             <p className="text-sm text-gray-700">
               🏆 완성한 포도판 <b className="text-amber-700">{completedBoards}개</b>
             </p>
-            <Button size="sm" variant="outline" className="border-amber-300 text-amber-700" onClick={() => setCertOpen(true)}>
+            <Button size="sm" variant="outline" className="border-amber-300 text-amber-700" onClick={() => { setCertNo(completedBoards); setCertOpen(true); }}>
               <Award className="w-3.5 h-3.5 mr-1" /> 상장 보기
             </Button>
           </div>
         )}
 
-        {/* 상장 다이얼로그 — 캡처해서 자랑하세요 */}
+        {/* 상장 다이얼로그 — 판마다 다른 디자인, ◀▶로 지난 상장도 */}
         <Dialog open={certOpen} onOpenChange={setCertOpen}>
-          <DialogContent className="max-w-sm p-0 overflow-hidden bg-transparent border-0 shadow-none">
-            <div className="bg-gradient-to-b from-amber-50 to-orange-50 border-[6px] border-double border-amber-500 rounded-lg p-6 text-center space-y-3 shadow-xl">
-              <p className="text-xs tracking-[0.3em] text-amber-600 font-semibold">CERTIFICATE OF AWESOME</p>
-              <p className="text-3xl">🏆</p>
-              <h2 className="text-xl font-bold text-gray-800">상 장</h2>
-              <p className="text-sm text-gray-500">제 {completedBoards} 호</p>
-              <p className="text-lg font-semibold text-gray-800">{profile?.nickname} 님</p>
-              <p className="text-sm text-gray-600 leading-relaxed px-2">
-                위 사람은 포도알 {BOARD_SIZE * completedBoards}개를 모으는 동안
-                <br />꾸준히 출근하고 할 일을 해내어
-                <br />누가 봐도 <b className="text-purple-700">"님 좀 짱인 듯"</b> 이므로
-                <br />이 상장을 수여함 🍇
-              </p>
-              <p className="text-xs text-gray-400 pt-1">
-                {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
-              </p>
-              <p className="text-sm font-semibold text-amber-700">연결오피스 🏢</p>
-              <p className="text-[10px] text-gray-300">화면을 캡처해서 자랑해 보세요!</p>
-            </div>
+          <DialogContent className="max-w-sm">
+            <AwardCertificate
+              data={{
+                template: templateAt(certNo - 1),
+                serial: `제 ${certNo} 호`,
+                awardEmoji: '🍇',
+                awardTitle: '포도알 완주상',
+                recipient: profile?.nickname || '나',
+                highlights: [`포도알 ${BOARD_SIZE * certNo}개`, `출근 ${workDays}일`, `할 일 ${doneTasks}개`],
+                body: `위 사람은 포도알 ${BOARD_SIZE * certNo}개를 모으는 동안 꾸준히 출근하고 할 일을 해내어 누가 봐도 "님 좀 짱인 듯"이므로 이 상장을 수여함 🍇`,
+                dateLabel: certDate(kstToday()),
+                periodLabel: `포도판 ${certNo}판`,
+                issuer: '연결오피스',
+              }}
+            />
+            {completedBoards > 1 && (
+              <div className="flex items-center justify-center gap-3">
+                <Button variant="ghost" size="icon" disabled={certNo <= 1} onClick={() => setCertNo(n => n - 1)} aria-label="이전 상장">
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <span className="text-sm text-gray-600">{certNo} / {completedBoards}</span>
+                <Button variant="ghost" size="icon" disabled={certNo >= completedBoards} onClick={() => setCertNo(n => n + 1)} aria-label="다음 상장">
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+            <p className="text-center text-[11px] text-gray-400">판을 채울 때마다 다른 디자인의 상장이 나와요 · 캡처해서 자랑해 보세요!</p>
           </DialogContent>
         </Dialog>
       </CardContent>

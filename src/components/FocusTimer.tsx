@@ -9,7 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Play, Square, Timer } from 'lucide-react';
 import { toast } from 'sonner';
 import { kstStartOfTodayISO } from '@/lib/dates';
-import { track } from '@/lib/analytics';
+import { track } from '@/lib/funnel';
+import { sortTasks, updateTaskStatus, useTasksChanged, withoutPending } from '@/lib/tasks';
+import { requestTrophyCheck } from '@/lib/awards';
 
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -66,7 +68,8 @@ export default function FocusTimer() {
       .eq('office_id', office.id)
       .neq('status', 'done')
       .order('sort_order');
-    setTasks(data || []);
+    // 진행 중·마감 임박한 할 일이 위로 오게
+    setTasks(sortTasks(withoutPending(data || [])));
   }, [user, office]);
 
   const fetchTodayTotal = useCallback(async () => {
@@ -87,6 +90,14 @@ export default function FocusTimer() {
     fetchTasks();
     fetchTodayTotal();
   }, [fetchActiveFocus, fetchTasks, fetchTodayTotal]);
+
+  // 할 일 카드에서 추가·완료하면 업무 선택 목록도 바로 갱신
+  useTasksChanged(fetchTasks);
+
+  // 고른 업무가 완료·삭제돼 목록에서 사라지면 선택 초기화
+  useEffect(() => {
+    if (selectedTaskId !== 'none' && !tasks.some(t => t.id === selectedTaskId)) setSelectedTaskId('none');
+  }, [tasks, selectedTaskId]);
 
   useEffect(() => {
     if (!activeFocus) {
@@ -118,9 +129,12 @@ export default function FocusTimer() {
       await fetchActiveFocus();
     } else {
       track('focus_started');
+      // 할 일을 골라 집중을 시작하면 그 할 일은 '진행 중'으로
+      const task = tasks.find(t => t.id === selectedTaskId);
+      if (task && task.status === 'todo') updateTaskStatus(task, 'in_progress');
       await changeStatus('집중 중');
       await fetchActiveFocus();
-      toast.success('집중 시작!');
+      toast.success(task ? `"${task.title}" 집중 시작!` : '집중 시작!');
     }
     setStarting(false);
   };
@@ -142,11 +156,28 @@ export default function FocusTimer() {
       return;
     }
     await changeStatus('업무 중');
+    requestTrophyCheck(); // 누적 집중 시간 트로피
+    const focusedTask = tasks.find(t => t.id === activeFocus.task_id);
     setActiveFocus(null);
     await fetchTodayTotal();
     // 저장되는 값은 12시간으로 끊긴다. 상한을 안 걸고 보여주면 탭을 13시간 열어둔 뒤
     // "13:00:00 집중 완료"라고 띄우고 바로 아래 합계는 12:00:00으로 나와 어긋난다.
-    toast.success(`${formatDuration(Math.min(MAX_FOCUS_SECONDS, duration))} 집중 완료!`);
+    const shown = formatDuration(Math.min(MAX_FOCUS_SECONDS, duration));
+    // 할 일과 함께 집중했다면 바로 완료 처리할 수 있게
+    if (focusedTask) {
+      toast.success(`${shown} 집중 완료!`, {
+        description: `"${focusedTask.title}" 다 끝냈나요?`,
+        duration: 8000,
+        action: {
+          label: '완료로 표시',
+          onClick: async () => {
+            if (await updateTaskStatus(focusedTask, 'done')) toast.success('할 일을 완료했어요 🎉');
+          },
+        },
+      });
+    } else {
+      toast.success(`${shown} 집중 완료!`);
+    }
   };
 
   return (

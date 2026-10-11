@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import { setAnalyticsUser } from '@/lib/analytics';
+import { setFunnelUser } from '@/lib/funnel';
 import { Profile } from '@/lib/types';
 
 interface AuthContextType {
@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
-      setAnalyticsUser(currentSession?.user?.id ?? null);
+      setFunnelUser(currentSession?.user?.id ?? null);
       if (currentSession?.user) {
         await fetchProfile(currentSession.user.id);
       }
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async (_event, newSession) => {
         setSession(newSession);
         setUser(newSession?.user ?? null);
-        setAnalyticsUser(newSession?.user?.id ?? null);
+        setFunnelUser(newSession?.user?.id ?? null);
         if (newSession?.user) {
           await fetchProfile(newSession.user.id);
         } else {

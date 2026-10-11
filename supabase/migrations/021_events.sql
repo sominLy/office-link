@@ -2,6 +2,9 @@
 -- 조회 정책은 두지 않는다 = service role(대시보드 SQL Editor)만 읽을 수 있다.
 -- 사용자에게 다른 사람의 행동 로그를 돌려주지 않기 위한 것이다 (010_app_state와 같은 방식).
 -- 실행 방법: Supabase 대시보드 → SQL Editor에 전체 붙여넣기 → Run
+-- ⚠️ 이 파일은 017_events.sql이라는 이름으로 2026-10-06에 이미 운영 DB에 적용됐다.
+--    origin의 017_announcements.sql과 번호가 겹쳐서 021로 옮겼을 뿐 내용은 같다.
+--    운영 DB에 다시 Run할 필요가 없다 (create table if not exists라 재실행도 안전하다).
 
 create table if not exists public.events (
   id uuid primary key default gen_random_uuid(),
@@ -17,10 +20,10 @@ create table if not exists public.events (
   -- 허용 목록. anon INSERT를 열어두므로 임의 이름으로 테이블이 오염되는 것을 막는다.
   -- ⚠️ 이벤트를 추가할 때 이 파일만 고쳐 다시 Run해도 제약은 바뀌지 않는다
   --    (create table if not exists라 테이블 생성이 건너뛰어진다).
-  --    새 이벤트는 018 마이그레이션에서
+  --    새 이벤트는 다음 번호의 마이그레이션에서
   --    alter table public.events drop constraint events_name_allowed,
   --      add constraint events_name_allowed check (name in (...));
-  --    로 교체하고, src/lib/analytics.ts의 EventName에도 같이 추가해야 한다.
+  --    로 교체하고, src/lib/funnel.ts의 EventName에도 같이 추가해야 한다.
   constraint events_name_allowed check (name in (
     'app_open',
     'page_view',

@@ -2,11 +2,12 @@ import { useEffect, useRef } from 'react';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { OfficeProvider } from '@/contexts/OfficeContext';
-import { track } from '@/lib/analytics';
+import { track } from '@/lib/funnel';
 import Index from './pages/Index';
 import Tasks from './pages/Tasks';
 import ClockOut from './pages/ClockOut';
@@ -15,6 +16,13 @@ import Profile from './pages/Profile';
 import Feed from './pages/Feed';
 import OfficeSetup from './pages/OfficeSetup';
 import Guide from './pages/Guide';
+import Retro from './pages/Retro';
+import Trophies from './pages/Trophies';
+import TrophyWatcher from '@/components/awards/TrophyWatcher';
+import UsageTracker from '@/components/UsageTracker';
+
+// 운영 대시보드는 차트 라이브러리가 커서 열 때만 불러온다
+const Admin = lazy(() => import('./pages/Admin'));
 
 const queryClient = new QueryClient();
 
@@ -48,7 +56,12 @@ const App = () => (
           <Toaster />
           <Analytics />
           <BrowserRouter>
+            {/* 퍼널 이벤트 적재 (화면에 그리는 것 없음) */}
             <RouteTracker />
+            {/* 할 일 완료·집중·출근 때 새 트로피가 열리면 축하 */}
+            <TrophyWatcher />
+            {/* 운영 대시보드용 이용 기록 (화면에 그리는 것 없음) */}
+            <UsageTracker />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/tasks" element={<Tasks />} />
@@ -58,6 +71,9 @@ const App = () => (
               <Route path="/feed" element={<Feed />} />
               <Route path="/office-setup" element={<OfficeSetup />} />
               <Route path="/guide" element={<Guide />} />
+              <Route path="/retro" element={<Retro />} />
+              <Route path="/trophies" element={<Trophies />} />
+              <Route path="/admin" element={<Suspense fallback={null}><Admin /></Suspense>} />
             </Routes>
           </BrowserRouter>
         </TooltipProvider>

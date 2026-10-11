@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { track } from '@/lib/analytics';
+import { track } from '@/lib/funnel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { trackAnonVisitOnce } from '@/lib/analytics';
 
 export default function Login() {
   const { signIn, signUp } = useAuth();
@@ -15,7 +16,9 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   // 비로그인 상태로 첫 화면에 도달한 지점. 유입 → 가입 전환의 분모가 된다.
+  // trackAnonVisitOnce는 하루 1번 방문 집계, track은 전환 계산용 이벤트 원본이라 둘 다 보낸다.
   useEffect(() => {
+    void trackAnonVisitOnce();
     track('landing_view');
   }, []);
 

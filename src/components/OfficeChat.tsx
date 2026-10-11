@@ -8,6 +8,7 @@ import { Send, Smile, X, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { defaultAvatar } from '@/lib/avatar';
 import { displayName } from '@/lib/callsign';
+import { isSubmitEnter } from '@/lib/utils';
 
 interface ChatMsg {
   id: string;
@@ -236,7 +237,7 @@ export default function OfficeChat() {
           placeholder={peer === null ? '단체방에 메시지 보내기' : `${nameOf(peer)}님에게 보내기`}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && send()}
+          onKeyDown={(e) => isSubmitEnter(e) && send()}
           maxLength={500}
         />
         <Button onClick={send} disabled={sending || !text.trim()} size="icon" className="bg-amber-600 hover:bg-amber-700 text-white flex-shrink-0">

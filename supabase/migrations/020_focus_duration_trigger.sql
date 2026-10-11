@@ -1,3 +1,5 @@
+-- ⚠️ 이 파일은 016_focus_duration_trigger.sql이라는 이름으로 2026-10-06에 이미 운영 DB에 적용됐다.
+--    origin의 016_weekly_retro.sql과 번호가 겹쳐서 020으로 옮겼을 뿐 내용은 같다.
 -- 집중 세션 duration을 DB 시계로 계산 (감사 H3)
 -- 실행 방법: Supabase 대시보드 → SQL Editor에 전체 붙여넣기 → Run
 --

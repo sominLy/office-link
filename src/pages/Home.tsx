@@ -19,6 +19,7 @@ import MemberStatsDialog from '@/components/MemberStatsDialog';
 import MenuPickDialog from '@/components/MenuPickDialog';
 import FocusCompanion, { WATCH_KEY, CLOCKOUT_KEY } from '@/components/FocusCompanion';
 import OverdueTasksDialog from '@/components/OverdueTasksDialog';
+import RetroBanner from '@/components/retro/RetroBanner';
 import BottomNav from '@/components/BottomNav';
 import { notificationsEnabled, requestNotificationPermission, notify, isMuted, setMuted } from '@/lib/notify';
 import { subscribePush, unsubscribePush } from '@/lib/push';
@@ -27,6 +28,7 @@ import { todayQuoteFrom, randomQuoteFrom } from '@/lib/quotes';
 import { checkQuote } from '@/lib/profanity';
 import { displayName, TITLE_MODES } from '@/lib/callsign';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { isSubmitEnter } from '@/lib/utils';
 
 const STATUS_OPTIONS: StatusPreset[] = ['출근', '집중 중', '업무 중', '휴식 중', '자리 비움', '스터디/회의 중', '점심 먹는 중', '저녁 먹는 중', '야식 먹는 중'];
 
@@ -279,6 +281,9 @@ export default function Home() {
           </button>
         </div>
 
+        {/* 주간 회고·상장 도착 알림 (정한 요일·시간이 지나면) */}
+        <RetroBanner />
+
         {/* My Status Control */}
         <section className="bg-white rounded-2xl p-5 shadow-sm border border-amber-100/50">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -384,13 +389,21 @@ export default function Home() {
       {/* ✨ 더보기 플로팅 버튼 — 부가 기능 모음 (헤더에서 이동) */}
       <div className="fixed right-4 bottom-20 z-30 flex flex-col items-end gap-2">
         {moreOpen && (
-          <div className="w-60 bg-white rounded-2xl shadow-lg border border-amber-100 overflow-hidden rise-in">
+          <div className="w-60 max-h-[calc(100dvh-10rem)] overflow-y-auto bg-white rounded-2xl shadow-lg border border-amber-100 rise-in">
             <div className="px-4 pt-3 pb-1 text-xs font-semibold text-amber-600 flex items-center gap-1">
               <Sparkles className="w-3.5 h-3.5" /> 숨은 기능 · 꿀팁
             </div>
             <button onClick={() => { setMoreOpen(false); navigate('/guide'); }} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-amber-50 text-left">
               <BookOpenText className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
               <span><span className="text-sm text-gray-800 font-medium">200% 활용 공략집</span><br/><span className="text-xs text-gray-400">앱 200% 쓰는 법 + 앱 설치</span></span>
+            </button>
+            <button onClick={() => { setMoreOpen(false); navigate('/retro'); }} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-amber-50 text-left">
+              <span className="text-base leading-none mt-0.5 flex-shrink-0">📬</span>
+              <span><span className="text-sm text-gray-800 font-medium">주간 회고 · 상장</span><br/><span className="text-xs text-gray-400">한 주 돌아보고 스스로 칭찬하기</span></span>
+            </button>
+            <button onClick={() => { setMoreOpen(false); navigate('/trophies'); }} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-amber-50 text-left">
+              <span className="text-base leading-none mt-0.5 flex-shrink-0">🏆</span>
+              <span><span className="text-sm text-gray-800 font-medium">내 진열장</span><br/><span className="text-xs text-gray-400">모은 스티커 · 트로피 · 상장</span></span>
             </button>
             <button onClick={() => { setMoreOpen(false); setFocusOpen(true); }} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-amber-50 text-left">
               <span className="text-base leading-none mt-0.5 flex-shrink-0">🍅</span>
@@ -443,7 +456,7 @@ export default function Home() {
           <Input
             value={quoteText}
             onChange={(e) => setQuoteText(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && submitQuote()}
+            onKeyDown={(e) => isSubmitEnter(e) && submitQuote()}
             placeholder="예: 오늘도 조용히 애쓰는 당신을 응원해요 🌱"
             maxLength={60}
           />
