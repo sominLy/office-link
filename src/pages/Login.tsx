@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { track } from '@/lib/analytics';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +14,11 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // 비로그인 상태로 첫 화면에 도달한 지점. 유입 → 가입 전환의 분모가 된다.
+  useEffect(() => {
+    track('landing_view');
+  }, []);
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -24,10 +30,13 @@ export default function Login() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await signUp(email, password);
+    track('signup_start');
+    const { error, isNewAccount } = await signUp(email, password);
     if (error) {
       toast.error('회원가입 실패: ' + error.message);
     } else {
+      // 가입 폼 통과 지점(이메일 인증 전). 같은 이메일 재제출은 세지 않는다
+      if (isNewAccount) track('signup_complete');
       toast.success('회원가입 완료! 이메일을 확인해 주세요.');
     }
     setLoading(false);

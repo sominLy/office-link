@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { setAnalyticsUser } from '@/lib/analytics';
 import { Profile } from '@/lib/types';
 
 interface AuthContextType {
@@ -9,7 +10,9 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
+  // isNewAccount: 실제로 새 계정이 만들어졌는가. 이미 가입된 이메일로 다시 제출해도
+  // Supabase는 계정 열거를 막으려고 error를 주지 않으므로, 전환 집계에는 이 값을 써야 한다.
+  signUp: (email: string, password: string) => Promise<{ error: Error | null; isNewAccount: boolean }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -42,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
+      setAnalyticsUser(currentSession?.user?.id ?? null);
       if (currentSession?.user) {
         await fetchProfile(currentSession.user.id);
       }
@@ -54,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async (_event, newSession) => {
         setSession(newSession);
         setUser(newSession?.user ?? null);
+        setAnalyticsUser(newSession?.user?.id ?? null);
         if (newSession?.user) {
           await fetchProfile(newSession.user.id);
         } else {
@@ -72,12 +77,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { emailRedirectTo: window.location.origin },
     });
-    return { error: error as Error | null };
+    // 이미 가입된 이메일이면 identities가 빈 배열로 돌아온다
+    const isNewAccount = (data?.user?.identities?.length ?? 0) > 0;
+    return { error: error as Error | null, isNewAccount };
   };
 
   const signOut = async () => {
