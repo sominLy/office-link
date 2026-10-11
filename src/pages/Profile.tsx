@@ -168,7 +168,7 @@ export default function Profile() {
                   {uploading ? '업로드 중...' : '카메라 버튼을 눌러 사진을 변경하세요 (5MB 이하)'}
                 </p>
                 {profile?.avatar_url && (
-                  <Button type="button" variant="ghost" size="sm" onClick={handleAvatarRemove} className="text-fg-neutral-muted hover:text-fg-critical h-7 px-2">
+                  <Button type="button" variant="ghost" size="sm" onClick={handleAvatarRemove} className="text-fg-neutral-muted hover:text-fg-critical-contrast h-7 px-2">
                     <X className="w-3.5 h-3.5 mr-1" />
                     사진 삭제 (기본 이미지로)
                   </Button>
@@ -266,7 +266,7 @@ export default function Profile() {
         {/* 계정 삭제 */}
         <Card className="border-stroke-critical-weak">
           <CardHeader>
-            <CardTitle className="text-t5 text-fg-critical">계정 삭제</CardTitle>
+            <CardTitle className="text-t5 text-fg-critical-contrast">계정 삭제</CardTitle>
             <CardDescription>
               프로필, 출퇴근 기록, 할 일, 집중 기록이 모두 삭제되며 되돌릴 수 없어요.
             </CardDescription>
@@ -274,7 +274,7 @@ export default function Profile() {
           <CardContent>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline" className="border-stroke-critical-weak text-fg-critical hover:bg-bg-critical-weak">
+                <Button variant="outline" className="border-stroke-critical-weak text-fg-critical-contrast hover:bg-bg-critical-weak">
                   <Trash2 className="w-4 h-4 mr-1" />
                   계정 삭제하기
                 </Button>

@@ -122,7 +122,7 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-t11 font-mono font-bold text-fg-neutral">{fmt(remaining)}</span>
-                  <span className={`text-t2 font-medium ${phase === 'focus' ? 'text-fg-critical' : 'text-fg-positive'}`}>
+                  <span className={`text-t2 font-medium ${phase === 'focus' ? 'text-fg-critical-contrast' : 'text-fg-positive-contrast'}`}>
                     {phase === 'focus' ? '집중' : '휴식'} · {rounds}세트
                   </span>
                 </div>

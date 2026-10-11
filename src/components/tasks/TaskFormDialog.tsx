@@ -104,7 +104,7 @@ export default function TaskFormDialog({ open, mode, initial, categories, onClos
               />
               {draft.category && (
                 <button type="button" onClick={() => set('category', '')} aria-label="카테고리 지우기"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-fg-disabled hover:text-fg-neutral-muted">
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-fg-neutral-subtle hover:text-fg-neutral-muted">
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}

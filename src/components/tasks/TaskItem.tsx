@@ -44,7 +44,7 @@ export default function TaskItem({ task, today, nowHM, showCategory, onToggle, o
         ) : task.status === 'in_progress' ? (
           <CircleDot className="w-5 h-5 text-fg-informative" />
         ) : (
-          <Circle className="w-5 h-5 text-fg-disabled hover:text-amber-400" />
+          <Circle className="w-5 h-5 text-fg-neutral-subtle hover:text-fg-brand" />
         )}
       </button>
 
@@ -113,7 +113,7 @@ export default function TaskItem({ task, today, nowHM, showCategory, onToggle, o
             </DropdownMenuItem>
           )}
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => onDelete(task)} className="text-fg-critical focus:text-fg-critical">
+          <DropdownMenuItem onClick={() => onDelete(task)} className="text-fg-critical-contrast focus:text-fg-critical-contrast">
             <Trash2 className="w-4 h-4 mr-2" /> 삭제
           </DropdownMenuItem>
         </DropdownMenuContent>

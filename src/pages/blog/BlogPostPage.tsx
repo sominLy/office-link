@@ -149,7 +149,7 @@ const BlogPostPage = () => {
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-blue-50 p-6 text-center">
         <div className="space-y-6 max-w-md">
           <div className="space-y-4">
-            <h1 className="text-7xl font-bold text-fg-disabled">404</h1>
+            <h1 className="text-7xl font-bold text-fg-neutral-subtle">404</h1>
             <h2 className="text-2xl font-bold text-fg-neutral">Page Not Found</h2>
             <p className="text-base text-muted-foreground">
               Sorry, the blog post you are looking for does not exist or has been removed.

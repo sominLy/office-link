@@ -191,14 +191,14 @@ export default function FocusTimer() {
       {activeFocus ? (
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-t11 font-mono font-bold text-fg-critical">{formatDuration(elapsed)}</p>
+            <p className="text-t11 font-mono font-bold text-fg-critical-contrast">{formatDuration(elapsed)}</p>
             {activeFocus.task_id && (
               <p className="text-t2 text-fg-neutral-muted mt-1">
                 {tasks.find(t => t.id === activeFocus.task_id)?.title || '업무'}
               </p>
             )}
           </div>
-          <Button onClick={stopFocus} variant="outline" className="border-stroke-critical-weak text-fg-critical hover:bg-bg-critical-weak">
+          <Button onClick={stopFocus} variant="outline" className="border-stroke-critical-weak text-fg-critical-contrast hover:bg-bg-critical-weak">
             <Square className="w-4 h-4 mr-1" />
             종료
           </Button>

@@ -19,8 +19,8 @@ import QuickAddTask from '@/components/tasks/QuickAddTask';
 import OverdueTasksDialog from '@/components/OverdueTasksDialog';
 
 const dueTextColor: Record<DueTone, string> = {
-  overdue: 'text-fg-critical font-medium',
-  today: 'text-fg-warning font-medium',
+  overdue: 'text-fg-critical-contrast font-medium',
+  today: 'text-fg-warning-contrast font-medium',
   tomorrow: 'text-fg-brand',
   later: 'text-fg-neutral-muted',
 };
@@ -114,7 +114,7 @@ export default function MyTasks({ compact = false }: { compact?: boolean }) {
           className="w-full mb-3 flex items-center gap-2 rounded-lg border border-stroke-critical-weak bg-red-50/70 px-3 py-2 text-left hover:bg-bg-critical-weak"
         >
           <Clock className="w-3.5 h-3.5 text-fg-critical flex-shrink-0" />
-          <span className="flex-1 text-t2 text-fg-critical">마감 지난 할 일 <b>{overdueCount}개</b></span>
+          <span className="flex-1 text-t2 text-fg-critical-contrast">마감 지난 할 일 <b>{overdueCount}개</b></span>
           <span className="text-t2 font-semibold text-fg-critical flex items-center">정리하기 <ChevronRight className="w-3 h-3" /></span>
         </button>
       )}
@@ -150,7 +150,7 @@ export default function MyTasks({ compact = false }: { compact?: boolean }) {
                   {task.title}
                 </span>
                 {task.status === 'in_progress' && !due && (
-                  <span className="text-t2 text-fg-informative flex-shrink-0">진행 중</span>
+                  <span className="text-t2 text-fg-informative-contrast flex-shrink-0">진행 중</span>
                 )}
                 {due && (
                   <span className={cn('text-t2 flex-shrink-0 whitespace-nowrap', dueTextColor[due.tone])}>{due.label}</span>

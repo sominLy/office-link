@@ -16,18 +16,18 @@ import type { StatusPreset } from '@/lib/types';
  */
 export const PRESENCE_META: Record<StatusPreset, { chip: string; outline: string; dot: string }> = {
   '출근': {
-    chip: 'bg-bg-positive-weak text-fg-positive',
-    outline: 'bg-bg-positive-weak text-fg-positive border-stroke-positive-weak',
+    chip: 'bg-bg-positive-weak text-fg-positive-contrast',
+    outline: 'bg-bg-positive-weak text-fg-positive-contrast border-stroke-positive-weak',
     dot: 'bg-bg-positive-solid',
   },
   '집중 중': {
-    chip: 'bg-bg-critical-weak text-fg-critical',
-    outline: 'bg-bg-critical-weak text-fg-critical border-stroke-critical-weak',
+    chip: 'bg-bg-critical-weak text-fg-critical-contrast',
+    outline: 'bg-bg-critical-weak text-fg-critical-contrast border-stroke-critical-weak',
     dot: 'bg-bg-critical-solid',
   },
   '업무 중': {
-    chip: 'bg-bg-informative-weak text-fg-informative',
-    outline: 'bg-bg-informative-weak text-fg-informative border-stroke-informative-weak',
+    chip: 'bg-bg-informative-weak text-fg-informative-contrast',
+    outline: 'bg-bg-informative-weak text-fg-informative-contrast border-stroke-informative-weak',
     dot: 'bg-bg-informative-solid',
   },
   '휴식 중': {

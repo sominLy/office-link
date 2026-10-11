@@ -339,7 +339,7 @@ export default function Home() {
                       ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  <Button onClick={() => navigate('/clock-out')} variant="outline" className="border-stroke-critical-weak text-fg-critical hover:bg-bg-critical-weak flex-1 sm:flex-none">
+                  <Button onClick={() => navigate('/clock-out')} variant="outline" className="border-stroke-critical-weak text-fg-critical-contrast hover:bg-bg-critical-weak flex-1 sm:flex-none">
                     퇴근하기
                   </Button>
                 </>
@@ -356,7 +356,7 @@ export default function Home() {
 
         {/* Office Members */}
         <section>
-          <h2 className="text-t4 font-medium text-fg-neutral-muted mb-3 px-1">오피스 멤버 <span className="text-fg-disabled">· 카드를 누르면 기록이 보여요</span></h2>
+          <h2 className="text-t4 font-medium text-fg-neutral-muted mb-3 px-1">오피스 멤버 <span className="text-fg-neutral-muted">· 카드를 누르면 기록이 보여요</span></h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {members.map((member) => (
               <button key={member.user_id} onClick={() => setSelectedMember(member)} className="lift text-left rounded-xl">
@@ -408,7 +408,7 @@ export default function Home() {
               <span><span className="text-t4 text-fg-neutral font-medium">응원 글귀 제보</span><br/><span className="text-t2 text-fg-neutral-muted">내 한마디가 모두의 홈에</span></span>
             </button>
             <button onClick={toggleNotifications} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-bg-brand-weak text-left">
-              {notifOn ? <Bell className="w-4 h-4 text-fg-brand mt-0.5 flex-shrink-0" /> : <BellOff className="w-4 h-4 text-fg-disabled mt-0.5 flex-shrink-0" />}
+              {notifOn ? <Bell className="w-4 h-4 text-fg-brand mt-0.5 flex-shrink-0" /> : <BellOff className="w-4 h-4 text-fg-neutral-subtle mt-0.5 flex-shrink-0" />}
               <span><span className="text-t4 text-fg-neutral font-medium">알림 {notifOn ? '끄기' : '켜기'}</span><br/><span className="text-t2 text-fg-neutral-muted">출근·응원 소식 푸시</span></span>
             </button>
             <button onClick={forceRefresh} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-bg-brand-weak text-left">

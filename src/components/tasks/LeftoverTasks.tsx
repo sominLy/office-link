@@ -77,11 +77,11 @@ export default function LeftoverTasks() {
           return (
             <li key={task.id} className="flex items-center gap-2 rounded-lg bg-gray-50/70 pl-2 pr-1 py-1.5">
               <button onClick={() => complete(task)} className="flex-shrink-0 rounded-full" aria-label="완료로 표시" title="완료로 표시">
-                <Circle className="w-5 h-5 text-fg-disabled hover:text-fg-positive" />
+                <Circle className="w-5 h-5 text-fg-neutral-subtle hover:text-fg-positive" />
               </button>
               <span className="flex-1 min-w-0">
                 <span className="block text-t4 text-fg-neutral-muted truncate">{task.title}</span>
-                {due && <span className={`block text-t1 ${due.tone === 'overdue' ? 'text-fg-critical' : 'text-orange-500'}`}>{due.label}</span>}
+                {due && <span className={`block text-t1 ${due.tone === 'overdue' ? 'text-fg-critical-contrast' : 'text-orange-500'}`}>{due.label}</span>}
               </span>
               <Button variant="ghost" size="sm" className="h-7 px-2 text-t2 text-fg-brand flex-shrink-0" onClick={() => toTomorrow(task)}>
                 <CalendarClock className="w-3.5 h-3.5 mr-1" /> 내일로

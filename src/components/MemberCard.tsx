@@ -53,7 +53,7 @@ export default function MemberCard({ member }: { member: MemberStatus }) {
             )}
           </div>
           {member.is_focusing && (
-            <p className="text-t2 text-fg-critical mt-1 truncate">
+            <p className="text-t2 text-fg-critical-contrast mt-1 truncate">
               🎯 {member.focus_task_title || '자유 집중'} 집중 중
             </p>
           )}

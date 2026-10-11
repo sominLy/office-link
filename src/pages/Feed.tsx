@@ -237,7 +237,7 @@ export default function Feed() {
                 {item.user_id === user?.id && item.type === 'post' && (
                   // 모바일엔 호버가 없으니 항상 보이게
                   <button onClick={() => removeItem(item.id)} aria-label="글 삭제"
-                    className="text-fg-disabled hover:text-fg-critical sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 flex-shrink-0 p-1 -m-1">
+                    className="text-fg-neutral-subtle hover:text-fg-critical-contrast sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 flex-shrink-0 p-1 -m-1">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 )}

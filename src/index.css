@@ -42,84 +42,54 @@
 }
 
 @layer base {
+  /* shadcn/ui 프리미티브 50개가 이 변수들로 색을 받는다. 앱 코드만 SEED 토큰으로
+     바꾸면 Button·Input·Dialog 같은 조각은 그대로 예전 색으로 남는다.
+     값은 SEED 팔레트에서 가져오되 HSL 삼중값 형식을 유지한다 — ui/ 안에서
+     bg-primary/50처럼 투명도를 섞어 쓰는 자리가 32곳이라 hsl(var(--x) / a) 형식이
+     필요하다. 주석의 토큰 이름이 출처다.
+
+     .dark 블록은 지웠다. dark 클래스를 붙이는 코드가 없어서 한 번도 적용된 적이
+     없고, 라이트 쪽만 SEED로 옮기면 두 벌이 조용히 어긋난다. 다크 모드를 넣을 때는
+     SEED 다크 팔레트에서 같은 방식으로 다시 만든다. */
   :root {
-    --background: 35 30% 98%;
-    --foreground: 25 20% 12%;
+    --background: 210 14% 97%;        /* gray-100 #f7f8f9 */
+    --foreground: 220 10% 11%;        /* gray-1000 #1a1c20 */
 
-    --card: 0 0% 100%;
-    --card-foreground: 25 20% 12%;
+    --card: 0 0% 100%;                /* gray-00 */
+    --card-foreground: 220 10% 11%;   /* gray-1000 */
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 25 20% 12%;
+    --popover: 0 0% 100%;             /* gray-00 */
+    --popover-foreground: 220 10% 11%;
 
-    --primary: 25 70% 45%;
-    --primary-foreground: 35 30% 98%;
+    --primary: 26 90% 37%;            /* 연결오피스 앰버 #b45309 — 흰 글씨 5.02:1 */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 35 20% 94%;
-    --secondary-foreground: 25 20% 20%;
+    --secondary: 210 9% 96%;          /* gray-200 #f3f4f5 */
+    --secondary-foreground: 214 14% 19%;
 
-    --muted: 35 15% 93%;
-    --muted-foreground: 25 10% 45%;
+    --muted: 210 14% 97%;             /* gray-100 */
+    --muted-foreground: 220 12% 38%;  /* gray-800 #555d6d — 흰 배경 6.62:1 */
 
-    --accent: 35 25% 92%;
-    --accent-foreground: 25 20% 15%;
+    --accent: 210 9% 96%;             /* gray-200 */
+    --accent-foreground: 220 10% 11%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 2 95% 58%;         /* red-700 #fa342c */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 35 15% 89%;
-    --input: 35 15% 89%;
-    --ring: 25 70% 45%;
+    --border: 223 11% 88%;            /* gray-400 #dcdee3 */
+    --input: 223 11% 88%;
+    --ring: 218 99% 68%;              /* blue-600 #5e98fe — SEED 포커스 링 */
 
-    --radius: 0.625rem;
+    --radius: 0.75rem;                /* SEED r3 12px */
 
-    --sidebar-background: 35 20% 97%;
-    --sidebar-foreground: 25 15% 25%;
-    --sidebar-primary: 25 70% 45%;
-    --sidebar-primary-foreground: 35 30% 98%;
-    --sidebar-accent: 35 20% 93%;
-    --sidebar-accent-foreground: 25 15% 15%;
-    --sidebar-border: 35 12% 88%;
-    --sidebar-ring: 25 70% 45%;
-  }
-
-  .dark {
-    --background: 25 15% 9%;
-    --foreground: 35 20% 92%;
-
-    --card: 25 15% 12%;
-    --card-foreground: 35 20% 92%;
-
-    --popover: 25 15% 12%;
-    --popover-foreground: 35 20% 92%;
-
-    --primary: 30 65% 55%;
-    --primary-foreground: 25 15% 9%;
-
-    --secondary: 25 12% 16%;
-    --secondary-foreground: 35 20% 90%;
-
-    --muted: 25 12% 16%;
-    --muted-foreground: 35 10% 55%;
-
-    --accent: 25 12% 18%;
-    --accent-foreground: 35 20% 90%;
-
-    --destructive: 0 62% 40%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 25 12% 18%;
-    --input: 25 12% 18%;
-    --ring: 30 65% 55%;
-
-    --sidebar-background: 25 15% 10%;
-    --sidebar-foreground: 35 15% 90%;
-    --sidebar-primary: 30 65% 55%;
-    --sidebar-primary-foreground: 25 15% 9%;
-    --sidebar-accent: 25 12% 15%;
-    --sidebar-accent-foreground: 35 15% 90%;
-    --sidebar-border: 25 12% 15%;
-    --sidebar-ring: 30 65% 55%;
+    --sidebar-background: 210 14% 97%;
+    --sidebar-foreground: 220 12% 38%;
+    --sidebar-primary: 26 90% 37%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 9% 96%;
+    --sidebar-accent-foreground: 220 10% 11%;
+    --sidebar-border: 223 11% 88%;
+    --sidebar-ring: 218 99% 68%;
   }
 }
 
@@ -204,9 +174,6 @@
     background: hsl(0 0% 100% / 0.72);
     backdrop-filter: blur(14px) saturate(1.4);
     -webkit-backdrop-filter: blur(14px) saturate(1.4);
-  }
-  .dark .glass {
-    background: hsl(25 15% 12% / 0.72);
   }
 
   /* 카드가 살짝 떠오르는 부드러운 호버 */

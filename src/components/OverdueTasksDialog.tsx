@@ -104,7 +104,7 @@ export default function OverdueTasksDialog({ open, onClose, onChanged }: { open:
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-fg-critical" /> 마감이 지난 할 일
-            {tasks.length > 0 && <Badge variant="outline" className="bg-bg-critical-weak text-fg-critical border-stroke-critical-weak">{tasks.length}</Badge>}
+            {tasks.length > 0 && <Badge variant="outline" className="bg-bg-critical-weak text-fg-critical-contrast border-stroke-critical-weak">{tasks.length}</Badge>}
           </DialogTitle>
           <DialogDescription className={tasks.length > 0 ? 'text-left' : 'sr-only'}>
             기간을 늘리거나 완료·삭제로 정리하고 가볍게 시작해요.
@@ -140,11 +140,11 @@ export default function OverdueTasksDialog({ open, onClose, onChanged }: { open:
                           <CalendarDays className="w-3 h-3" />
                           <span>{formatDateLabel(task.due_date as string)}{timeLabel ? ` ${timeLabel}` : ''}까지였어요</span>
                           {task.status === 'in_progress' && (
-                            <Badge variant="outline" className="ml-0.5 text-t1 px-1.5 py-0 bg-bg-informative-weak text-fg-informative border-stroke-informative-weak">진행 중</Badge>
+                            <Badge variant="outline" className="ml-0.5 text-t1 px-1.5 py-0 bg-bg-informative-weak text-fg-informative-contrast border-stroke-informative-weak">진행 중</Badge>
                           )}
                         </p>
                       </div>
-                      <Badge variant="outline" className="text-t2 whitespace-nowrap bg-bg-critical-weak text-fg-critical border-stroke-critical-weak">
+                      <Badge variant="outline" className="text-t2 whitespace-nowrap bg-bg-critical-weak text-fg-critical-contrast border-stroke-critical-weak">
                         {late}일 지남
                       </Badge>
                     </div>
@@ -186,10 +186,10 @@ export default function OverdueTasksDialog({ open, onClose, onChanged }: { open:
                           onClick={() => { setPickerFor(task.id); setPickedDate(addDays(today, 1)); }}>
                           <CalendarDays className="w-3.5 h-3.5 mr-1" /> 날짜 고르기
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-8 px-2 text-t2 text-fg-positive" onClick={() => complete(task)}>
+                        <Button variant="ghost" size="sm" className="h-8 px-2 text-t2 text-fg-positive-contrast" onClick={() => complete(task)}>
                           <CheckCheck className="w-3.5 h-3.5 mr-1" /> 이미 했어요
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-8 px-2 text-t2 text-fg-critical ml-auto" onClick={() => remove(task)}>
+                        <Button variant="ghost" size="sm" className="h-8 px-2 text-t2 text-fg-critical-contrast ml-auto" onClick={() => remove(task)}>
                           <Trash2 className="w-3.5 h-3.5 mr-1" /> 삭제
                         </Button>
                       </div>

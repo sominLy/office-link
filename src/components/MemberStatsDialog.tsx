@@ -224,7 +224,7 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
                 {myRole === 'admin' && member.is_working && (
                   <button
                     onClick={forceClockOut}
-                    className="ml-auto text-t2 text-fg-critical border border-stroke-critical-weak rounded-full px-2 py-0.5 hover:bg-bg-critical-weak"
+                    className="ml-auto text-t2 text-fg-critical-contrast border border-stroke-critical-weak rounded-full px-2 py-0.5 hover:bg-bg-critical-weak"
                     title="깜빡한 멤버를 대신 퇴근시켜요"
                   >
                     퇴근시키기
@@ -244,7 +244,7 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
                       <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
                     </span>
-                    <p className="text-t4 text-fg-critical">
+                    <p className="text-t4 text-fg-critical-contrast">
                       지금 <b>{stats.focusingTaskTitle || '자유 집중'}</b>에 집중하고 있어요 🔥
                     </p>
                   </div>
@@ -261,7 +261,7 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
                       <p className="font-semibold text-fg-neutral text-t4">{fmt(stats.todayWorkSeconds)}</p>
                     </div>
                     <div className="bg-bg-critical-weak rounded-lg p-3">
-                      <div className="flex items-center gap-1.5 text-fg-critical text-t2 mb-1">
+                      <div className="flex items-center gap-1.5 text-fg-critical-contrast text-t2 mb-1">
                         <Target className="w-3.5 h-3.5" /> 집중
                       </div>
                       <p className="font-semibold text-fg-neutral text-t4">{fmt(stats.todayFocusSeconds)}</p>
@@ -274,13 +274,13 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
                   <p className="text-t2 font-medium text-fg-neutral-muted mb-2">이번 주</p>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="bg-bg-informative-weak rounded-lg p-3">
-                      <div className="flex items-center gap-1.5 text-fg-informative text-t2 mb-1">
+                      <div className="flex items-center gap-1.5 text-fg-informative-contrast text-t2 mb-1">
                         <CalendarDays className="w-3.5 h-3.5" /> 출근
                       </div>
                       <p className="font-semibold text-fg-neutral text-t4">{stats.weekWorkDays}일</p>
                     </div>
                     <div className="bg-bg-critical-weak rounded-lg p-3">
-                      <div className="flex items-center gap-1.5 text-fg-critical text-t2 mb-1">
+                      <div className="flex items-center gap-1.5 text-fg-critical-contrast text-t2 mb-1">
                         <Target className="w-3.5 h-3.5" /> 총 집중
                       </div>
                       <p className="font-semibold text-fg-neutral text-t4">{fmt(stats.weekFocusSeconds)}</p>
@@ -305,7 +305,7 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
                           {task.status === 'done' ? (
                             <CheckCircle2 className="w-4 h-4 text-fg-positive flex-shrink-0" />
                           ) : (
-                            <Circle className="w-4 h-4 text-fg-disabled flex-shrink-0" />
+                            <Circle className="w-4 h-4 text-fg-neutral-subtle flex-shrink-0" />
                           )}
                           <span className={`truncate ${task.status === 'done' ? 'line-through text-fg-neutral-muted' : 'text-fg-neutral-muted'}`}>
                             {task.title}
@@ -316,7 +316,7 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
                             </Badge>
                           )}
                           {task.status === 'in_progress' && (
-                            <Badge variant="outline" className="text-t1 bg-bg-informative-weak text-fg-informative border-stroke-informative-weak flex-shrink-0">진행 중</Badge>
+                            <Badge variant="outline" className="text-t1 bg-bg-informative-weak text-fg-informative-contrast border-stroke-informative-weak flex-shrink-0">진행 중</Badge>
                           )}
                           {/* 이모지 응원 버튼 */}
                           <span className="flex items-center gap-1 ml-auto">

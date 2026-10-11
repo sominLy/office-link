@@ -119,7 +119,7 @@ export default function Trophies() {
                         <div key={t.id} className={cn('flex flex-col items-center text-center', newIds.has(t.id) && 'sticker-pop')}>
                           <span className="relative text-t12 leading-none drop-shadow-[0_3px_2px_rgba(120,60,0,0.25)]">
                             {t.emoji}
-                            {newIds.has(t.id) && <span className="absolute -top-1 -right-3 text-t1 font-bold text-white bg-rose-500 rounded-full px-1">NEW</span>}
+                            {newIds.has(t.id) && <span className="absolute -top-1 -right-3 text-t1 font-bold text-fg-critical-contrast bg-bg-critical-weak rounded-full px-1">NEW</span>}
                           </span>
                           <span className="mt-1 text-t1 font-medium text-fg-brand-contrast leading-tight [word-break:keep-all]">{t.title}</span>
                         </div>
@@ -166,7 +166,7 @@ export default function Trophies() {
                       <span className={cn('text-t9 leading-tight', n === 0 && 'grayscale opacity-30')}>{s.emoji}</span>
                       <span className={cn('mt-0.5 text-t1 leading-tight [word-break:keep-all]', n > 0 ? 'text-fg-neutral-muted' : 'text-fg-neutral-muted')}>{n > 0 ? s.title : '???'}</span>
                       {n > 1 && <span className="absolute -top-1.5 -right-1.5 text-t1 font-bold text-white bg-bg-brand-solid rounded-full min-w-[1.1rem] px-1">×{n}</span>}
-                      {n === 0 && <Lock className="absolute top-1 right-1 w-2.5 h-2.5 text-fg-disabled" />}
+                      {n === 0 && <Lock className="absolute top-1 right-1 w-2.5 h-2.5 text-fg-neutral-subtle" />}
                     </div>
                   );
                 })}

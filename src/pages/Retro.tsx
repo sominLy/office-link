@@ -225,10 +225,12 @@ export default function Retro() {
         ) : (
           <>
             {/* 한 줄 칭찬 */}
-            <section className="rounded-2xl bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 text-white p-5 shadow-md rise-in">
+            {/* 밝은 그라데이션 위에 흰 글씨를 얹으면 대비가 1.7~2.9:1로 읽히지 않는다.
+                축하 화면이라 그라데이션은 밝게 두고 글자를 진한 중립색으로 바꿨다 (6:1 이상). */}
+            <section className="rounded-2xl bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 text-fg-neutral p-5 shadow-md rise-in">
               <p className="text-t12">{head.emoji}</p>
               <h2 className="mt-2 text-t7 font-bold leading-snug [word-break:keep-all]">{final ? head.title : '이번 주, 지금까지 이렇게 해냈어요'}</h2>
-              <p className="mt-1.5 text-t4 text-white/90">
+              <p className="mt-1.5 text-t4 font-medium">
                 {hasActivity(data)
                   ? [
                       data.workDays > 0 && `${data.workDays}일 출근`,
@@ -434,7 +436,7 @@ export default function Retro() {
                     <li key={t.id} className="flex items-center gap-1.5 text-t4 text-fg-neutral-muted">
                       <span className="flex-1 min-w-0 truncate">· {t.title}</span>
                       {t.week_start >= thisWeek
-                        ? <span className="flex-shrink-0 text-t1 text-fg-positive">이번 주로 옮김</span>
+                        ? <span className="flex-shrink-0 text-t1 text-fg-positive-contrast">이번 주로 옮김</span>
                         : t.routine_id && <span className="flex-shrink-0 text-t1 text-fg-neutral-muted">루틴 · 이번 주에 새로 생겨요</span>}
                     </li>
                   ))}
@@ -445,7 +447,7 @@ export default function Retro() {
                     <CalendarPlus className="w-4 h-4 mr-1" /> {carryable.length}개 이번 주 할 일로 가져오기
                   </Button>
                 ) : (
-                  <p className="text-t2 text-fg-positive text-center">이어서 할 일은 모두 이번 주에 있어요 👍</p>
+                  <p className="text-t2 text-fg-positive-contrast text-center">이어서 할 일은 모두 이번 주에 있어요 👍</p>
                 )}
               </Card>
             )}
@@ -538,7 +540,7 @@ function StatTile({ label, value, delta, unit, time }: { label: string; value: s
     <Card className="p-4 border-stroke-neutral-subtle">
       <p className="text-t2 text-fg-neutral-muted">{label}</p>
       <p className="mt-0.5 text-t9 font-bold text-fg-neutral">{value}</p>
-      <p className={cn('mt-0.5 text-t2', same ? 'text-fg-neutral-muted' : delta > 0 ? 'text-fg-positive font-medium' : 'text-fg-neutral-muted')}>
+      <p className={cn('mt-0.5 text-t2', same ? 'text-fg-neutral-muted' : delta > 0 ? 'text-fg-positive-contrast font-medium' : 'text-fg-neutral-muted')}>
         {same ? '지난주와 같아요' : delta > 0 ? `▲ 지난주보다 ${amount}` : `▽ 지난주보다 ${amount}`}
       </p>
     </Card>

@@ -19,12 +19,12 @@ export const STATUS_META: Record<TaskStatus, { label: string; chip: string; dot:
   },
   in_progress: {
     label: '진행 중',
-    chip: 'bg-bg-informative-weak text-fg-informative border-stroke-informative-weak',
+    chip: 'bg-bg-informative-weak text-fg-informative-contrast border-stroke-informative-weak',
     dot: 'bg-bg-informative-solid',
   },
   done: {
     label: '완료',
-    chip: 'bg-bg-positive-weak text-fg-positive border-stroke-positive-weak',
+    chip: 'bg-bg-positive-weak text-fg-positive-contrast border-stroke-positive-weak',
     dot: 'bg-bg-positive-solid',
   },
 };
@@ -36,9 +36,9 @@ export const STATUS_META: Record<TaskStatus, { label: string; chip: string; dot:
 export const PRIORITY_META: Record<TaskPriority, { label: string; chip: string; picked: string; fg: string }> = {
   high: {
     label: '높음',
-    chip: 'bg-bg-critical-weak text-fg-critical border-stroke-critical-weak',
+    chip: 'bg-bg-critical-weak text-fg-critical-contrast border-stroke-critical-weak',
     picked: 'bg-bg-critical-solid text-white border-stroke-critical-solid',
-    fg: 'text-fg-critical',
+    fg: 'text-fg-critical-contrast',
   },
   normal: {
     label: '보통',
@@ -50,7 +50,7 @@ export const PRIORITY_META: Record<TaskPriority, { label: string; chip: string; 
     label: '낮음',
     chip: 'bg-bg-neutral-muted text-fg-neutral-muted border-stroke-neutral-subtle',
     picked: 'bg-bg-neutral-solid text-fg-on-neutral-solid border-stroke-neutral-solid',
-    fg: 'text-fg-disabled',
+    fg: 'text-fg-neutral-subtle',
   },
 };
 
@@ -60,10 +60,10 @@ export type DueTone = 'overdue' | 'today' | 'tomorrow' | 'later';
 
 // 네 단계를 서로 다른 SEED 계열로 둔다 — 지남=위험, 오늘=주의, 내일=브랜드, 그 뒤=정보
 const DUE_CLS: Record<DueTone, string> = {
-  overdue: 'bg-bg-critical-weak text-fg-critical border-stroke-critical-weak',
-  today: 'bg-bg-warning-weak text-fg-warning border-stroke-warning-weak',
+  overdue: 'bg-bg-critical-weak text-fg-critical-contrast border-stroke-critical-weak',
+  today: 'bg-bg-warning-weak text-fg-warning-contrast border-stroke-warning-weak',
   tomorrow: 'bg-bg-brand-weak text-fg-brand border-stroke-brand-weak',
-  later: 'bg-bg-informative-weak text-fg-informative border-stroke-informative-weak',
+  later: 'bg-bg-informative-weak text-fg-informative-contrast border-stroke-informative-weak',
 };
 
 /** 마감 라벨: "2일 지남" · "오늘 오후 6:00까지" · "내일까지" · "D-3" (마감 없으면 null) */

@@ -61,7 +61,7 @@ export default function AuthErrorPage() {
               {countdown > 0 ? (
                 <>
                   Will automatically return to the home page in{' '}
-                  <span className="text-fg-informative font-semibold text-t5">
+                  <span className="text-fg-informative-contrast font-semibold text-t5">
                     {countdown}
                   </span>{' '}
                   seconds

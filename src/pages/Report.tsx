@@ -258,7 +258,7 @@ export default function Report() {
                       ? new Date(s.ended_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
                       : '근무 중'}
                   </span>
-                  <button onClick={() => openEditSession(s)} className="ml-auto text-fg-disabled hover:text-fg-brand">
+                  <button onClick={() => openEditSession(s)} className="ml-auto text-fg-neutral-subtle hover:text-fg-brand">
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                 </li>

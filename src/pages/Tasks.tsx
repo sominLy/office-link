@@ -392,7 +392,7 @@ export default function Tasks() {
                   <span className="text-t2 rounded-full px-2 py-0.5 bg-orange-50 text-orange-600 border border-orange-200">오늘 마감 {dueTodayCount}</span>
                 )}
                 {inProgressCount > 0 && (
-                  <span className="text-t2 rounded-full px-2 py-0.5 bg-bg-informative-weak text-fg-informative border border-stroke-informative-weak">진행 중 {inProgressCount}</span>
+                  <span className="text-t2 rounded-full px-2 py-0.5 bg-bg-informative-weak text-fg-informative-contrast border border-stroke-informative-weak">진행 중 {inProgressCount}</span>
                 )}
               </div>
             )}
@@ -406,10 +406,10 @@ export default function Tasks() {
             className="w-full flex items-center gap-2.5 rounded-xl border border-stroke-critical-weak bg-red-50/80 px-4 py-3 text-left hover:bg-bg-critical-weak transition-colors rise-in"
           >
             <Clock className="w-4 h-4 text-fg-critical flex-shrink-0" />
-            <span className="flex-1 min-w-0 text-t4 text-fg-critical">
+            <span className="flex-1 min-w-0 text-t4 text-fg-critical-contrast">
               마감이 지난 할 일 <b>{overdueCount}개</b>가 있어요
             </span>
-            <span className="text-t2 font-semibold text-fg-critical flex items-center flex-shrink-0">
+            <span className="text-t2 font-semibold text-fg-critical-contrast flex items-center flex-shrink-0">
               정리하기 <ChevronRight className="w-3.5 h-3.5" />
             </span>
           </button>
@@ -447,7 +447,7 @@ export default function Tasks() {
                 {openTasks.length === 0 && (
                   <Card className="p-6 text-center border-stroke-positive-weak bg-green-50/60">
                     <p className="text-t11 mb-1">🎉</p>
-                    <p className="text-t4 font-semibold text-fg-positive">이번 주 할 일을 모두 끝냈어요!</p>
+                    <p className="text-t4 font-semibold text-fg-positive-contrast">이번 주 할 일을 모두 끝냈어요!</p>
                     <p className="text-t2 text-green-600/80 mt-1">다음 주 할 일을 미리 담아두거나, 오늘은 푹 쉬어요</p>
                   </Card>
                 )}
@@ -504,8 +504,8 @@ export default function Tasks() {
                 const col = status === 'done' ? doneTasks : sorted.filter(t => t.status === status);
                 const tone = {
                   todo: { title: 'text-fg-neutral-muted', bg: 'bg-gray-50/70' },
-                  in_progress: { title: 'text-fg-informative', bg: 'bg-blue-50/40' },
-                  done: { title: 'text-fg-positive', bg: 'bg-green-50/40' },
+                  in_progress: { title: 'text-fg-informative-contrast', bg: 'bg-blue-50/40' },
+                  done: { title: 'text-fg-positive-contrast', bg: 'bg-green-50/40' },
                 }[status];
                 return (
                   <div key={status} className="space-y-2">

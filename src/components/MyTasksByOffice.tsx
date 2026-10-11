@@ -164,7 +164,7 @@ export default function MyTasksByOffice() {
                           ? <CheckCircle2 className="w-4 h-4 text-fg-positive check-pop" />
                           : task.status === 'in_progress'
                             ? <CircleDot className="w-4 h-4 text-fg-informative" />
-                            : <Circle className="w-4 h-4 text-fg-disabled hover:text-amber-400" />}
+                            : <Circle className="w-4 h-4 text-fg-neutral-subtle hover:text-fg-brand" />}
                       </button>
                       <span className={`flex-1 min-w-0 truncate ${task.status === 'done' ? 'line-through text-fg-neutral-muted' : 'text-fg-neutral-muted'}`}>
                         {task.title}
@@ -175,7 +175,7 @@ export default function MyTasksByOffice() {
                       )}
                       {/* 모바일엔 호버가 없으니 항상 보이게, 데스크톱은 호버 시 */}
                       <button onClick={() => remove(task)} aria-label={`${task.title} 삭제`}
-                        className="flex-shrink-0 p-1 -m-1 text-fg-disabled hover:text-fg-critical sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100">
+                        className="flex-shrink-0 p-1 -m-1 text-fg-neutral-subtle hover:text-fg-critical-contrast sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </li>

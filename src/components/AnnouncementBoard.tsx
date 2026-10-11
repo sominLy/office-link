@@ -46,7 +46,7 @@ export default function AnnouncementBoard() {
       <div className="flex items-center gap-1.5 mb-1.5">
         <Megaphone className="w-4 h-4 text-fg-brand" />
         <h2 className="text-t4 font-semibold text-fg-brand-contrast">업데이트 소식</h2>
-        {isNew && <span className="text-t1 font-bold text-white bg-rose-500 rounded-full px-1.5 py-px">NEW</span>}
+        {isNew && <span className="text-t1 font-bold text-fg-critical-contrast bg-bg-critical-weak rounded-full px-1.5 py-px">NEW</span>}
         <span className="ml-auto text-t1 text-fg-brand">{dateLabel(latest.created_at)}</span>
       </div>
       <p className="text-t4 text-fg-neutral-muted leading-relaxed break-keep [overflow-wrap:anywhere]">{latest.message}</p>

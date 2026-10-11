@@ -200,10 +200,10 @@ export default function OfficeChat() {
                     )}
                     <div className={`flex flex-col ${mine ? 'items-end' : 'items-start'} flex-shrink-0`}>
                       {mine && rc > 0 && <span className="text-t1 text-fg-brand leading-none mb-0.5">읽음 {rc}</span>}
-                      <span className="text-t1 text-fg-disabled leading-none">{timeLabel(m.created_at)}</span>
+                      <span className="text-t1 text-fg-neutral-muted leading-none">{timeLabel(m.created_at)}</span>
                     </div>
                     {canDelete(m) && (
-                      <button onClick={() => del(m.id)} className="text-fg-disabled hover:text-fg-critical opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex-shrink-0" title="삭제 (10분 이내)">
+                      <button onClick={() => del(m.id)} className="text-fg-neutral-subtle hover:text-fg-critical-contrast opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex-shrink-0" title="삭제 (10분 이내)">
                         <X className="w-3.5 h-3.5" />
                       </button>
                     )}
