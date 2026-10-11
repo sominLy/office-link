@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
@@ -92,9 +92,18 @@ export default function Tasks() {
 
   // ───────── 불러오기 ─────────
 
+  // 겹쳐 들어온 조회 중 마지막 것만 반영한다. fetchTasks는 최초 1회와 루틴 자동 생성
+  // 직후에 연달아 불리는데, 먼저 보낸 요청이 늦게 도착하면 새로 만든 루틴 할 일이
+  // 빠진 목록으로 화면이 덮인다.
+  const tasksReqRef = useRef(0);
+  const monthReqRef = useRef(0);
+
   const fetchTasks = useCallback(async () => {
     if (!user || !office) return;
-    setTasks(await fetchWeekTasks(user.id, office.id));
+    const req = ++tasksReqRef.current;
+    const rows = await fetchWeekTasks(user.id, office.id);
+    if (req !== tasksReqRef.current) return;
+    setTasks(rows);
     setLoading(false);
   }, [user, office]);
 
@@ -102,6 +111,8 @@ export default function Tasks() {
     if (!user || !office) return;
     const first = new Date(calMonth.getFullYear(), calMonth.getMonth(), 1);
     const last = new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 0);
+    // 달을 빠르게 넘기면 이전 달 응답이 나중에 도착해 보이는 달과 어긋난다
+    const req = ++monthReqRef.current;
     const { data } = await supabase
       .from('tasks')
       .select('*')
@@ -110,6 +121,7 @@ export default function Tasks() {
       .gte('due_date', strFromDate(first))
       .lte('due_date', strFromDate(last))
       .order('sort_order');
+    if (req !== monthReqRef.current) return;
     setMonthTasks(withoutPending(data || []));
   }, [user, office, calMonth]);
 
@@ -167,6 +179,12 @@ export default function Tasks() {
   );
 
   // ───────── 변경 ─────────
+
+  // tasks.length를 쓰면 월간 탭에서 불러온 할 일과 번호가 겹친다. compareTasks가
+  // sort_order를 여섯 번째 동점 처리로 쓰기 때문에, 겹치면 같은 마감일·우선순위끼리
+  // 순서가 들쭉날쭉해진다.
+  const nextSortOrder = () =>
+    Math.max(-1, ...tasks.map(t => t.sort_order), ...monthTasks.map(t => t.sort_order)) + 1;
 
   const patchLocal = (id: string, patch: Partial<Task>) => {
     const apply = (list: Task[]) => list.map(t => (t.id === id ? { ...t, ...patch } : t));
@@ -255,7 +273,7 @@ export default function Tasks() {
       priority: d.priority,
     };
     if (form.mode === 'create') {
-      const created = await createTask(user.id, office.id, { ...fields, sort_order: tasks.length });
+      const created = await createTask(user.id, office.id, { ...fields, sort_order: nextSortOrder() });
       if (!created) return false;
       track('task_created');
       addToState(created);
@@ -279,7 +297,7 @@ export default function Tasks() {
 
   const quickAdd = async (title: string, due: string | null) => {
     if (!user || !office) return false;
-    const created = await createTask(user.id, office.id, { title, due_date: due, sort_order: tasks.length });
+    const created = await createTask(user.id, office.id, { title, due_date: due, sort_order: nextSortOrder() });
     if (!created) return false;
     track('task_created');
     addToState(created);
