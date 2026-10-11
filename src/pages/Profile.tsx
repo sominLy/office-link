@@ -138,14 +138,14 @@ export default function Profile() {
       <main className="max-w-lg mx-auto px-4 py-6 pb-24 space-y-4">
         <Card className="border-stroke-neutral-subtle">
           <CardHeader>
-            <CardTitle className="text-base">프로필</CardTitle>
+            <CardTitle className="text-t5">프로필</CardTitle>
             <CardDescription>{user?.email}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             {/* 프로필 사진 */}
             <div className="flex items-center gap-4">
               <div className="relative">
-                <div className="w-20 h-20 rounded-full bg-bg-brand-weak flex items-center justify-center text-3xl overflow-hidden">
+                <div className="w-20 h-20 rounded-full bg-bg-brand-weak flex items-center justify-center text-t11 overflow-hidden">
                   {profile?.avatar_url ? (
                     <img src={profile.avatar_url} alt="" className="w-20 h-20 object-cover" />
                   ) : (
@@ -164,7 +164,7 @@ export default function Profile() {
                 <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
               </div>
               <div className="space-y-1.5">
-                <p className="text-sm text-fg-neutral-muted">
+                <p className="text-t4 text-fg-neutral-muted">
                   {uploading ? '업로드 중...' : '카메라 버튼을 눌러 사진을 변경하세요 (5MB 이하)'}
                 </p>
                 {profile?.avatar_url && (
@@ -200,10 +200,10 @@ export default function Profile() {
           onClick={() => navigate('/guide')}
           className="w-full flex items-center gap-3 bg-gradient-to-r from-amber-100 to-orange-100 border border-stroke-brand-weak rounded-xl px-4 py-3 hover:from-amber-200 hover:to-orange-200 transition-colors"
         >
-          <span className="text-2xl">📖</span>
+          <span className="text-t9">📖</span>
           <span className="text-left flex-1">
-            <p className="text-sm font-semibold text-fg-neutral">200% 활용 공략집</p>
-            <p className="text-xs text-fg-neutral-muted">고인물 팁 14가지 + 아이폰 앱으로 설치하는 법</p>
+            <p className="text-t4 font-semibold text-fg-neutral">200% 활용 공략집</p>
+            <p className="text-t2 text-fg-neutral-muted">고인물 팁 14가지 + 아이폰 앱으로 설치하는 법</p>
           </span>
         </button>
 
@@ -212,10 +212,10 @@ export default function Profile() {
             onClick={() => navigate('/admin')}
             className="w-full flex items-center gap-3 bg-bg-layer-default border border-stroke-neutral-subtle rounded-xl px-4 py-3 hover:bg-bg-neutral-muted transition-colors"
           >
-            <span className="text-2xl">📊</span>
+            <span className="text-t9">📊</span>
             <span className="text-left flex-1">
-              <p className="text-sm font-semibold text-fg-neutral">운영 대시보드</p>
-              <p className="text-xs text-fg-neutral-muted">방문자·이용 시간·기능별 사용·유지율 (운영자만 보여요)</p>
+              <p className="text-t4 font-semibold text-fg-neutral">운영 대시보드</p>
+              <p className="text-t2 text-fg-neutral-muted">방문자·이용 시간·기능별 사용·유지율 (운영자만 보여요)</p>
             </span>
           </button>
         )}
@@ -223,7 +223,7 @@ export default function Profile() {
         {/* 주간 회고 · 진열장 */}
         <Card className="border-stroke-neutral-subtle">
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">📬 주간 회고 · 🏆 진열장</CardTitle>
+            <CardTitle className="text-t5 flex items-center gap-2">📬 주간 회고 · 🏆 진열장</CardTitle>
             <CardDescription>
               {describePrefs(readRetroPrefs(profile))}에 한 주 기록과 상장이 도착해요. 다음 도착: {nextDeliveryLabel(readRetroPrefs(profile))}
             </CardDescription>
@@ -245,7 +245,7 @@ export default function Profile() {
         {/* 근무 시간 알림 */}
         <Card className="border-stroke-neutral-subtle">
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
+            <CardTitle className="text-t5 flex items-center gap-2">
               <BellRing className="w-4 h-4 text-fg-brand" />
               근무 시간 알림
             </CardTitle>
@@ -266,7 +266,7 @@ export default function Profile() {
         {/* 계정 삭제 */}
         <Card className="border-stroke-critical-weak">
           <CardHeader>
-            <CardTitle className="text-base text-fg-critical">계정 삭제</CardTitle>
+            <CardTitle className="text-t5 text-fg-critical">계정 삭제</CardTitle>
             <CardDescription>
               프로필, 출퇴근 기록, 할 일, 집중 기록이 모두 삭제되며 되돌릴 수 없어요.
             </CardDescription>
@@ -288,7 +288,7 @@ export default function Profile() {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>취소</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDeleteAccount} disabled={deleting} className="bg-bg-critical-solid hover:bg-bg-critical-solid">
+                  <AlertDialogAction onClick={handleDeleteAccount} disabled={deleting} className="bg-bg-critical-solid hover:bg-bg-critical-solid-pressed">
                     {deleting ? '삭제 중...' : '삭제'}
                   </AlertDialogAction>
                 </AlertDialogFooter>

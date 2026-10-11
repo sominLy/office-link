@@ -50,9 +50,9 @@ export default function Login() {
       <Card className="w-full max-w-md shadow-lg border-0">
         <CardHeader className="text-center pb-2">
           <div className="mx-auto mb-3 w-12 h-12 bg-bg-brand-weak rounded-xl flex items-center justify-center">
-            <span className="text-2xl">🏢</span>
+            <span className="text-t9">🏢</span>
           </div>
-          <CardTitle className="text-2xl font-bold text-fg-neutral">연결오피스</CardTitle>
+          <CardTitle className="text-t9 font-bold text-fg-neutral">연결오피스</CardTitle>
           <CardDescription className="text-fg-neutral-muted">함께 일하는 가상 오피스</CardDescription>
         </CardHeader>
         <CardContent>

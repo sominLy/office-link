@@ -184,16 +184,16 @@ export default function FocusTimer() {
     <Card className="p-5 border-stroke-neutral-subtle shadow-sm">
       <div className="flex items-center gap-2 mb-3">
         <Timer className="w-4 h-4 text-fg-brand" />
-        <h3 className="font-semibold text-fg-neutral text-sm">집중 타이머</h3>
-        <span className="text-xs text-fg-neutral-muted ml-auto">오늘 총 {formatDuration(todayTotal + (activeFocus ? elapsed : 0))}</span>
+        <h3 className="font-semibold text-fg-neutral text-t4">집중 타이머</h3>
+        <span className="text-t2 text-fg-neutral-muted ml-auto">오늘 총 {formatDuration(todayTotal + (activeFocus ? elapsed : 0))}</span>
       </div>
 
       {activeFocus ? (
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-3xl font-mono font-bold text-fg-critical">{formatDuration(elapsed)}</p>
+            <p className="text-t11 font-mono font-bold text-fg-critical">{formatDuration(elapsed)}</p>
             {activeFocus.task_id && (
-              <p className="text-xs text-fg-neutral-muted mt-1">
+              <p className="text-t2 text-fg-neutral-muted mt-1">
                 {tasks.find(t => t.id === activeFocus.task_id)?.title || '업무'}
               </p>
             )}
@@ -216,7 +216,7 @@ export default function FocusTimer() {
               ))}
             </SelectContent>
           </Select>
-          <Button onClick={startFocus} disabled={starting} className="bg-bg-critical-solid hover:bg-bg-critical-solid text-white">
+          <Button onClick={startFocus} disabled={starting} className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
             <Play className="w-4 h-4 mr-1" />
             집중 시작
           </Button>

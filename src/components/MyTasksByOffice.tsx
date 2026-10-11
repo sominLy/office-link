@@ -94,7 +94,7 @@ export default function MyTasksByOffice() {
   return (
     <Card className="border-stroke-neutral-subtle">
       <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
+        <CardTitle className="text-t5 flex items-center gap-2">
           <ListTodo className="w-4 h-4 text-fg-brand" /> 내 할 일 (오피스별)
         </CardTitle>
         <CardDescription>이번 주 할 일을 오피스별로 한눈에 보고, 여러 오피스에 한 번에 추가할 수 있어요.</CardDescription>
@@ -116,7 +116,7 @@ export default function MyTasksByOffice() {
                 key={o.id}
                 onClick={() => toggleOffice(o.id)}
                 aria-pressed={selectedOffices.has(o.id)}
-                className={`text-xs rounded-full px-2.5 py-1 border transition-colors max-w-full truncate ${
+                className={`text-t2 rounded-full px-2.5 py-1 border transition-colors max-w-full truncate ${
                   selectedOffices.has(o.id)
                     ? 'bg-bg-brand-solid text-white border-amber-600'
                     : 'bg-bg-layer-default text-fg-neutral-muted border-stroke-neutral-subtle hover:border-stroke-brand-weak'
@@ -127,10 +127,10 @@ export default function MyTasksByOffice() {
             ))}
           </div>
           {selectedOffices.size === 0 && (
-            <p className="text-xs text-fg-brand">어느 오피스에 추가할지 하나 이상 골라주세요</p>
+            <p className="text-t2 text-fg-brand">어느 오피스에 추가할지 하나 이상 골라주세요</p>
           )}
           <div className="flex items-center justify-between">
-            <label className="flex items-center gap-1.5 text-xs text-fg-neutral-muted cursor-pointer">
+            <label className="flex items-center gap-1.5 text-t2 text-fg-neutral-muted cursor-pointer">
               <input type="checkbox" checked={newPrivate} onChange={(e) => setNewPrivate(e.target.checked)} className="accent-amber-600" />
               <Lock className="w-3 h-3" /> 비공개
             </label>
@@ -150,15 +150,15 @@ export default function MyTasksByOffice() {
             <div key={o.id}>
               <div className="flex items-center gap-2 mb-2">
                 <Building2 className="w-4 h-4 text-fg-brand flex-shrink-0" />
-                <h4 className="text-sm font-semibold text-fg-neutral-muted truncate min-w-0">{o.name}</h4>
-                <Badge variant="secondary" className="text-xs bg-bg-brand-weak text-fg-brand flex-shrink-0">{done}/{group.length}</Badge>
+                <h4 className="text-t4 font-semibold text-fg-neutral-muted truncate min-w-0">{o.name}</h4>
+                <Badge variant="secondary" className="text-t2 bg-bg-brand-weak text-fg-brand flex-shrink-0">{done}/{group.length}</Badge>
               </div>
               {group.length === 0 ? (
-                <p className="text-xs text-fg-neutral-muted pl-6 pb-1">이번 주 할 일이 없어요</p>
+                <p className="text-t2 text-fg-neutral-muted pl-6 pb-1">이번 주 할 일이 없어요</p>
               ) : (
                 <ul className="space-y-1.5">
                   {group.map(task => (
-                    <li key={task.id} className="flex items-center gap-2 text-sm bg-gray-50/70 rounded-lg px-3 py-2 group">
+                    <li key={task.id} className="flex items-center gap-2 text-t4 bg-gray-50/70 rounded-lg px-3 py-2 group">
                       <button onClick={() => toggleDone(task)} aria-label={task.status === 'done' ? '완료 취소' : '완료로 표시'} className="flex-shrink-0">
                         {task.status === 'done'
                           ? <CheckCircle2 className="w-4 h-4 text-fg-positive check-pop" />
@@ -171,7 +171,7 @@ export default function MyTasksByOffice() {
                         {task.is_private && <Lock className="w-3 h-3 text-fg-neutral-muted inline ml-1" />}
                       </span>
                       {task.category && (
-                        <Badge variant="outline" className="text-[10px] bg-bg-layer-default text-fg-brand border-stroke-brand-weak max-w-[6rem] truncate">{task.category}</Badge>
+                        <Badge variant="outline" className="text-t1 bg-bg-layer-default text-fg-brand border-stroke-brand-weak max-w-[6rem] truncate">{task.category}</Badge>
                       )}
                       {/* 모바일엔 호버가 없으니 항상 보이게, 데스크톱은 호버 시 */}
                       <button onClick={() => remove(task)} aria-label={`${task.title} 삭제`}

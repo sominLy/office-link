@@ -48,20 +48,20 @@ export default function AuthErrorPage() {
           </div>
 
           {/* Error title */}
-          <h1 className="text-2xl font-bold text-fg-neutral">
+          <h1 className="text-t9 font-bold text-fg-neutral">
             Authentication Error
           </h1>
 
           {/* Error description */}
-          <p className="text-base text-muted-foreground">{errorMessage}</p>
+          <p className="text-t5 text-muted-foreground">{errorMessage}</p>
 
           {/* Countdown message */}
           <div className="pt-2">
-            <p className="text-sm text-fg-neutral-muted">
+            <p className="text-t4 text-fg-neutral-muted">
               {countdown > 0 ? (
                 <>
                   Will automatically return to the home page in{' '}
-                  <span className="text-fg-informative font-semibold text-base">
+                  <span className="text-fg-informative font-semibold text-t5">
                     {countdown}
                   </span>{' '}
                   seconds

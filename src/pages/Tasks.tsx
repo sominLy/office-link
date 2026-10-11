@@ -359,7 +359,7 @@ export default function Tasks() {
             </Button>
             <div className="min-w-0">
               <h1 className="font-bold text-fg-neutral leading-tight">이번 주 할 일</h1>
-              <p className="text-[11px] text-fg-neutral-muted leading-tight">{monthDay(weekStart)} ~ {monthDay(weekEnd)}</p>
+              <p className="text-t1 text-fg-neutral-muted leading-tight">{monthDay(weekStart)} ~ {monthDay(weekEnd)}</p>
             </div>
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -378,21 +378,21 @@ export default function Tasks() {
         {tasks.length > 0 && (
           <Card className="p-4 border-stroke-neutral-subtle shadow-sm rise-in">
             <div className="flex items-baseline justify-between gap-2">
-              <p className="text-sm font-semibold text-fg-neutral">
+              <p className="text-t4 font-semibold text-fg-neutral">
                 {openTasks.length === 0 ? '이번 주 할 일 끝! 🎉' : `남은 할 일 ${openTasks.length}개`}
               </p>
-              <p className="text-xs text-fg-neutral-muted flex-shrink-0">
-                <b className="text-fg-brand text-sm">{doneTasks.length}</b> / {tasks.length} 완료 · {progress}%
+              <p className="text-t2 text-fg-neutral-muted flex-shrink-0">
+                <b className="text-fg-brand text-t4">{doneTasks.length}</b> / {tasks.length} 완료 · {progress}%
               </p>
             </div>
             <Progress value={progress} className="h-2 mt-2 bg-bg-brand-weak [&>div]:bg-gradient-to-r [&>div]:from-amber-400 [&>div]:to-orange-500" aria-label="이번 주 진행률" />
             {(dueTodayCount > 0 || inProgressCount > 0) && (
               <div className="flex flex-wrap gap-1.5 mt-2.5">
                 {dueTodayCount > 0 && (
-                  <span className="text-xs rounded-full px-2 py-0.5 bg-orange-50 text-orange-600 border border-orange-200">오늘 마감 {dueTodayCount}</span>
+                  <span className="text-t2 rounded-full px-2 py-0.5 bg-orange-50 text-orange-600 border border-orange-200">오늘 마감 {dueTodayCount}</span>
                 )}
                 {inProgressCount > 0 && (
-                  <span className="text-xs rounded-full px-2 py-0.5 bg-bg-informative-weak text-fg-informative border border-stroke-informative-weak">진행 중 {inProgressCount}</span>
+                  <span className="text-t2 rounded-full px-2 py-0.5 bg-bg-informative-weak text-fg-informative border border-stroke-informative-weak">진행 중 {inProgressCount}</span>
                 )}
               </div>
             )}
@@ -406,10 +406,10 @@ export default function Tasks() {
             className="w-full flex items-center gap-2.5 rounded-xl border border-stroke-critical-weak bg-red-50/80 px-4 py-3 text-left hover:bg-bg-critical-weak transition-colors rise-in"
           >
             <Clock className="w-4 h-4 text-fg-critical flex-shrink-0" />
-            <span className="flex-1 min-w-0 text-sm text-fg-critical">
+            <span className="flex-1 min-w-0 text-t4 text-fg-critical">
               마감이 지난 할 일 <b>{overdueCount}개</b>가 있어요
             </span>
-            <span className="text-xs font-semibold text-fg-critical flex items-center flex-shrink-0">
+            <span className="text-t2 font-semibold text-fg-critical flex items-center flex-shrink-0">
               정리하기 <ChevronRight className="w-3.5 h-3.5" />
             </span>
           </button>
@@ -435,9 +435,9 @@ export default function Tasks() {
               </div>
             ) : tasks.length === 0 ? (
               <Card className="p-8 text-center border-dashed border-stroke-brand-weak bg-white/70">
-                <p className="text-3xl mb-2">📝</p>
-                <p className="text-sm font-medium text-fg-neutral-muted">이번 주 할 일이 아직 없어요</p>
-                <p className="text-xs text-fg-neutral-muted mt-1">위 입력칸에 적고 Enter만 누르면 바로 담겨요</p>
+                <p className="text-t11 mb-2">📝</p>
+                <p className="text-t4 font-medium text-fg-neutral-muted">이번 주 할 일이 아직 없어요</p>
+                <p className="text-t2 text-fg-neutral-muted mt-1">위 입력칸에 적고 Enter만 누르면 바로 담겨요</p>
                 <Button size="sm" variant="outline" className="mt-4 border-stroke-brand-weak text-fg-brand" onClick={() => setRoutineDialogOpen(true)}>
                   <Repeat className="w-3.5 h-3.5 mr-1" /> 매주 하는 일은 루틴으로 등록
                 </Button>
@@ -446,9 +446,9 @@ export default function Tasks() {
               <>
                 {openTasks.length === 0 && (
                   <Card className="p-6 text-center border-stroke-positive-weak bg-green-50/60">
-                    <p className="text-3xl mb-1">🎉</p>
-                    <p className="text-sm font-semibold text-fg-positive">이번 주 할 일을 모두 끝냈어요!</p>
-                    <p className="text-xs text-green-600/80 mt-1">다음 주 할 일을 미리 담아두거나, 오늘은 푹 쉬어요</p>
+                    <p className="text-t11 mb-1">🎉</p>
+                    <p className="text-t4 font-semibold text-fg-positive">이번 주 할 일을 모두 끝냈어요!</p>
+                    <p className="text-t2 text-green-600/80 mt-1">다음 주 할 일을 미리 담아두거나, 오늘은 푹 쉬어요</p>
                   </Card>
                 )}
                 {/* 안 끝난 할 일 — 카테고리별, 급한 순 */}
@@ -464,11 +464,11 @@ export default function Tasks() {
                       {showHeader && (
                         <div className="flex items-center gap-2 px-1">
                           <FolderOpen className="w-4 h-4 text-fg-brand flex-shrink-0" />
-                          <h3 className="text-sm font-semibold text-fg-neutral-muted truncate min-w-0">{cat ?? '기타'}</h3>
-                          <Badge variant="secondary" className="text-xs bg-bg-brand-weak text-fg-brand flex-shrink-0">{done}/{total.length}</Badge>
+                          <h3 className="text-t4 font-semibold text-fg-neutral-muted truncate min-w-0">{cat ?? '기타'}</h3>
+                          <Badge variant="secondary" className="text-t2 bg-bg-brand-weak text-fg-brand flex-shrink-0">{done}/{total.length}</Badge>
                           <button
                             onClick={() => openCreate({ category: cat ?? '' })}
-                            className="ml-auto flex-shrink-0 flex items-center gap-0.5 text-xs text-fg-brand hover:bg-bg-brand-weak rounded-full px-2 py-0.5 border border-stroke-brand-weak"
+                            className="ml-auto flex-shrink-0 flex items-center gap-0.5 text-t2 text-fg-brand hover:bg-bg-brand-weak rounded-full px-2 py-0.5 border border-stroke-brand-weak"
                             aria-label={`${cat ?? '기타'}에 할 일 추가`}
                           >
                             <Plus className="w-3 h-3" /> 추가
@@ -485,7 +485,7 @@ export default function Tasks() {
                   <section className="space-y-2">
                     <button
                       onClick={toggleShowDone}
-                      className="flex items-center gap-1 px-1 text-sm font-medium text-fg-neutral-muted hover:text-fg-neutral-muted"
+                      className="flex items-center gap-1 px-1 text-t4 font-medium text-fg-neutral-muted hover:text-fg-neutral"
                       aria-expanded={showDone}
                     >
                       <ChevronRight className={cn('w-4 h-4 transition-transform', showDone && 'rotate-90')} />
@@ -509,13 +509,13 @@ export default function Tasks() {
                 }[status];
                 return (
                   <div key={status} className="space-y-2">
-                    <h3 className={cn('text-sm font-semibold px-1 flex items-center gap-1.5', tone.title)}>
+                    <h3 className={cn('text-t4 font-semibold px-1 flex items-center gap-1.5', tone.title)}>
                       <span className={cn('h-2 w-2 rounded-full', STATUS_META[status].dot)} />
                       {STATUS_META[status].label} <span className="font-normal text-fg-neutral-muted">{col.length}</span>
                     </h3>
                     <div className={cn('space-y-2 min-h-[88px] rounded-xl p-2', tone.bg)}>
                       {col.length === 0 ? (
-                        <p className="text-xs text-fg-neutral-muted text-center py-6">
+                        <p className="text-t2 text-fg-neutral-muted text-center py-6">
                           {status === 'in_progress' ? '카드의 상태를 "진행 중"으로 바꿔보세요' : '비어 있어요'}
                         </p>
                       ) : (
@@ -544,24 +544,24 @@ export default function Tasks() {
                     allDone: "relative after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1 after:w-1 after:rounded-full after:bg-green-400 aria-selected:after:bg-bg-layer-default",
                   }}
                 />
-                <div className="flex items-center gap-3 pb-1 text-[11px] text-fg-neutral-muted">
+                <div className="flex items-center gap-3 pb-1 text-t1 text-fg-neutral-muted">
                   <span className="flex items-center gap-1"><i className="h-1.5 w-1.5 rounded-full bg-bg-brand-solid" /> 남은 할 일</span>
                   <span className="flex items-center gap-1"><i className="h-1.5 w-1.5 rounded-full bg-green-400" /> 다 끝낸 날</span>
                 </div>
               </Card>
               <div className="space-y-2">
                 <div className="flex items-center justify-between px-1">
-                  <h3 className="text-sm font-semibold text-fg-neutral-muted">
+                  <h3 className="text-t4 font-semibold text-fg-neutral-muted">
                     {formatDateLabel(calDayStr)}
-                    {calDayStr === today && <span className="ml-1.5 text-xs font-medium text-fg-brand">오늘</span>}
+                    {calDayStr === today && <span className="ml-1.5 text-t2 font-medium text-fg-brand">오늘</span>}
                   </h3>
                   {dayTasks.length > 0 && (
-                    <span className="text-xs text-fg-neutral-muted">{dayTasks.filter(t => t.status === 'done').length}/{dayTasks.length} 완료</span>
+                    <span className="text-t2 text-fg-neutral-muted">{dayTasks.filter(t => t.status === 'done').length}/{dayTasks.length} 완료</span>
                   )}
                 </div>
                 {dayTasks.length === 0 ? (
                   <Card className="p-6 text-center border-dashed bg-white/70">
-                    <p className="text-fg-neutral-muted text-sm">이 날짜엔 할 일이 없어요</p>
+                    <p className="text-fg-neutral-muted text-t4">이 날짜엔 할 일이 없어요</p>
                     <Button size="sm" variant="outline" className="mt-3 border-stroke-brand-weak text-fg-brand"
                       onClick={() => openCreate({ due_date: calDayStr })}>
                       <Plus className="w-3.5 h-3.5 mr-1" /> 이 날짜에 추가
@@ -605,16 +605,16 @@ export default function Tasks() {
           <div className="space-y-3">
             {routines.length === 0 ? (
               <div className="text-center py-4 rounded-lg bg-bg-brand-weak border border-dashed border-stroke-brand-weak">
-                <p className="text-sm text-fg-neutral-muted">아직 루틴이 없어요</p>
-                <p className="text-xs text-fg-neutral-muted mt-0.5">예: 주간 회고 쓰기, 영어 단어 50개</p>
+                <p className="text-t4 text-fg-neutral-muted">아직 루틴이 없어요</p>
+                <p className="text-t2 text-fg-neutral-muted mt-0.5">예: 주간 회고 쓰기, 영어 단어 50개</p>
               </div>
             ) : (
               <ul className="space-y-1.5 max-h-48 overflow-y-auto">
                 {routines.map(r => (
-                  <li key={r.id} className="flex items-center gap-2 text-sm bg-bg-brand-weak border border-stroke-brand-weak rounded-lg pl-3 pr-1 py-1.5">
+                  <li key={r.id} className="flex items-center gap-2 text-t4 bg-bg-brand-weak border border-stroke-brand-weak rounded-lg pl-3 pr-1 py-1.5">
                     <Repeat className="w-3.5 h-3.5 text-fg-brand flex-shrink-0" />
                     <span className="flex-1 min-w-0 truncate text-fg-neutral-muted">{r.title}</span>
-                    {r.category && <Badge variant="outline" className="text-[10px] bg-bg-layer-default text-fg-brand border-stroke-brand-weak max-w-[6rem] truncate">{r.category}</Badge>}
+                    {r.category && <Badge variant="outline" className="text-t1 bg-bg-layer-default text-fg-brand border-stroke-brand-weak max-w-[6rem] truncate">{r.category}</Badge>}
                     <Button variant="ghost" size="icon" className="w-8 h-8 text-fg-neutral-muted hover:text-fg-critical" onClick={() => deleteRoutine(r)} aria-label={`루틴 ${r.title} 삭제`}>
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
@@ -640,8 +640,8 @@ export default function Tasks() {
                 <div className="flex flex-wrap gap-1.5">
                   {suggestCategories.map((c) => (
                     <button key={c} type="button" onClick={() => setRoutineCategory(routineCategory === c ? '' : c)}
-                      className={cn('text-xs rounded-full px-2 py-0.5 border max-w-[10rem] truncate',
-                        routineCategory === c ? 'bg-bg-brand-solid text-white border-stroke-brand-solid' : 'bg-bg-brand-weak hover:bg-bg-brand-weak text-fg-brand border-stroke-brand-weak')}>
+                      className={cn('text-t2 rounded-full px-2 py-0.5 border max-w-[10rem] truncate',
+                        routineCategory === c ? 'bg-bg-brand-solid text-white border-stroke-brand-solid' : 'bg-bg-brand-weak hover:bg-bg-brand-weak-pressed text-fg-brand border-stroke-brand-weak')}>
                       {c}
                     </button>
                   ))}

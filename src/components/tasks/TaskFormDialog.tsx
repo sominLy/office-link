@@ -37,7 +37,7 @@ interface TaskFormDialogProps {
   onSubmit: (draft: TaskDraft) => Promise<boolean>;
 }
 
-const chipBase = 'rounded-full border px-2.5 py-1 text-xs font-medium transition-colors';
+const chipBase = 'rounded-full border px-2.5 py-1 text-t2 font-medium transition-colors';
 const chipIdle = 'bg-bg-layer-default text-fg-neutral-muted border-stroke-neutral-subtle hover:border-stroke-brand-weak';
 const chipPicked = 'bg-bg-brand-solid text-white border-stroke-brand-solid';
 
@@ -113,7 +113,7 @@ export default function TaskFormDialog({ open, mode, initial, categories, onClos
               <div className="flex flex-wrap gap-1.5">
                 {categories.map((c) => (
                   <button key={c} type="button" onClick={() => set('category', draft.category === c ? '' : c)}
-                    className={cn(chipBase, 'max-w-[10rem] truncate', draft.category === c ? chipPicked : 'bg-bg-brand-weak text-fg-brand border-stroke-brand-weak hover:bg-bg-brand-weak')}>
+                    className={cn(chipBase, 'max-w-[10rem] truncate', draft.category === c ? chipPicked : 'bg-bg-brand-weak text-fg-brand border-stroke-brand-weak hover:bg-bg-brand-weak-pressed')}>
                     {c}
                   </button>
                 ))}
@@ -141,7 +141,7 @@ export default function TaskFormDialog({ open, mode, initial, categories, onClos
               <Input type="time" value={draft.due_time} onChange={(e) => set('due_time', e.target.value)}
                 disabled={!draft.due_date} aria-label="마감 시간" className="w-32 flex-shrink-0" />
             </div>
-            <p className="text-xs text-fg-neutral-muted flex items-center gap-1 min-h-[1rem]">
+            <p className="text-t2 text-fg-neutral-muted flex items-center gap-1 min-h-[1rem]">
               {draft.due_date
                 ? <>📅 {formatDateLabel(draft.due_date)}{timeLabel ? ` ${timeLabel}까지` : '까지'}
                     {draft.due_time && (
@@ -153,11 +153,11 @@ export default function TaskFormDialog({ open, mode, initial, categories, onClos
             {/* 수정할 때: 지금 마감일에서 며칠 미루기 */}
             {mode === 'edit' && draft.due_date && (
               <div className="flex items-center gap-1.5 pt-0.5">
-                <span className="text-xs text-fg-neutral-muted flex-shrink-0">미루기</span>
+                <span className="text-t2 text-fg-neutral-muted flex-shrink-0">미루기</span>
                 <div className="grid grid-cols-4 gap-1.5 flex-1">
                   {[1, 2, 3, 7].map(n => (
                     <button key={n} type="button" onClick={() => set('due_date', addDays(draft.due_date, n))}
-                      className="rounded-lg border border-stroke-brand-weak bg-bg-layer-default py-1 text-xs font-medium text-fg-brand hover:bg-bg-brand-weak">
+                      className="rounded-lg border border-stroke-brand-weak bg-bg-layer-default py-1 text-t2 font-medium text-fg-brand hover:bg-bg-brand-weak">
                       {n === 7 ? '+일주일' : `+${n}일`}
                     </button>
                   ))}
@@ -172,7 +172,7 @@ export default function TaskFormDialog({ open, mode, initial, categories, onClos
               {(['high', 'normal', 'low'] as TaskPriority[]).map(p => (
                 <button key={p} type="button" role="radio" aria-checked={draft.priority === p}
                   onClick={() => set('priority', p)}
-                  className={cn('rounded-lg border py-2 text-sm font-medium transition-colors',
+                  className={cn('rounded-lg border py-2 text-t4 font-medium transition-colors',
                     draft.priority === p ? PRIORITY_META[p].picked : 'bg-bg-layer-default text-fg-neutral-muted border-stroke-neutral-subtle hover:border-stroke-brand-weak')}>
                   {PRIORITY_META[p].label}
                 </button>
@@ -183,8 +183,8 @@ export default function TaskFormDialog({ open, mode, initial, categories, onClos
           <label htmlFor="task-private" className="flex items-center gap-3 rounded-lg border border-stroke-neutral-subtle bg-gray-50/60 px-3 py-2.5 cursor-pointer">
             <Lock className="w-4 h-4 text-fg-neutral-muted flex-shrink-0" />
             <span className="flex-1">
-              <span className="block text-sm text-fg-neutral-muted">비공개</span>
-              <span className="block text-xs text-fg-neutral-muted">켜면 오피스 멤버에게 안 보이고 나만 볼 수 있어요</span>
+              <span className="block text-t4 text-fg-neutral-muted">비공개</span>
+              <span className="block text-t2 text-fg-neutral-muted">켜면 오피스 멤버에게 안 보이고 나만 볼 수 있어요</span>
             </span>
             <Switch id="task-private" checked={draft.is_private} onCheckedChange={(v) => set('is_private', v)} />
           </label>

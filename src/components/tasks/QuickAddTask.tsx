@@ -48,13 +48,13 @@ export default function QuickAddTask({ onAdd, onOpenDetail, defaultDue = kstToda
         maxLength={100}
         enterKeyHint="enter"
         aria-label="새 할 일 제목"
-        className="flex-1 min-w-0 bg-transparent py-1 text-sm text-fg-neutral placeholder:text-fg-neutral-muted focus:outline-none"
+        className="flex-1 min-w-0 bg-transparent py-1 text-t4 text-fg-neutral placeholder:text-fg-neutral-muted focus:outline-none"
       />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className="flex items-center gap-0.5 rounded-full border border-stroke-brand-weak bg-bg-brand-weak px-2 py-1 text-xs font-medium text-fg-brand hover:bg-bg-brand-weak flex-shrink-0 whitespace-nowrap"
+            className="flex items-center gap-0.5 rounded-full border border-stroke-brand-weak bg-bg-brand-weak px-2 py-1 text-t2 font-medium text-fg-brand hover:bg-bg-brand-weak-pressed flex-shrink-0 whitespace-nowrap"
             aria-label={`마감: ${shortDueLabel(due, today)} (바꾸기)`}
           >
             <CalendarDays className="w-3 h-3" />
@@ -63,7 +63,7 @@ export default function QuickAddTask({ onAdd, onOpenDetail, defaultDue = kstToda
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-44">
-          <DropdownMenuLabel className="text-xs text-fg-neutral-muted font-normal">언제까지 할까요?</DropdownMenuLabel>
+          <DropdownMenuLabel className="text-t2 text-fg-neutral-muted font-normal">언제까지 할까요?</DropdownMenuLabel>
           {quickDueOptions(today).map(o => (
             <DropdownMenuItem key={o.key} onClick={() => setDue(o.date)} className="cursor-pointer">
               <span className="flex-1">{o.date ? o.label : '날짜 없이 (이번 주)'}</span>

@@ -59,10 +59,10 @@ export default function RetroBanner() {
         onClick={() => navigate(`/retro?week=${week}`)}
         className="w-full flex items-center gap-3 px-4 py-3.5 text-left"
       >
-        <span className="text-3xl flex-shrink-0 float-bob">📬</span>
+        <span className="text-t11 flex-shrink-0 float-bob">📬</span>
         <span className="flex-1 min-w-0 pr-6">
-          <span className="block text-sm font-bold text-fg-brand-contrast">주간 회고와 상장이 도착했어요!</span>
-          <span className="block text-xs text-amber-800/80">{shortPeriod(week)} 한 주 · 열어서 스스로를 칭찬해 줘요 💛</span>
+          <span className="block text-t4 font-bold text-fg-brand-contrast">주간 회고와 상장이 도착했어요!</span>
+          <span className="block text-t2 text-amber-800/80">{shortPeriod(week)} 한 주 · 열어서 스스로를 칭찬해 줘요 💛</span>
         </span>
       </button>
       <button

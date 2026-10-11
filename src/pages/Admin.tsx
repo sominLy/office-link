@@ -101,12 +101,12 @@ function missingFn(err: { code?: string; message?: string } | null) {
 /** 지난 기간 대비 변화 — 위·아래 화살표와 글자로 (색만으로 구분하지 않게) */
 function Delta({ now, prev, label = '지난 기간 대비' }: { now: number; prev: number | null | undefined; label?: string }) {
   if (prev == null) return null;
-  if (prev === 0 && now === 0) return <span className="text-[11px] text-[#898781]">변화 없음</span>;
-  if (prev === 0) return <span className="text-[11px] text-[#006300]">▲ 새로 생김 <span className="text-[#898781]">· {label}</span></span>;
+  if (prev === 0 && now === 0) return <span className="text-t1 text-[#898781]">변화 없음</span>;
+  if (prev === 0) return <span className="text-t1 text-[#006300]">▲ 새로 생김 <span className="text-[#898781]">· {label}</span></span>;
   const pct = Math.round(((now - prev) / prev) * 100);
-  if (pct === 0) return <span className="text-[11px] text-[#898781]">변화 없음 · {label}</span>;
+  if (pct === 0) return <span className="text-t1 text-[#898781]">변화 없음 · {label}</span>;
   return (
-    <span className={cn('text-[11px]', pct > 0 ? 'text-[#006300]' : 'text-[#d03b3b]')}>
+    <span className={cn('text-t1', pct > 0 ? 'text-[#006300]' : 'text-[#d03b3b]')}>
       {pct > 0 ? '▲' : '▼'} {Math.abs(pct)}% <span className="text-[#898781]">· {label}</span>
     </span>
   );
@@ -115,12 +115,12 @@ function Delta({ now, prev, label = '지난 기간 대비' }: { now: number; pre
 function Stat({ label, value, sub, delta, hint }: { label: string; value: string; sub?: string; delta?: React.ReactNode; hint?: string }) {
   return (
     <div className="rounded-xl border border-black/10 bg-[#fcfcfb] p-3 [word-break:keep-all]">
-      <p className="text-xs text-[#52514e]">{label}</p>
-      <p className="mt-1 text-2xl font-semibold text-[#0b0b0b] leading-tight">
-        {value}{sub && <span className="text-sm font-normal text-[#52514e]"> {sub}</span>}
+      <p className="text-t2 text-[#52514e]">{label}</p>
+      <p className="mt-1 text-t9 font-semibold text-[#0b0b0b] leading-tight">
+        {value}{sub && <span className="text-t4 font-normal text-[#52514e]"> {sub}</span>}
       </p>
       {delta && <div className="mt-0.5">{delta}</div>}
-      {hint && <p className="mt-0.5 text-[11px] leading-snug text-[#898781]">{hint}</p>}
+      {hint && <p className="mt-0.5 text-t1 leading-snug text-[#898781]">{hint}</p>}
     </div>
   );
 }
@@ -269,19 +269,19 @@ export default function Admin() {
       <div className="min-h-screen bg-[#f9f9f7] px-4 py-6">
         <div className="max-w-lg mx-auto space-y-4">
           <Button variant="ghost" size="sm" onClick={back}><ArrowLeft className="w-4 h-4 mr-1" />뒤로</Button>
-          <div className="rounded-xl border border-black/10 bg-bg-layer-default p-5 space-y-3 text-sm text-[#0b0b0b]">
+          <div className="rounded-xl border border-black/10 bg-bg-layer-default p-5 space-y-3 text-t4 text-[#0b0b0b]">
             {problem === 'missing' && (
               <>
                 <h1 className="font-semibold">📊 대시보드를 켜려면 SQL을 한 번 실행해야 해요</h1>
                 <p className="text-[#52514e]">Supabase 대시보드 → SQL Editor에서 <code>019_admin_dashboard.sql</code>을 실행한 뒤, 아래 줄로 본인을 운영자로 등록하세요.</p>
-                <pre className="rounded-lg bg-[#f4f4f1] p-3 text-xs overflow-x-auto whitespace-pre-wrap break-all">{`insert into public.app_admins (user_id)\nselect id from auth.users where email = '${user?.email ?? '내 이메일'}'\non conflict do nothing;`}</pre>
+                <pre className="rounded-lg bg-[#f4f4f1] p-3 text-t2 overflow-x-auto whitespace-pre-wrap break-all">{`insert into public.app_admins (user_id)\nselect id from auth.users where email = '${user?.email ?? '내 이메일'}'\non conflict do nothing;`}</pre>
               </>
             )}
             {problem === 'forbidden' && (
               <>
                 <h1 className="font-semibold">🔒 운영자만 볼 수 있어요</h1>
                 <p className="text-[#52514e]">운영자라면 Supabase SQL Editor에서 이 줄을 한 번 실행하세요.</p>
-                <pre className="rounded-lg bg-[#f4f4f1] p-3 text-xs overflow-x-auto whitespace-pre-wrap break-all">{`insert into public.app_admins (user_id)\nselect id from auth.users where email = '${user?.email ?? '내 이메일'}'\non conflict do nothing;`}</pre>
+                <pre className="rounded-lg bg-[#f4f4f1] p-3 text-t2 overflow-x-auto whitespace-pre-wrap break-all">{`insert into public.app_admins (user_id)\nselect id from auth.users where email = '${user?.email ?? '내 이메일'}'\non conflict do nothing;`}</pre>
               </>
             )}
             {problem === 'error' && <p>대시보드를 확인하지 못했어요. 잠시 뒤 다시 열어 주세요.</p>}
@@ -311,7 +311,7 @@ export default function Admin() {
           <Button variant="ghost" size="icon" onClick={back} aria-label="뒤로"><ArrowLeft className="w-4 h-4" /></Button>
           <div className="min-w-0 flex-1">
             <h1 className="font-semibold text-[#0b0b0b] leading-tight">📊 운영 대시보드</h1>
-            <p className="text-[11px] text-[#898781] leading-tight">
+            <p className="text-t1 text-[#898781] leading-tight">
               {data ? `${rangeLabel(data.from, data.to)} · ${new Date(data.generated_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 기준` : loadError ? '불러오지 못했어요' : '불러오는 중…'}
             </p>
           </div>
@@ -324,7 +324,7 @@ export default function Admin() {
           <div className="inline-flex rounded-lg border border-black/10 bg-bg-layer-default p-0.5" role="radiogroup" aria-label="기간">
             {RANGES.map(r => (
               <button key={r.key} type="button" role="radio" aria-checked={range === r.key} onClick={() => setRange(r.key)}
-                className={cn('px-2.5 py-1 text-xs rounded-md', range === r.key ? 'bg-[#0b0b0b] text-white font-medium' : 'text-[#52514e] hover:bg-black/[0.04]')}>
+                className={cn('px-2.5 py-1 text-t2 rounded-md', range === r.key ? 'bg-[#0b0b0b] text-white font-medium' : 'text-[#52514e] hover:bg-black/[0.04]')}>
                 {r.label}
               </button>
             ))}
@@ -333,7 +333,7 @@ export default function Admin() {
             value={cohort}
             onChange={e => setCohort(e.target.value as Cohort)}
             disabled={!data?.launch_day}
-            className="h-8 rounded-lg border border-black/10 bg-bg-layer-default px-2 text-xs text-[#0b0b0b] disabled:text-[#898781]"
+            className="h-8 rounded-lg border border-black/10 bg-bg-layer-default px-2 text-t2 text-[#0b0b0b] disabled:text-[#898781]"
             aria-label="사용자 묶음"
             title={data?.launch_day ? undefined : "'기록·메모' 탭에서 공개 시작일을 정하면 기존/새 사용자를 나눠 볼 수 있어요"}
           >
@@ -346,9 +346,9 @@ export default function Admin() {
 
       <main className={cn('max-w-5xl mx-auto px-4 pt-4 space-y-4 transition-opacity', loading && data && 'opacity-60')}>
         {!data && loadError ? (
-          <div className="rounded-xl border border-black/10 bg-bg-layer-default p-5 text-sm space-y-3">
+          <div className="rounded-xl border border-black/10 bg-bg-layer-default p-5 text-t4 space-y-3">
             <p className="font-semibold text-[#0b0b0b]">지표를 불러오지 못했어요</p>
-            <p className="text-xs text-[#52514e] break-all">{loadError}</p>
+            <p className="text-t2 text-[#52514e] break-all">{loadError}</p>
             <Button size="sm" onClick={load} disabled={loading}>다시 시도</Button>
           </div>
         ) : !data || !k ? (
@@ -359,7 +359,7 @@ export default function Admin() {
           <Tabs value={tab} onValueChange={setTab}>
             <TabsList className="w-full grid grid-cols-5 bg-black/[0.04] h-auto">
               {[['overview', '개요'], ['features', '기능'], ['retention', '유지율'], ['offices', '오피스'], ['notes', '업데이트']].map(([v, l]) => (
-                <TabsTrigger key={v} value={v} className="text-xs sm:text-sm px-1">{l}</TabsTrigger>
+                <TabsTrigger key={v} value={v} className="text-t2 sm:text-t4 px-1">{l}</TabsTrigger>
               ))}
             </TabsList>
 
@@ -367,14 +367,14 @@ export default function Admin() {
             <TabsContent value="overview" className="space-y-4 mt-4">
               <section className="rounded-xl border border-black/10 bg-[#fcfcfb] p-4 flex flex-wrap items-end gap-x-6 gap-y-2">
                 <div>
-                  <p className="text-xs text-[#52514e]">이번 주 함께 출근한 오피스 <span className="text-[#898781]">(북극성 지표)</span></p>
-                  <p className="text-5xl font-semibold text-[#0b0b0b] leading-none mt-2">{fmt(k.together_week)}<span className="text-lg font-normal text-[#52514e]"> 개</span></p>
+                  <p className="text-t2 text-[#52514e]">이번 주 함께 출근한 오피스 <span className="text-[#898781]">(북극성 지표)</span></p>
+                  <p className="text-t14 font-semibold text-[#0b0b0b] leading-none mt-2">{fmt(k.together_week)}<span className="text-t6 font-normal text-[#52514e]"> 개</span></p>
                 </div>
                 <div className="pb-1">
                   {weekDay < 7
-                    ? <span className="text-[11px] text-[#52514e]">이번 주 {weekDay}일째 · 지난주 {fmt(k.together_prev_week)}개</span>
+                    ? <span className="text-t1 text-[#52514e]">이번 주 {weekDay}일째 · 지난주 {fmt(k.together_prev_week)}개</span>
                     : <Delta now={k.together_week} prev={k.together_prev_week} label="지난주 대비" />}
-                  <p className="text-[11px] text-[#898781] mt-0.5">2명 이상이 각자 3일 이상 출근한 오피스 · 주는 월요일 시작</p>
+                  <p className="text-t1 text-[#898781] mt-0.5">2명 이상이 각자 3일 이상 출근한 오피스 · 주는 월요일 시작</p>
                 </div>
               </section>
 
@@ -420,7 +420,7 @@ export default function Admin() {
                 <div className="flex flex-wrap gap-1.5 mb-3" role="radiogroup" aria-label="볼 지표">
                   {ACTIVITY.map(m => (
                     <button key={m.key} type="button" role="radio" aria-checked={metric.key === m.key} onClick={() => setMetric(m)}
-                      className={cn('px-2 py-1 rounded-full text-[11px] border', metric.key === m.key ? 'border-[#2a78d6] bg-[#2a78d6]/10 text-[#0b0b0b] font-medium' : 'border-black/10 text-[#52514e] hover:bg-black/[0.03]')}>
+                      className={cn('px-2 py-1 rounded-full text-t1 border', metric.key === m.key ? 'border-[#2a78d6] bg-[#2a78d6]/10 text-[#0b0b0b] font-medium' : 'border-black/10 text-[#52514e] hover:bg-black/[0.03]')}>
                       {m.name}
                     </button>
                   ))}
@@ -450,7 +450,7 @@ export default function Admin() {
 
               <ChartCard title="화면별 조회 · 이용 시간" subtitle={data.tracking_since ? `${shortDay(data.tracking_since)}부터 기록` : '대시보드를 켠 뒤부터 기록돼요'}>
                 {data.pages.length === 0
-                  ? <p className="text-xs text-[#898781] py-4 text-center">아직 기록이 없어요 — 사람들이 앱을 쓰면 쌓여요</p>
+                  ? <p className="text-t2 text-[#898781] py-4 text-center">아직 기록이 없어요 — 사람들이 앱을 쓰면 쌓여요</p>
                   : <DataTable head={['화면', '조회', '본 사람', '조작 시간(분)']}
                       rows={data.pages.map(p => [PAGE_LABELS[p.path] || p.path, fmt(p.views), fmt(p.users), fmt(p.active_min)])} />}
               </ChartCard>
@@ -462,7 +462,7 @@ export default function Admin() {
                 </ChartCard>
                 <ChartCard title="앱으로 설치해서 쓰는 사람" subtitle="홈 화면에 추가한 앱이어야 iPhone 알림이 와요">
                   {data.platform.standalone + data.platform.browser === 0
-                    ? <p className="text-xs text-[#898781] py-4 text-center">아직 기록이 없어요</p>
+                    ? <p className="text-t2 text-[#898781] py-4 text-center">아직 기록이 없어요</p>
                     : <BarList rows={[{ label: '설치한 앱', value: data.platform.standalone }, { label: '브라우저', value: data.platform.browser }]} valueLabel={v => `${fmt(v)}명`} />}
                 </ChartCard>
               </div>
@@ -493,15 +493,15 @@ export default function Admin() {
                     sub: judged && !base ? '판단 전' : base ? `${Math.round((f.users / base) * 100)}%${judged ? ` (${fmt(base)}명 중)` : ''}` : undefined,
                   };
                 })} valueLabel={v => `${fmt(v)}명`} />
-                <p className="mt-3 text-[11px] text-[#898781] [word-break:keep-all]">
+                <p className="mt-3 text-t1 text-[#898781] [word-break:keep-all]">
                   '첫 주 2일+ 출근'은 가입한 지 7일, '둘째 주에도 사용'은 14일이 지난 사람만 셀 수 있어서 그 사람들 중 비율로 보여요.
                 </p>
               </ChartCard>
 
               <ChartCard title="가입 주차별 유지율" subtitle="그 주에 가입한 사람 중 n주 뒤에도 무언가를 한 사람 비율 · 진할수록 높음 · 아직 안 끝난 주는 비워 둬요">
-                {data.retention.length === 0 ? <p className="text-xs text-[#898781] py-4 text-center">최근 10주 안에 가입한 사람이 없어요</p> : (
+                {data.retention.length === 0 ? <p className="text-t2 text-[#898781] py-4 text-center">최근 10주 안에 가입한 사람이 없어요</p> : (
                   <div className="overflow-x-auto">
-                    <table className="w-full text-xs border-separate" style={{ borderSpacing: 2 }}>
+                    <table className="w-full text-t2 border-separate" style={{ borderSpacing: 2 }}>
                       <thead>
                         <tr>
                           <th className="text-left font-medium text-[#52514e] px-1 whitespace-nowrap">가입한 주 (인원)</th>
@@ -545,11 +545,11 @@ export default function Admin() {
             {/* ===== 업데이트·메모 ===== */}
             <TabsContent value="notes" className="space-y-4 mt-4">
               <ChartCard title="업데이트 전후 비교" subtitle="날짜 전 7일과 그날부터 7일의 하루 평균 · 다른 일(시험 기간, 홍보)도 함께 영향을 줘요">
-                {comparisons.length === 0 ? <p className="text-xs text-[#898781] py-4 text-center">비교할 업데이트나 메모가 없어요</p> : (
+                {comparisons.length === 0 ? <p className="text-t2 text-[#898781] py-4 text-center">비교할 업데이트나 메모가 없어요</p> : (
                   <ul className="space-y-3 max-h-[36rem] overflow-auto pr-1">
                     {comparisons.map(({ m, before, after, afterDays }) => (
                       <li key={m.id} className="rounded-lg border border-black/5 bg-bg-layer-default p-3">
-                        <p className="text-xs text-[#0b0b0b] flex gap-2 min-w-0">
+                        <p className="text-t2 text-[#0b0b0b] flex gap-2 min-w-0">
                           <span className="text-[#898781] flex-shrink-0">{shortDay(m.day)}</span>
                           <span className="truncate" title={m.label}>{m.kind === 'release' ? '🚀' : '📌'} {m.label}</span>
                           {afterDays < 7 && <span className="text-[#898781] flex-shrink-0">· {afterDays}일째</span>}
@@ -561,8 +561,8 @@ export default function Admin() {
                             const pct = a == null || b == null || b === 0 ? null : Math.round(((a - b) / b) * 100);
                             return (
                               <div key={c.key} className="min-w-0">
-                                <dt className="text-[11px] text-[#52514e]">{c.name} <span className="text-[#898781]">(하루 평균)</span></dt>
-                                <dd className="text-xs text-[#0b0b0b] tabular-nums whitespace-nowrap">
+                                <dt className="text-t1 text-[#52514e]">{c.name} <span className="text-[#898781]">(하루 평균)</span></dt>
+                                <dd className="text-t2 text-[#0b0b0b] tabular-nums whitespace-nowrap">
                                   {a == null || b == null ? '—' : <>{fmt(b, 1)} → <b>{fmt(a, 1)}</b></>}
                                   {pct != null && pct !== 0 && <span className={pct > 0 ? 'text-[#006300]' : 'text-[#d03b3b]'}> {pct > 0 ? '▲' : '▼'}{Math.abs(pct)}%</span>}
                                 </dd>
@@ -578,17 +578,17 @@ export default function Admin() {
 
               <div className="grid md:grid-cols-2 gap-4">
                 <section className="min-w-0 rounded-xl border border-black/10 bg-[#fcfcfb] p-4 space-y-3">
-                  <h3 className="text-sm font-semibold text-[#0b0b0b]">📌 메모 추가</h3>
-                  <p className="text-xs text-[#52514e]">'인스타 첫 게시물', '에타 홍보', '시험 기간' 같은 일을 적어 두면 차트에 표시되고 전후 비교에 나와요. 업데이트 공지(🚀)는 자동으로 들어가요.</p>
+                  <h3 className="text-t4 font-semibold text-[#0b0b0b]">📌 메모 추가</h3>
+                  <p className="text-t2 text-[#52514e]">'인스타 첫 게시물', '에타 홍보', '시험 기간' 같은 일을 적어 두면 차트에 표시되고 전후 비교에 나와요. 업데이트 공지(🚀)는 자동으로 들어가요.</p>
                   <div className="flex flex-wrap gap-2">
-                    <Input type="date" value={markerDay} onChange={e => setMarkerDay(e.target.value)} className="w-[9.5rem] h-9 text-xs" max={kstToday()} aria-label="메모 날짜" />
-                    <Input value={markerLabel} onChange={e => setMarkerLabel(e.target.value)} maxLength={60} placeholder="무슨 일이 있었나요?" className="h-9 text-xs flex-1 min-w-[10rem]"
+                    <Input type="date" value={markerDay} onChange={e => setMarkerDay(e.target.value)} className="w-[9.5rem] h-9 text-t2" max={kstToday()} aria-label="메모 날짜" />
+                    <Input value={markerLabel} onChange={e => setMarkerLabel(e.target.value)} maxLength={60} placeholder="무슨 일이 있었나요?" className="h-9 text-t2 flex-1 min-w-[10rem]"
                       aria-label="메모 내용" onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) addMarker(); }} />
                     <Button size="sm" className="h-9" onClick={addMarker} disabled={busy || !markerLabel.trim()}>추가</Button>
                   </div>
                   <ul className="divide-y divide-black/5 max-h-64 overflow-auto">
                     {[...data.markers].reverse().map(m => (
-                      <li key={m.id} className="flex items-center gap-2 py-1.5 text-xs">
+                      <li key={m.id} className="flex items-center gap-2 py-1.5 text-t2">
                         <span className="text-[#898781] w-10 flex-shrink-0">{shortDay(m.day)}</span>
                         <span className="flex-1 min-w-0 truncate text-[#0b0b0b]" title={m.label}>{m.kind === 'release' ? '🚀' : '📌'} {m.label}</span>
                         {m.kind === 'note' && (
@@ -602,19 +602,19 @@ export default function Admin() {
                 </section>
 
                 <section className="min-w-0 rounded-xl border border-black/10 bg-[#fcfcfb] p-4 space-y-3">
-                  <h3 className="text-sm font-semibold text-[#0b0b0b]">🚪 공개 시작일</h3>
-                  <p className="text-xs text-[#52514e]">이 날 전에 가입한 사람(친구들)은 '기존 사용자', 이후는 '새 사용자'로 나눠 볼 수 있어요. 친구들은 매일 쓰는 열성 사용자라 섞이면 숫자가 실제보다 좋아 보여요.</p>
+                  <h3 className="text-t4 font-semibold text-[#0b0b0b]">🚪 공개 시작일</h3>
+                  <p className="text-t2 text-[#52514e]">이 날 전에 가입한 사람(친구들)은 '기존 사용자', 이후는 '새 사용자'로 나눠 볼 수 있어요. 친구들은 매일 쓰는 열성 사용자라 섞이면 숫자가 실제보다 좋아 보여요.</p>
                   <div className="flex flex-wrap gap-2">
-                    <Input type="date" value={launchDay} onChange={e => setLaunchDay(e.target.value)} className="w-[9.5rem] h-9 text-xs" aria-label="공개 시작일" />
+                    <Input type="date" value={launchDay} onChange={e => setLaunchDay(e.target.value)} className="w-[9.5rem] h-9 text-t2" aria-label="공개 시작일" />
                     <Button size="sm" className="h-9" onClick={() => launchDay && saveLaunch(launchDay)} disabled={busy || !launchDay}>저장</Button>
                     {data.launch_day && <Button size="sm" variant="outline" className="h-9" onClick={() => saveLaunch(null)} disabled={busy}>지우기</Button>}
                   </div>
-                  {data.launch_day && <p className="text-xs text-[#0b0b0b]">지금 설정: {longDay(data.launch_day)}</p>}
+                  {data.launch_day && <p className="text-t2 text-[#0b0b0b]">지금 설정: {longDay(data.launch_day)}</p>}
                 </section>
               </div>
 
-              <section className="rounded-xl border border-black/10 bg-[#fcfcfb] p-4 text-xs text-[#52514e] space-y-1.5">
-                <h3 className="text-sm font-semibold text-[#0b0b0b] mb-1">데이터 안내</h3>
+              <section className="rounded-xl border border-black/10 bg-[#fcfcfb] p-4 text-t2 text-[#52514e] space-y-1.5">
+                <h3 className="text-t4 font-semibold text-[#0b0b0b] mb-1">데이터 안내</h3>
                 <p>· 출근·할 일·집중·소식·회고는 처음부터 다 있어요. '활성 사용자'는 그날 앱을 열었거나 무언가를 한 사람이에요.</p>
                 <p>· 앱 방문·이용 시간·화면별 조회는 {data.tracking_since ? `${longDay(data.tracking_since)}부터` : '이 대시보드를 켠 뒤부터'}, 로그인 전 방문은 {data.anon_since ? `${longDay(data.anon_since)}부터` : '켠 뒤부터'} 기록돼요.</p>
                 <p>· 이용 시간은 화면이 켜져 있던 시간이 아니라 실제로 누르거나 스크롤한 뒤 1분까지만 세요. 하루 종일 켜두는 앱이라서요.</p>

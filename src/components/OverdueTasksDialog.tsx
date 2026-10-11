@@ -113,11 +113,11 @@ export default function OverdueTasksDialog({ open, onClose, onChanged }: { open:
 
         {empty ? (
           <div className="text-center py-6 space-y-1">
-            <p className="text-3xl">✨</p>
-            <p className="text-sm font-medium text-fg-neutral-muted">
+            <p className="text-t11">✨</p>
+            <p className="text-t4 font-medium text-fg-neutral-muted">
               {handled > 0 ? `${handled}개 정리 완료! 깔끔해졌어요` : '밀린 할 일이 없어요. 깔끔하네요'}
             </p>
-            <p className="text-xs text-fg-neutral-muted">오늘도 가볍게 시작해 봐요</p>
+            <p className="text-t2 text-fg-neutral-muted">오늘도 가볍게 시작해 봐요</p>
           </div>
         ) : (
           <>
@@ -135,16 +135,16 @@ export default function OverdueTasksDialog({ open, onClose, onChanged }: { open:
                   <li key={task.id} className="rounded-xl border border-stroke-critical-weak bg-bg-critical-weak p-3 space-y-2.5">
                     <div className="flex items-start gap-2">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-fg-neutral break-keep [overflow-wrap:anywhere]">{task.title}</p>
-                        <p className="text-xs text-fg-neutral-muted mt-0.5 flex flex-wrap items-center gap-x-1">
+                        <p className="text-t4 font-medium text-fg-neutral break-keep [overflow-wrap:anywhere]">{task.title}</p>
+                        <p className="text-t2 text-fg-neutral-muted mt-0.5 flex flex-wrap items-center gap-x-1">
                           <CalendarDays className="w-3 h-3" />
                           <span>{formatDateLabel(task.due_date as string)}{timeLabel ? ` ${timeLabel}` : ''}까지였어요</span>
                           {task.status === 'in_progress' && (
-                            <Badge variant="outline" className="ml-0.5 text-[10px] px-1.5 py-0 bg-bg-informative-weak text-fg-informative border-stroke-informative-weak">진행 중</Badge>
+                            <Badge variant="outline" className="ml-0.5 text-t1 px-1.5 py-0 bg-bg-informative-weak text-fg-informative border-stroke-informative-weak">진행 중</Badge>
                           )}
                         </p>
                       </div>
-                      <Badge variant="outline" className="text-xs whitespace-nowrap bg-bg-critical-weak text-fg-critical border-stroke-critical-weak">
+                      <Badge variant="outline" className="text-t2 whitespace-nowrap bg-bg-critical-weak text-fg-critical border-stroke-critical-weak">
                         {late}일 지남
                       </Badge>
                     </div>
@@ -157,11 +157,11 @@ export default function OverdueTasksDialog({ open, onClose, onChanged }: { open:
                           <button
                             key={o.days}
                             onClick={() => move(task, target)}
-                            className="rounded-lg border border-stroke-brand-weak bg-bg-layer-default px-0.5 py-1.5 text-center hover:bg-bg-brand-weak active:bg-bg-brand-weak"
+                            className="rounded-lg border border-stroke-brand-weak bg-bg-layer-default px-0.5 py-1.5 text-center hover:bg-bg-brand-weak-pressed active:bg-bg-brand-weak"
                             title={`${formatDateLabel(target)}까지로 옮기기`}
                           >
-                            <span className="block text-xs font-semibold text-fg-brand">{o.label}</span>
-                            <span className="block text-[10px] text-fg-neutral-muted leading-tight whitespace-nowrap">{formatShortDate(target).replace(' ', '')}</span>
+                            <span className="block text-t2 font-semibold text-fg-brand">{o.label}</span>
+                            <span className="block text-t1 text-fg-neutral-muted leading-tight whitespace-nowrap">{formatShortDate(target).replace(' ', '')}</span>
                           </button>
                         );
                       })}
@@ -171,7 +171,7 @@ export default function OverdueTasksDialog({ open, onClose, onChanged }: { open:
                       // 날짜를 고른 뒤 '옮기기'로 확정 — 입력 중 중간값으로 바로 옮겨지지 않게
                       <div className="flex gap-1.5">
                         <Input type="date" value={pickedDate} min={today} onChange={(e) => setPickedDate(e.target.value)}
-                          className="h-9 flex-1 min-w-0 text-sm" aria-label="새 마감일" autoFocus />
+                          className="h-9 flex-1 min-w-0 text-t4" aria-label="새 마감일" autoFocus />
                         <Button size="sm" className="h-9 bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" disabled={!pickedDate}
                           onClick={() => pickedDate && move(task, pickedDate)}>
                           옮기기
@@ -182,14 +182,14 @@ export default function OverdueTasksDialog({ open, onClose, onChanged }: { open:
                       </div>
                     ) : (
                       <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm" className="h-8 px-2 text-xs text-fg-neutral-muted"
+                        <Button variant="ghost" size="sm" className="h-8 px-2 text-t2 text-fg-neutral-muted"
                           onClick={() => { setPickerFor(task.id); setPickedDate(addDays(today, 1)); }}>
                           <CalendarDays className="w-3.5 h-3.5 mr-1" /> 날짜 고르기
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-8 px-2 text-xs text-fg-positive" onClick={() => complete(task)}>
+                        <Button variant="ghost" size="sm" className="h-8 px-2 text-t2 text-fg-positive" onClick={() => complete(task)}>
                           <CheckCheck className="w-3.5 h-3.5 mr-1" /> 이미 했어요
                         </Button>
-                        <Button variant="ghost" size="sm" className="h-8 px-2 text-xs text-fg-critical ml-auto" onClick={() => remove(task)}>
+                        <Button variant="ghost" size="sm" className="h-8 px-2 text-t2 text-fg-critical ml-auto" onClick={() => remove(task)}>
                           <Trash2 className="w-3.5 h-3.5 mr-1" /> 삭제
                         </Button>
                       </div>

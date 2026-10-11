@@ -155,13 +155,13 @@ export default function OfficeChat() {
       {/* 대상 선택: 단체방 + 멤버별 갠톡 */}
       <div className="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1">
         <button onClick={() => setPeer(null)}
-          className={`flex items-center gap-1 text-xs whitespace-nowrap rounded-full px-3 py-1.5 border flex-shrink-0 ${peer === null ? 'bg-bg-brand-solid text-white border-stroke-brand-solid' : 'bg-bg-layer-default text-fg-neutral-muted border-stroke-neutral-subtle'}`}>
+          className={`flex items-center gap-1 text-t2 whitespace-nowrap rounded-full px-3 py-1.5 border flex-shrink-0 ${peer === null ? 'bg-bg-brand-solid text-white border-stroke-brand-solid' : 'bg-bg-layer-default text-fg-neutral-muted border-stroke-neutral-subtle'}`}>
           <Users className="w-3.5 h-3.5" /> 단체방
         </button>
         {otherMembers.map(m => (
           <button key={m.user_id} onClick={() => setPeer(m.user_id)}
-            className={`flex items-center gap-1 text-xs whitespace-nowrap rounded-full px-2.5 py-1.5 border flex-shrink-0 ${peer === m.user_id ? 'bg-bg-brand-solid text-white border-stroke-brand-solid' : 'bg-bg-layer-default text-fg-neutral-muted border-stroke-neutral-subtle'}`}>
-            <span className="text-sm">{m.avatar_url ? '🙂' : defaultAvatar(m.nickname)}</span>
+            className={`flex items-center gap-1 text-t2 whitespace-nowrap rounded-full px-2.5 py-1.5 border flex-shrink-0 ${peer === m.user_id ? 'bg-bg-brand-solid text-white border-stroke-brand-solid' : 'bg-bg-layer-default text-fg-neutral-muted border-stroke-neutral-subtle'}`}>
+            <span className="text-t4">{m.avatar_url ? '🙂' : defaultAvatar(m.nickname)}</span>
             {displayName(m.nickname, office?.title_mode, m.rank_index)}
           </button>
         ))}
@@ -170,7 +170,7 @@ export default function OfficeChat() {
       {/* 메시지 */}
       <div className="flex-1 overflow-y-auto space-y-3 pr-1">
         {shown.length === 0 ? (
-          <p className="text-center text-fg-neutral-muted text-sm py-10">
+          <p className="text-center text-fg-neutral-muted text-t4 py-10">
             {peer === null ? '아직 대화가 없어요. 첫 인사를 건네보세요! 👋' : `${nameOf(peer)}님과의 첫 대화를 시작해보세요 💬`}
           </p>
         ) : (
@@ -184,23 +184,23 @@ export default function OfficeChat() {
             return (
               <div key={m.id} className={`flex gap-2 group ${mine ? 'flex-row-reverse' : ''}`}>
                 {!mine && (
-                  <span className="w-8 h-8 rounded-full bg-bg-brand-weak flex items-center justify-center text-base overflow-hidden flex-shrink-0 self-end">
+                  <span className="w-8 h-8 rounded-full bg-bg-brand-weak flex items-center justify-center text-t5 overflow-hidden flex-shrink-0 self-end">
                     {showHead ? (av.url ? <img src={av.url} alt="" className="w-8 h-8 rounded-full object-cover" /> : defaultAvatar(av.nickname)) : ''}
                   </span>
                 )}
                 <div className={`flex flex-col max-w-[72%] ${mine ? 'items-end' : 'items-start'}`}>
-                  {!mine && showHead && <span className="text-xs text-fg-neutral-muted mb-0.5 px-1">{nameOf(m.user_id)}</span>}
+                  {!mine && showHead && <span className="text-t2 text-fg-neutral-muted mb-0.5 px-1">{nameOf(m.user_id)}</span>}
                   <div className={`flex items-end gap-1 ${mine ? 'flex-row-reverse' : ''}`}>
                     {sticker ? (
-                      <span className="text-4xl px-1">{m.content}</span>
+                      <span className="text-t12 px-1">{m.content}</span>
                     ) : (
-                      <p className={`text-sm px-3 py-2 rounded-2xl break-keep [overflow-wrap:anywhere] ${mine ? 'bg-bg-brand-solid text-white rounded-br-md' : 'bg-bg-layer-default border border-stroke-brand-weak text-fg-neutral-muted rounded-bl-md'}`}>
+                      <p className={`text-t4 px-3 py-2 rounded-2xl break-keep [overflow-wrap:anywhere] ${mine ? 'bg-bg-brand-solid text-white rounded-br-md' : 'bg-bg-layer-default border border-stroke-brand-weak text-fg-neutral-muted rounded-bl-md'}`}>
                         {m.content}
                       </p>
                     )}
                     <div className={`flex flex-col ${mine ? 'items-end' : 'items-start'} flex-shrink-0`}>
-                      {mine && rc > 0 && <span className="text-[10px] text-fg-brand leading-none mb-0.5">읽음 {rc}</span>}
-                      <span className="text-[10px] text-fg-disabled leading-none">{timeLabel(m.created_at)}</span>
+                      {mine && rc > 0 && <span className="text-t1 text-fg-brand leading-none mb-0.5">읽음 {rc}</span>}
+                      <span className="text-t1 text-fg-disabled leading-none">{timeLabel(m.created_at)}</span>
                     </div>
                     {canDelete(m) && (
                       <button onClick={() => del(m.id)} className="text-fg-disabled hover:text-fg-critical opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex-shrink-0" title="삭제 (10분 이내)">
@@ -220,7 +220,7 @@ export default function OfficeChat() {
       {showStickers && (
         <div className="grid grid-cols-8 gap-1 bg-bg-layer-default border border-stroke-brand-weak rounded-xl p-2 mt-2">
           {STICKERS.map(s => (
-            <button key={s} onClick={() => { doSend(s); setShowStickers(false); }} className="text-2xl hover:scale-125 transition-transform py-1">
+            <button key={s} onClick={() => { doSend(s); setShowStickers(false); }} className="text-t9 hover:scale-125 transition-transform py-1">
               {s}
             </button>
           ))}

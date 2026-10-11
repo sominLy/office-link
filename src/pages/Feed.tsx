@@ -212,7 +212,7 @@ export default function Feed() {
 
         {/* 피드 */}
         {items.length === 0 ? (
-          <p className="text-center text-fg-neutral-muted text-sm py-8">아직 소식이 없어요. 첫 응원을 남겨보세요!</p>
+          <p className="text-center text-fg-neutral-muted text-t4 py-8">아직 소식이 없어요. 첫 응원을 남겨보세요!</p>
         ) : (
           <ul className="space-y-2">
             {items.map(item => (
@@ -221,7 +221,7 @@ export default function Feed() {
                   ? 'bg-bg-layer-default border-stroke-brand-weak shadow-sm'
                   : 'bg-white/50 border-transparent'
               }`}>
-                <span className="w-8 h-8 rounded-full bg-bg-brand-weak flex items-center justify-center text-base overflow-hidden flex-shrink-0 mt-0.5">
+                <span className="w-8 h-8 rounded-full bg-bg-brand-weak flex items-center justify-center text-t5 overflow-hidden flex-shrink-0 mt-0.5">
                   {item.author?.avatar_url ? (
                     <img src={item.author.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover" />
                   ) : item.type === 'wave' ? (
@@ -231,8 +231,8 @@ export default function Feed() {
                   )}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-fg-neutral-muted break-words">{renderLine(item)}</p>
-                  <p className="text-[11px] text-fg-neutral-muted mt-0.5">{timeAgo(item.created_at)}</p>
+                  <p className="text-t4 text-fg-neutral-muted break-words">{renderLine(item)}</p>
+                  <p className="text-t1 text-fg-neutral-muted mt-0.5">{timeAgo(item.created_at)}</p>
                 </div>
                 {item.user_id === user?.id && item.type === 'post' && (
                   // 모바일엔 호버가 없으니 항상 보이게

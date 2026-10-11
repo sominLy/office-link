@@ -53,7 +53,7 @@ export default function TaskItem({ task, today, nowHM, showCategory, onToggle, o
         <button
           onClick={() => onEdit(task)}
           className={cn(
-            'block w-full text-left text-sm leading-snug break-keep [overflow-wrap:anywhere] rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stroke-focus-ring',
+            'block w-full text-left text-t4 leading-snug break-keep [overflow-wrap:anywhere] rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stroke-focus-ring',
             done ? 'line-through text-fg-neutral-muted' : 'text-fg-neutral',
           )}
         >
@@ -66,7 +66,7 @@ export default function TaskItem({ task, today, nowHM, showCategory, onToggle, o
           {/* 상태 직접 고르기: 시작 전 / 진행 중 / 완료 */}
           <Select value={task.status} onValueChange={(v) => onStatus(task, v as TaskStatus)}>
             <SelectTrigger
-              className={cn('h-6 w-auto gap-1 rounded-full px-2 text-xs font-medium [&>svg]:h-3 [&>svg]:w-3', STATUS_META[task.status].chip)}
+              className={cn('h-6 w-auto gap-1 rounded-full px-2 text-t2 font-medium [&>svg]:h-3 [&>svg]:w-3', STATUS_META[task.status].chip)}
               aria-label="진행 상태"
             >
               <i aria-hidden className={cn('h-1.5 w-1.5 rounded-full', STATUS_META[task.status].dot)} />
@@ -74,23 +74,23 @@ export default function TaskItem({ task, today, nowHM, showCategory, onToggle, o
             </SelectTrigger>
             <SelectContent>
               {(Object.keys(STATUS_META) as TaskStatus[]).map(s => (
-                <SelectItem key={s} value={s} className="text-xs">{STATUS_META[s].label}</SelectItem>
+                <SelectItem key={s} value={s} className="text-t2">{STATUS_META[s].label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
           {due && (
-            <Badge variant="outline" className={cn('text-xs font-medium whitespace-nowrap', due.cls)}>
+            <Badge variant="outline" className={cn('text-t2 font-medium whitespace-nowrap', due.cls)}>
               <CalendarDays className="w-3 h-3 mr-0.5" />{due.label}
             </Badge>
           )}
           {/* '보통'은 기본값이라 굳이 표시하지 않는다 (카드를 가볍게) */}
           {task.priority !== 'normal' && (
-            <Badge variant="outline" className={cn('text-xs whitespace-nowrap', PRIORITY_META[task.priority].chip)}>
+            <Badge variant="outline" className={cn('text-t2 whitespace-nowrap', PRIORITY_META[task.priority].chip)}>
               <Flag className="w-3 h-3 mr-0.5" />{PRIORITY_META[task.priority].label}
             </Badge>
           )}
           {showCategory && task.category && (
-            <Badge variant="outline" className="text-xs whitespace-nowrap bg-bg-layer-default text-fg-brand border-stroke-brand-weak max-w-[8rem] truncate">
+            <Badge variant="outline" className="text-t2 whitespace-nowrap bg-bg-layer-default text-fg-brand border-stroke-brand-weak max-w-[8rem] truncate">
               {task.category}
             </Badge>
           )}
@@ -99,7 +99,7 @@ export default function TaskItem({ task, today, nowHM, showCategory, onToggle, o
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="w-7 h-7 -mr-1 flex-shrink-0 text-fg-neutral-muted hover:text-fg-neutral-muted" aria-label="할 일 메뉴">
+          <Button variant="ghost" size="icon" className="w-7 h-7 -mr-1 flex-shrink-0 text-fg-neutral-muted hover:text-fg-neutral" aria-label="할 일 메뉴">
             <MoreVertical className="w-4 h-4" />
           </Button>
         </DropdownMenuTrigger>

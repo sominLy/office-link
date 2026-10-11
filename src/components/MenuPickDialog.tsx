@@ -58,8 +58,8 @@ export default function MenuPickDialog({ open, onClose }: { open: boolean; onClo
           </TabsList>
         </Tabs>
         <div className="py-6">
-          <p className="text-sm text-fg-neutral-muted mb-2">{TAB_LABELS[tab].title}</p>
-          <p className={`text-3xl font-bold ${rolling ? 'text-amber-400' : 'text-fg-neutral'}`}>
+          <p className="text-t4 text-fg-neutral-muted mb-2">{TAB_LABELS[tab].title}</p>
+          <p className={`text-t11 font-bold ${rolling ? 'text-amber-400' : 'text-fg-neutral'}`}>
             {pick || '🎲'}
           </p>
         </div>

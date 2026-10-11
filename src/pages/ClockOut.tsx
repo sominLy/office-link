@@ -119,39 +119,39 @@ export default function ClockOut() {
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-fg-brand" />
               <div>
-                <p className="text-xs text-fg-neutral-muted">출근</p>
-                <p className="font-medium text-sm">{formatTime(stats.clockInTime)}</p>
+                <p className="text-t2 text-fg-neutral-muted">출근</p>
+                <p className="font-medium text-t4">{formatTime(stats.clockInTime)}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-orange-500" />
               <div>
-                <p className="text-xs text-fg-neutral-muted">체류시간</p>
-                <p className="font-medium text-sm">{formatDuration(stayDuration)}</p>
+                <p className="text-t2 text-fg-neutral-muted">체류시간</p>
+                <p className="font-medium text-t4">{formatDuration(stayDuration)}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <Target className="w-4 h-4 text-fg-critical" />
               <div>
-                <p className="text-xs text-fg-neutral-muted">집중시간</p>
-                <p className="font-medium text-sm">{formatDuration(stats.totalFocus)}</p>
+                <p className="text-t2 text-fg-neutral-muted">집중시간</p>
+                <p className="font-medium text-t4">{formatDuration(stats.totalFocus)}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-fg-positive" />
               <div>
-                <p className="text-xs text-fg-neutral-muted">완료 업무</p>
-                <p className="font-medium text-sm">{stats.completedTasks}개</p>
+                <p className="text-t2 text-fg-neutral-muted">완료 업무</p>
+                <p className="font-medium text-t4">{stats.completedTasks}개</p>
               </div>
             </div>
           </div>
 
           {stats.focusedTasks.length > 0 && (
             <div className="mt-4 pt-4 border-t border-stroke-neutral-subtle">
-              <p className="text-xs text-fg-neutral-muted mb-2">집중한 업무</p>
+              <p className="text-t2 text-fg-neutral-muted mb-2">집중한 업무</p>
               <div className="flex flex-wrap gap-1">
                 {stats.focusedTasks.map((t, i) => (
-                  <span key={i} className="text-xs bg-bg-brand-weak text-fg-brand px-2 py-0.5 rounded">{t}</span>
+                  <span key={i} className="text-t2 bg-bg-brand-weak text-fg-brand px-2 py-0.5 rounded">{t}</span>
                 ))}
               </div>
             </div>
@@ -161,7 +161,7 @@ export default function ClockOut() {
         <LeftoverTasks />
 
         <Card className="p-5 border-stroke-neutral-subtle">
-          <label className="text-sm font-medium text-fg-neutral-muted block mb-2">한 줄 회고 (선택)</label>
+          <label className="text-t4 font-medium text-fg-neutral-muted block mb-2">한 줄 회고 (선택)</label>
           <Input
             placeholder="오늘 하루를 한 줄로 정리해 보세요"
             value={memo}
@@ -170,7 +170,7 @@ export default function ClockOut() {
           />
         </Card>
 
-        <Button onClick={handleClockOut} className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white h-12 text-base">
+        <Button onClick={handleClockOut} className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white h-12 text-t5">
           퇴근하기
         </Button>
       </main>

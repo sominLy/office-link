@@ -110,7 +110,7 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
               <div className="relative">
                 <div className="text-6xl float-bob">{face}</div>
               </div>
-              <div className="bg-bg-brand-weak text-fg-brand text-xs rounded-full px-3 py-1">{speech}</div>
+              <div className="bg-bg-brand-weak text-fg-brand text-t2 rounded-full px-3 py-1">{speech}</div>
 
               {/* 진행 원형 */}
               <div className="relative w-40 h-40">
@@ -121,8 +121,8 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
                     strokeLinecap="round" className="transition-all duration-1000 ease-linear" />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-3xl font-mono font-bold text-fg-neutral">{fmt(remaining)}</span>
-                  <span className={`text-xs font-medium ${phase === 'focus' ? 'text-fg-critical' : 'text-fg-positive'}`}>
+                  <span className="text-t11 font-mono font-bold text-fg-neutral">{fmt(remaining)}</span>
+                  <span className={`text-t2 font-medium ${phase === 'focus' ? 'text-fg-critical' : 'text-fg-positive'}`}>
                     {phase === 'focus' ? '집중' : '휴식'} · {rounds}세트
                   </span>
                 </div>
@@ -132,7 +132,7 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
               <div className="flex gap-1.5">
                 {PRESETS.map(p => (
                   <button key={p.label} onClick={() => applyPreset(p)}
-                    className={`text-xs rounded-full px-3 py-1 border ${preset.label === p.label ? 'bg-bg-brand-solid text-white border-stroke-brand-solid' : 'bg-bg-layer-default text-fg-neutral-muted border-stroke-neutral-subtle'}`}>
+                    className={`text-t2 rounded-full px-3 py-1 border ${preset.label === p.label ? 'bg-bg-brand-solid text-white border-stroke-brand-solid' : 'bg-bg-layer-default text-fg-neutral-muted border-stroke-neutral-subtle'}`}>
                     {p.label}
                   </button>
                 ))}
@@ -151,31 +151,31 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
           {/* 감시 모드 */}
           <TabsContent value="watch" className="pt-2 space-y-3">
             <div className="flex flex-col items-center gap-1 py-1">
-              <div className="text-5xl float-bob">👁</div>
-              <p className="text-sm font-semibold text-fg-neutral-muted">판옵티콘 감시 모드</p>
-              <p className="text-xs text-fg-neutral-muted text-center">시간(0~6)과 분(5분 단위)을 정하면<br/>그 간격마다 "아직 집중 중?" 알림이 와요.</p>
+              <div className="text-t14 float-bob">👁</div>
+              <p className="text-t4 font-semibold text-fg-neutral-muted">판옵티콘 감시 모드</p>
+              <p className="text-t2 text-fg-neutral-muted text-center">시간(0~6)과 분(5분 단위)을 정하면<br/>그 간격마다 "아직 집중 중?" 알림이 와요.</p>
             </div>
             {/* 시:분 선택 · 시간 0~6, 분 5분 단위 (최소 5분) */}
             <div className="flex items-end justify-center gap-2">
               <label className="flex flex-col items-center gap-1">
-                <span className="text-[11px] text-fg-neutral-muted">시간</span>
+                <span className="text-t1 text-fg-neutral-muted">시간</span>
                 <select value={Math.floor(draft / 60)}
                   onChange={(e) => setWatchDraft(Math.max(5, Number(e.target.value) * 60 + (draft % 60)))}
-                  className="border border-stroke-neutral-subtle rounded-lg px-3 py-2 text-lg font-bold text-fg-brand tabular-nums">
+                  className="border border-stroke-neutral-subtle rounded-lg px-3 py-2 text-t6 font-bold text-fg-brand tabular-nums">
                   {[0, 1, 2, 3, 4, 5, 6].map(h => <option key={h} value={h}>{String(h).padStart(2, '0')}</option>)}
                 </select>
               </label>
-              <span className="text-2xl font-bold text-amber-400 pb-1.5">:</span>
+              <span className="text-t9 font-bold text-amber-400 pb-1.5">:</span>
               <label className="flex flex-col items-center gap-1">
-                <span className="text-[11px] text-fg-neutral-muted">분</span>
+                <span className="text-t1 text-fg-neutral-muted">분</span>
                 <select value={draft % 60}
                   onChange={(e) => setWatchDraft(Math.max(5, Math.floor(draft / 60) * 60 + Number(e.target.value)))}
-                  className="border border-stroke-neutral-subtle rounded-lg px-3 py-2 text-lg font-bold text-fg-brand tabular-nums">
+                  className="border border-stroke-neutral-subtle rounded-lg px-3 py-2 text-t6 font-bold text-fg-brand tabular-nums">
                   {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => <option key={m} value={m}>{String(m).padStart(2, '0')}</option>)}
                 </select>
               </label>
             </div>
-            <p className="text-center text-xs text-fg-neutral-muted">→ {humanMin(draft)}마다</p>
+            <p className="text-center text-t2 text-fg-neutral-muted">→ {humanMin(draft)}마다</p>
             <div className="flex gap-2">
               <Button onClick={() => setWatchMode(draft)} className="flex-1 bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
                 {watch === draft && watch > 0 ? '이 간격으로 켜짐' : '이 간격으로 켜기'}
@@ -184,10 +184,10 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
                 <Button variant="outline" className="border-stroke-brand-weak text-fg-neutral-muted" onClick={() => setWatchMode(0)}>끄기</Button>
               )}
             </div>
-            <p className="text-xs text-center text-fg-neutral-muted">
+            <p className="text-t2 text-center text-fg-neutral-muted">
               {watch ? `🟢 켜짐 · ${humanMin(watch)}마다` : '⚪ 꺼짐'}
             </p>
-            <p className="text-[11px] text-fg-brand bg-bg-brand-weak rounded-lg p-2 flex items-center gap-1">
+            <p className="text-t1 text-fg-brand bg-bg-brand-weak rounded-lg p-2 flex items-center gap-1">
               <Eye className="w-3.5 h-3.5" /> 알림은 앱이 켜져 있을 때 와요. 푸시 알림이 켜져 있어야 백그라운드에서도 옵니다.
             </p>
           </TabsContent>
@@ -195,17 +195,17 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
           {/* 퇴근 알림 */}
           <TabsContent value="off" className="pt-2 space-y-3">
             <div className="flex flex-col items-center gap-1 py-1">
-              <div className="text-5xl float-bob">🏃</div>
-              <p className="text-sm font-semibold text-fg-neutral-muted">예상 퇴근 시간 알림</p>
-              <p className="text-xs text-fg-neutral-muted text-center">예상 퇴근 시간을 정해두면, 그 시간에<br/>"아직 일하고 계신가요?" 알림이 와요.</p>
+              <div className="text-t14 float-bob">🏃</div>
+              <p className="text-t4 font-semibold text-fg-neutral-muted">예상 퇴근 시간 알림</p>
+              <p className="text-t2 text-fg-neutral-muted text-center">예상 퇴근 시간을 정해두면, 그 시간에<br/>"아직 일하고 계신가요?" 알림이 와요.</p>
             </div>
             <div className="flex items-center gap-2 justify-center">
               <Clock className="w-4 h-4 text-fg-brand" />
               <input type="time" value={clockout} onChange={(e) => saveClockout(e.target.value)}
-                className="border border-stroke-neutral-subtle rounded-lg px-3 py-2 text-sm" />
+                className="border border-stroke-neutral-subtle rounded-lg px-3 py-2 text-t4" />
               {clockout && <Button variant="ghost" size="sm" className="text-fg-neutral-muted" onClick={() => saveClockout('')}>끄기</Button>}
             </div>
-            <p className="text-xs text-center text-fg-neutral-muted">{clockout ? `🟢 ${clockout}에 알림 예정` : '⚪ 설정 안 됨'}</p>
+            <p className="text-t2 text-center text-fg-neutral-muted">{clockout ? `🟢 ${clockout}에 알림 예정` : '⚪ 설정 안 됨'}</p>
           </TabsContent>
         </Tabs>
       </DialogContent>

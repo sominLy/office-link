@@ -59,7 +59,7 @@ export default function RetroSettingsDialog({ open, onClose, onSaved }: { open: 
                   aria-checked={prefs.day === i}
                   onClick={() => setPrefs(p => ({ ...p, day: i }))}
                   className={cn(
-                    'rounded-lg border py-2 text-sm font-medium transition-colors',
+                    'rounded-lg border py-2 text-t4 font-medium transition-colors',
                     prefs.day === i ? 'bg-bg-brand-solid text-white border-stroke-brand-solid' : 'bg-bg-layer-default text-fg-neutral-muted border-stroke-neutral-subtle hover:border-stroke-brand-weak',
                     i >= 5 && prefs.day !== i && 'text-rose-500',
                   )}
@@ -68,7 +68,7 @@ export default function RetroSettingsDialog({ open, onClose, onSaved }: { open: 
                 </button>
               ))}
             </div>
-            <p className="text-xs text-fg-neutral-muted">{coverageHint(prefs.day)}</p>
+            <p className="text-t2 text-fg-neutral-muted">{coverageHint(prefs.day)}</p>
           </div>
 
           <div className="space-y-1.5">
@@ -77,7 +77,7 @@ export default function RetroSettingsDialog({ open, onClose, onSaved }: { open: 
             <div className="flex flex-wrap gap-1.5">
               {TIME_PRESETS.map(t => (
                 <button key={t} type="button" onClick={() => setPrefs(p => ({ ...p, time: t }))}
-                  className={cn('rounded-full border px-2.5 py-1 text-xs font-medium',
+                  className={cn('rounded-full border px-2.5 py-1 text-t2 font-medium',
                     prefs.time === t ? 'bg-bg-brand-solid text-white border-stroke-brand-solid' : 'bg-bg-layer-default text-fg-neutral-muted border-stroke-neutral-subtle hover:border-stroke-brand-weak')}>
                   {formatTimeLabel(t)}
                 </button>
@@ -85,10 +85,10 @@ export default function RetroSettingsDialog({ open, onClose, onSaved }: { open: 
             </div>
           </div>
 
-          <div className="rounded-lg bg-bg-brand-weak border border-stroke-brand-weak px-3 py-2.5 text-sm text-fg-brand-contrast">
+          <div className="rounded-lg bg-bg-brand-weak border border-stroke-brand-weak px-3 py-2.5 text-t4 text-fg-brand-contrast">
             매주 <b>{WEEKDAY_NAMES[prefs.day]}요일 {prefs.time ? formatTimeLabel(prefs.time) : '—'}</b>에 회고가 도착해요
             {!notificationsEnabled() && (
-              <p className="text-xs text-fg-brand mt-1">💡 홈 ✨ 더보기 → 알림 켜기를 하면 앱을 닫아둬도 알려드려요</p>
+              <p className="text-t2 text-fg-brand mt-1">💡 홈 ✨ 더보기 → 알림 켜기를 하면 앱을 닫아둬도 알려드려요</p>
             )}
           </div>
 

@@ -67,6 +67,18 @@ export default {
           ring: 'hsl(var(--sidebar-ring))',
         },
       },
+      // SEED 타이포 유틸(t4-medium 등)은 크기·행간·굵기를 한꺼번에 넣는다. 크기만 바꾸고
+      // 싶은 자리에 쓰면 부모에서 물려받은 굵기가 regular로 덮인다. 플러그인에
+      // 크기만 바꾸는 유틸(text-size-*)은 없어서 여기에 SEED 스케일을 연결한다.
+      // text-t4처럼 쓰면 font-size와 line-height만 SEED 값이 되고 굵기는 그대로다.
+      // 값이 clamp라서 사용자가 글자 크기를 키우면 함께 커진다(iOS 동적 글자 크기).
+      fontSize: Object.fromEntries(
+        Array.from({ length: 14 }, (_, i) => [
+          `t${i + 1}`,
+          [`var(--seed-font-size-t${i + 1})`, { lineHeight: `var(--seed-line-height-t${i + 1})` }],
+        ]),
+      ),
+
       // SEED 플러그인은 text-·bg-·border- 색만 만들고 ring-은 만들지 않는다.
       // 포커스 링을 SEED 토큰으로 쓰려면 여기에 연결해야 한다 —
       // 연결하지 않으면 ring-stroke-focus-ring이 CSS를 만들지 않아 링이 사라진다.

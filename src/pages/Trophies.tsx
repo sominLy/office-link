@@ -83,7 +83,7 @@ export default function Trophies() {
           <div className="min-w-0 flex-1">
             <h1 className="font-bold text-fg-neutral leading-tight">🏆 내 진열장</h1>
             {stats && (
-              <p className="text-[11px] text-fg-neutral-muted leading-tight">
+              <p className="text-t1 text-fg-neutral-muted leading-tight">
                 트로피 {trophies.length} · 스티커 {stats.stickers} · 상장 {stats.certificates}
               </p>
             )}
@@ -104,12 +104,12 @@ export default function Trophies() {
           <>
             {/* 트로피 선반 */}
             <section className="rounded-2xl p-4 pb-2 shadow-sm border border-stroke-neutral-subtle" style={{ background: 'linear-gradient(180deg, #fff7ea 0%, #fbe9cf 100%)' }}>
-              <h2 className="text-sm font-semibold text-fg-brand-contrast mb-1">트로피 선반</h2>
+              <h2 className="text-t4 font-semibold text-fg-brand-contrast mb-1">트로피 선반</h2>
               {trophies.length === 0 ? (
                 <div className="text-center py-6">
-                  <p className="text-4xl opacity-40">🏆</p>
-                  <p className="text-sm text-fg-neutral-muted mt-2">아직 비어 있어요</p>
-                  <p className="text-xs text-fg-neutral-muted">출근하고, 할 일을 체크하고, 집중하면 하나씩 채워져요</p>
+                  <p className="text-t12 opacity-40">🏆</p>
+                  <p className="text-t4 text-fg-neutral-muted mt-2">아직 비어 있어요</p>
+                  <p className="text-t2 text-fg-neutral-muted">출근하고, 할 일을 체크하고, 집중하면 하나씩 채워져요</p>
                 </div>
               ) : (
                 shelves.map((row, r) => (
@@ -117,11 +117,11 @@ export default function Trophies() {
                     <div className="grid grid-cols-4 gap-1 px-1">
                       {row.map(t => (
                         <div key={t.id} className={cn('flex flex-col items-center text-center', newIds.has(t.id) && 'sticker-pop')}>
-                          <span className="relative text-[2.1rem] leading-none drop-shadow-[0_3px_2px_rgba(120,60,0,0.25)]">
+                          <span className="relative text-t12 leading-none drop-shadow-[0_3px_2px_rgba(120,60,0,0.25)]">
                             {t.emoji}
-                            {newIds.has(t.id) && <span className="absolute -top-1 -right-3 text-[9px] font-bold text-white bg-rose-500 rounded-full px-1">NEW</span>}
+                            {newIds.has(t.id) && <span className="absolute -top-1 -right-3 text-t1 font-bold text-white bg-rose-500 rounded-full px-1">NEW</span>}
                           </span>
-                          <span className="mt-1 text-[11px] font-medium text-fg-brand-contrast leading-tight [word-break:keep-all]">{t.title}</span>
+                          <span className="mt-1 text-t1 font-medium text-fg-brand-contrast leading-tight [word-break:keep-all]">{t.title}</span>
                         </div>
                       ))}
                     </div>
@@ -134,13 +134,13 @@ export default function Trophies() {
 
             {/* 다음 목표 */}
             <Card className="p-4 border-stroke-neutral-subtle">
-              <h2 className="text-sm font-semibold text-fg-neutral mb-3">다음 트로피까지</h2>
+              <h2 className="text-t4 font-semibold text-fg-neutral mb-3">다음 트로피까지</h2>
               <ul className="space-y-3">
                 {progress.map(({ track, value, next, pct }) => (
                   <li key={track.key}>
-                    <div className="flex items-center justify-between text-sm gap-2">
+                    <div className="flex items-center justify-between text-t4 gap-2">
                       <span className="text-fg-neutral-muted">{track.name} <b className="text-fg-neutral tabular-nums">{value}{track.unit}</b></span>
-                      <span className="text-xs text-fg-neutral-muted flex-shrink-0">
+                      <span className="text-t2 text-fg-neutral-muted flex-shrink-0">
                         {next ? <>{next.emoji} {next.title}까지 <b className="text-fg-brand">{next.at - value}{track.unit}</b></> : '🎉 모두 달성!'}
                       </span>
                     </div>
@@ -155,31 +155,31 @@ export default function Trophies() {
             {/* 스티커북 */}
             <Card className="p-4 border-stroke-neutral-subtle">
               <div className="flex items-baseline justify-between mb-3">
-                <h2 className="text-sm font-semibold text-fg-neutral">칭찬 스티커북</h2>
-                <span className="text-xs text-fg-neutral-muted">{stickerCounts.size}/{STICKERS.length} 종류</span>
+                <h2 className="text-t4 font-semibold text-fg-neutral">칭찬 스티커북</h2>
+                <span className="text-t2 text-fg-neutral-muted">{stickerCounts.size}/{STICKERS.length} 종류</span>
               </div>
               <div className="grid grid-cols-5 gap-2">
                 {STICKERS.map(s => {
                   const n = stickerCounts.get(s.code) || 0;
                   return (
                     <div key={s.code} className={cn('relative flex flex-col items-center rounded-xl border p-1.5 text-center', n > 0 ? 'bg-bg-brand-weak border-stroke-brand-weak' : 'bg-bg-neutral-muted border-dashed border-stroke-neutral-subtle')}>
-                      <span className={cn('text-2xl leading-tight', n === 0 && 'grayscale opacity-30')}>{s.emoji}</span>
-                      <span className={cn('mt-0.5 text-[10px] leading-tight [word-break:keep-all]', n > 0 ? 'text-fg-neutral-muted' : 'text-fg-neutral-muted')}>{n > 0 ? s.title : '???'}</span>
-                      {n > 1 && <span className="absolute -top-1.5 -right-1.5 text-[10px] font-bold text-white bg-bg-brand-solid rounded-full min-w-[1.1rem] px-1">×{n}</span>}
+                      <span className={cn('text-t9 leading-tight', n === 0 && 'grayscale opacity-30')}>{s.emoji}</span>
+                      <span className={cn('mt-0.5 text-t1 leading-tight [word-break:keep-all]', n > 0 ? 'text-fg-neutral-muted' : 'text-fg-neutral-muted')}>{n > 0 ? s.title : '???'}</span>
+                      {n > 1 && <span className="absolute -top-1.5 -right-1.5 text-t1 font-bold text-white bg-bg-brand-solid rounded-full min-w-[1.1rem] px-1">×{n}</span>}
                       {n === 0 && <Lock className="absolute top-1 right-1 w-2.5 h-2.5 text-fg-disabled" />}
                     </div>
                   );
                 })}
               </div>
-              <p className="mt-3 text-xs text-fg-neutral-muted">매주 회고를 열면 그 주에 해낸 만큼 스티커가 붙어요</p>
+              <p className="mt-3 text-t2 text-fg-neutral-muted">매주 회고를 열면 그 주에 해낸 만큼 스티커가 붙어요</p>
             </Card>
 
             {/* 상장 모음 */}
             <Card className="p-4 border-stroke-neutral-subtle">
-              <h2 className="text-sm font-semibold text-fg-neutral mb-2">받은 상장 {certificates.length}장</h2>
+              <h2 className="text-t4 font-semibold text-fg-neutral mb-2">받은 상장 {certificates.length}장</h2>
               {certificates.length === 0 ? (
                 <div className="text-center py-4">
-                  <p className="text-sm text-fg-neutral-muted">아직 받은 상장이 없어요</p>
+                  <p className="text-t4 text-fg-neutral-muted">아직 받은 상장이 없어요</p>
                   <Button size="sm" variant="outline" className="mt-2 border-stroke-brand-weak text-fg-brand" onClick={() => navigate('/retro')}>
                     📬 회고 열어보기
                   </Button>
@@ -189,14 +189,14 @@ export default function Trophies() {
                   {certificates.map(c => (
                     <li key={c.key}>
                       <button onClick={() => openCertificate(c)} className="w-full flex items-center gap-3 py-2.5 text-left hover:bg-bg-brand-weak rounded-lg px-1">
-                        <span className="text-2xl">{c.award.emoji}</span>
+                        <span className="text-t9">{c.award.emoji}</span>
                         <span className="flex-1 min-w-0">
-                          <span className="block text-sm font-medium text-fg-neutral">{c.award.title}</span>
-                          <span className="block text-xs text-fg-neutral-muted truncate">
+                          <span className="block text-t4 font-medium text-fg-neutral">{c.award.title}</span>
+                          <span className="block text-t2 text-fg-neutral-muted truncate">
                             {shortPeriod(c.week)}{offices.length > 1 && ` · ${offices.find(o => o.id === c.officeId)?.name || ''}`} · 스티커 {c.rows.length}개
                           </span>
                         </span>
-                        <span className="text-xs text-fg-brand flex items-center">{loadingCert === c.key ? '여는 중…' : <>보기 <ChevronRight className="w-3.5 h-3.5" /></>}</span>
+                        <span className="text-t2 text-fg-brand flex items-center">{loadingCert === c.key ? '여는 중…' : <>보기 <ChevronRight className="w-3.5 h-3.5" /></>}</span>
                       </button>
                     </li>
                   ))}

@@ -70,7 +70,7 @@ export default function LeftoverTasks() {
       <div className="flex items-start justify-between gap-2 mb-1">
         <h2 className="font-semibold text-fg-neutral">🌙 아직 남은 오늘 할 일 <span className="text-fg-brand">{tasks.length}</span></h2>
       </div>
-      <p className="text-xs text-fg-neutral-muted mb-3">끝낸 건 체크하고, 못 한 건 내일로 넘겨두면 내일 아침이 가벼워요.</p>
+      <p className="text-t2 text-fg-neutral-muted mb-3">끝낸 건 체크하고, 못 한 건 내일로 넘겨두면 내일 아침이 가벼워요.</p>
       <ul className="space-y-1.5">
         {tasks.map(task => {
           const due = dueInfo(task, today, nowHM);
@@ -80,10 +80,10 @@ export default function LeftoverTasks() {
                 <Circle className="w-5 h-5 text-fg-disabled hover:text-fg-positive" />
               </button>
               <span className="flex-1 min-w-0">
-                <span className="block text-sm text-fg-neutral-muted truncate">{task.title}</span>
-                {due && <span className={`block text-[11px] ${due.tone === 'overdue' ? 'text-fg-critical' : 'text-orange-500'}`}>{due.label}</span>}
+                <span className="block text-t4 text-fg-neutral-muted truncate">{task.title}</span>
+                {due && <span className={`block text-t1 ${due.tone === 'overdue' ? 'text-fg-critical' : 'text-orange-500'}`}>{due.label}</span>}
               </span>
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-fg-brand flex-shrink-0" onClick={() => toTomorrow(task)}>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-t2 text-fg-brand flex-shrink-0" onClick={() => toTomorrow(task)}>
                 <CalendarClock className="w-3.5 h-3.5 mr-1" /> 내일로
               </Button>
             </li>

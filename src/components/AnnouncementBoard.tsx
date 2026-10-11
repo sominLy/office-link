@@ -45,17 +45,17 @@ export default function AnnouncementBoard() {
     <section className="rounded-2xl border border-stroke-brand-weak bg-gradient-to-br from-amber-50 to-orange-50/70 p-4 shadow-sm" aria-label="업데이트 공지">
       <div className="flex items-center gap-1.5 mb-1.5">
         <Megaphone className="w-4 h-4 text-fg-brand" />
-        <h2 className="text-sm font-semibold text-fg-brand-contrast">업데이트 소식</h2>
-        {isNew && <span className="text-[10px] font-bold text-white bg-rose-500 rounded-full px-1.5 py-px">NEW</span>}
-        <span className="ml-auto text-[11px] text-fg-brand">{dateLabel(latest.created_at)}</span>
+        <h2 className="text-t4 font-semibold text-fg-brand-contrast">업데이트 소식</h2>
+        {isNew && <span className="text-t1 font-bold text-white bg-rose-500 rounded-full px-1.5 py-px">NEW</span>}
+        <span className="ml-auto text-t1 text-fg-brand">{dateLabel(latest.created_at)}</span>
       </div>
-      <p className="text-sm text-fg-neutral-muted leading-relaxed break-keep [overflow-wrap:anywhere]">{latest.message}</p>
+      <p className="text-t4 text-fg-neutral-muted leading-relaxed break-keep [overflow-wrap:anywhere]">{latest.message}</p>
 
       {older.length > 0 && (
         <>
           <button
             onClick={() => setOpen(o => !o)}
-            className="mt-2.5 flex items-center gap-0.5 text-xs font-medium text-fg-brand hover:text-fg-brand-contrast"
+            className="mt-2.5 flex items-center gap-0.5 text-t2 font-medium text-fg-brand hover:text-fg-brand-contrast"
             aria-expanded={open}
           >
             지난 공지 {older.length}개 {open ? '접기' : '보기'}
@@ -64,7 +64,7 @@ export default function AnnouncementBoard() {
           {open && (
             <ul className="mt-2 space-y-2 border-t border-stroke-neutral-subtle pt-2.5">
               {older.map(a => (
-                <li key={a.id} className="text-xs leading-relaxed">
+                <li key={a.id} className="text-t2 leading-relaxed">
                   <span className="text-fg-brand mr-1.5">{dateLabel(a.created_at)}</span>
                   <span className="text-fg-neutral-muted break-keep [overflow-wrap:anywhere]">{a.message}</span>
                 </li>

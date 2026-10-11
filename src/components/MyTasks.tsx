@@ -92,13 +92,13 @@ export default function MyTasks({ compact = false }: { compact?: boolean }) {
     <Card className="p-5 border-stroke-neutral-subtle shadow-sm">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <h3 className="font-semibold text-fg-neutral text-sm">이번 주 할 일</h3>
-          <Badge variant="secondary" className="text-xs bg-bg-brand-weak text-fg-brand">
+          <h3 className="font-semibold text-fg-neutral text-t4">이번 주 할 일</h3>
+          <Badge variant="secondary" className="text-t2 bg-bg-brand-weak text-fg-brand">
             {doneCount}/{tasks.length}
           </Badge>
         </div>
         {compact && (
-          <Button variant="ghost" size="sm" onClick={() => navigate('/tasks')} className="text-fg-brand text-xs -mr-2">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/tasks')} className="text-fg-brand text-t2 -mr-2">
             전체 보기 <ArrowRight className="w-3 h-3 ml-1" />
           </Button>
         )}
@@ -114,8 +114,8 @@ export default function MyTasks({ compact = false }: { compact?: boolean }) {
           className="w-full mb-3 flex items-center gap-2 rounded-lg border border-stroke-critical-weak bg-red-50/70 px-3 py-2 text-left hover:bg-bg-critical-weak"
         >
           <Clock className="w-3.5 h-3.5 text-fg-critical flex-shrink-0" />
-          <span className="flex-1 text-xs text-fg-critical">마감 지난 할 일 <b>{overdueCount}개</b></span>
-          <span className="text-xs font-semibold text-fg-critical flex items-center">정리하기 <ChevronRight className="w-3 h-3" /></span>
+          <span className="flex-1 text-t2 text-fg-critical">마감 지난 할 일 <b>{overdueCount}개</b></span>
+          <span className="text-t2 font-semibold text-fg-critical flex items-center">정리하기 <ChevronRight className="w-3 h-3" /></span>
         </button>
       )}
 
@@ -124,7 +124,7 @@ export default function MyTasks({ compact = false }: { compact?: boolean }) {
           {[0, 1, 2].map(i => <div key={i} className="h-5 rounded bg-bg-brand-weak animate-pulse" />)}
         </div>
       ) : displayTasks.length === 0 ? (
-        <p className="text-sm text-fg-neutral-muted text-center py-3">
+        <p className="text-t4 text-fg-neutral-muted text-center py-3">
           {tasks.length === 0 ? '이번 주 할 일을 아래에 적어보세요' : '이번 주 할 일을 모두 끝냈어요 🎉'}
         </p>
       ) : (
@@ -146,14 +146,14 @@ export default function MyTasks({ compact = false }: { compact?: boolean }) {
                     <Circle className={`w-5 h-5 ${PRIORITY_META[task.priority].fg} hover:text-fg-brand`} />
                   )}
                 </button>
-                <span className={cn('text-sm flex-1 min-w-0 truncate', task.status === 'done' ? 'line-through text-fg-neutral-muted' : 'text-fg-neutral-muted')}>
+                <span className={cn('text-t4 flex-1 min-w-0 truncate', task.status === 'done' ? 'line-through text-fg-neutral-muted' : 'text-fg-neutral-muted')}>
                   {task.title}
                 </span>
                 {task.status === 'in_progress' && !due && (
-                  <span className="text-xs text-fg-informative flex-shrink-0">진행 중</span>
+                  <span className="text-t2 text-fg-informative flex-shrink-0">진행 중</span>
                 )}
                 {due && (
-                  <span className={cn('text-xs flex-shrink-0 whitespace-nowrap', dueTextColor[due.tone])}>{due.label}</span>
+                  <span className={cn('text-t2 flex-shrink-0 whitespace-nowrap', dueTextColor[due.tone])}>{due.label}</span>
                 )}
               </li>
             );
@@ -162,7 +162,7 @@ export default function MyTasks({ compact = false }: { compact?: boolean }) {
       )}
 
       {hiddenCount > 0 && (
-        <button onClick={() => navigate('/tasks')} className="mt-1 text-xs text-fg-neutral-muted hover:text-fg-brand">
+        <button onClick={() => navigate('/tasks')} className="mt-1 text-t2 text-fg-neutral-muted hover:text-fg-brand">
           + {hiddenCount}개 더 있어요
         </button>
       )}

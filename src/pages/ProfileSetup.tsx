@@ -38,9 +38,9 @@ export default function ProfileSetup() {
       <Card className="w-full max-w-md shadow-lg border-0">
         <CardHeader className="text-center">
           <div className="mx-auto mb-3 w-12 h-12 bg-bg-brand-weak rounded-xl flex items-center justify-center">
-            <span className="text-2xl">👤</span>
+            <span className="text-t9">👤</span>
           </div>
-          <CardTitle className="text-xl font-bold text-fg-neutral">프로필 설정</CardTitle>
+          <CardTitle className="text-t7 font-bold text-fg-neutral">프로필 설정</CardTitle>
           <CardDescription>오피스에서 사용할 이름을 입력해 주세요</CardDescription>
         </CardHeader>
         <CardContent>
