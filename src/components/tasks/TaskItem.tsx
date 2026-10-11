@@ -35,7 +35,7 @@ export default function TaskItem({ task, today, nowHM, showCategory, onToggle, o
     >
       <button
         onClick={() => onToggle(task)}
-        className="mt-px flex-shrink-0 rounded-full p-0.5 -m-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300"
+        className="mt-px flex-shrink-0 rounded-full p-0.5 -m-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stroke-focus-ring"
         aria-label={done ? '완료 취소' : '완료로 표시'}
         title={done ? '완료 취소' : '완료로 표시'}
       >
@@ -53,7 +53,7 @@ export default function TaskItem({ task, today, nowHM, showCategory, onToggle, o
         <button
           onClick={() => onEdit(task)}
           className={cn(
-            'block w-full text-left text-sm leading-snug break-keep [overflow-wrap:anywhere] rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300',
+            'block w-full text-left text-sm leading-snug break-keep [overflow-wrap:anywhere] rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stroke-focus-ring',
             done ? 'line-through text-fg-neutral-muted' : 'text-fg-neutral',
           )}
         >

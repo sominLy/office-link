@@ -67,6 +67,13 @@ export default {
           ring: 'hsl(var(--sidebar-ring))',
         },
       },
+      // SEED 플러그인은 text-·bg-·border- 색만 만들고 ring-은 만들지 않는다.
+      // 포커스 링을 SEED 토큰으로 쓰려면 여기에 연결해야 한다 —
+      // 연결하지 않으면 ring-stroke-focus-ring이 CSS를 만들지 않아 링이 사라진다.
+      ringColor: {
+        'stroke-focus-ring': 'var(--seed-color-stroke-focus-ring)',
+        'stroke-brand-weak': 'var(--seed-color-stroke-brand-weak)',
+      },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',

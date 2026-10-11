@@ -1,40 +1,11 @@
 import { useEffect, useState } from 'react';
-import { MemberStatus, StatusPreset } from '@/lib/types';
+import { MemberStatus } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { defaultAvatar } from '@/lib/avatar';
 import { displayName } from '@/lib/callsign';
 import { useOffice } from '@/contexts/OfficeContext';
-
-const statusColors: Record<StatusPreset, string> = {
-  '출근': 'bg-bg-positive-weak text-fg-positive',
-  '집중 중': 'bg-bg-critical-weak text-fg-critical',
-  '업무 중': 'bg-bg-informative-weak text-fg-informative',
-  '휴식 중': 'bg-yellow-100 text-yellow-700',
-  '자리 비움': 'bg-bg-neutral-muted text-fg-neutral-muted',
-  '스터디/회의 중': 'bg-purple-100 text-purple-700',
-  '점심 먹는 중': 'bg-orange-100 text-orange-700',
-  '저녁 먹는 중': 'bg-rose-100 text-rose-700',
-  '야식 먹는 중': 'bg-violet-100 text-violet-700',
-  '연차': 'bg-teal-100 text-teal-700',
-  '휴가 중': 'bg-sky-100 text-sky-700',
-  '퇴근': 'bg-slate-100 text-slate-500',
-};
-
-const statusDots: Record<StatusPreset, string> = {
-  '출근': 'bg-green-400',
-  '집중 중': 'bg-red-400',
-  '업무 중': 'bg-blue-400',
-  '휴식 중': 'bg-yellow-400',
-  '점심 먹는 중': 'bg-orange-400',
-  '저녁 먹는 중': 'bg-rose-400',
-  '야식 먹는 중': 'bg-violet-400',
-  '연차': 'bg-teal-400',
-  '휴가 중': 'bg-sky-400',
-  '자리 비움': 'bg-gray-400',
-  '스터디/회의 중': 'bg-purple-400',
-  '퇴근': 'bg-slate-300',
-};
+import { PRESENCE_META } from '@/lib/presence';
 
 function formatElapsed(startedAt: string): string {
   const diff = Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000);
@@ -69,12 +40,12 @@ export default function MemberCard({ member }: { member: MemberStatus }) {
               <span className="text-lg">{defaultAvatar(member.nickname)}</span>
             )}
           </div>
-          <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${statusDots[member.current_status]}`} />
+          <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${PRESENCE_META[member.current_status].dot}`} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-medium text-fg-neutral text-sm truncate">{shownName}</p>
           <div className="flex items-center gap-2 mt-0.5">
-            <Badge variant="secondary" className={`text-xs px-1.5 py-0 ${statusColors[member.current_status]}`}>
+            <Badge variant="secondary" className={`text-xs px-1.5 py-0 ${PRESENCE_META[member.current_status].chip}`}>
               {member.current_status}
             </Badge>
             {!isOffline && (

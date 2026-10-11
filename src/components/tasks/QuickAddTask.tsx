@@ -36,7 +36,7 @@ export default function QuickAddTask({ onAdd, onOpenDetail, defaultDue = kstToda
     <form
       onSubmit={submit}
       className={cn(
-        'flex items-center gap-1.5 rounded-xl border border-stroke-brand-weak bg-bg-layer-default pl-3 pr-1.5 py-1.5 shadow-sm transition-colors focus-within:border-stroke-brand-weak focus-within:ring-2 focus-within:ring-amber-100',
+        'flex items-center gap-1.5 rounded-xl border border-stroke-brand-weak bg-bg-layer-default pl-3 pr-1.5 py-1.5 shadow-sm transition-colors focus-within:border-stroke-brand-weak focus-within:ring-2 focus-within:ring-stroke-focus-ring',
         className,
       )}
     >

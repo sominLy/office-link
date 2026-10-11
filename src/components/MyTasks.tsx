@@ -12,21 +12,15 @@ import { toast } from 'sonner';
 import { kstNowHM, kstToday } from '@/lib/dates';
 import { cn } from '@/lib/utils';
 import {
-  DueTone, addedMessage, createTask, dueInfo, fetchOverdueTasks, fetchWeekTasks, sortTasks, syncRoutineTasks,
+  DueTone, PRIORITY_META, addedMessage, createTask, dueInfo, fetchOverdueTasks, fetchWeekTasks, sortTasks, syncRoutineTasks,
   updateTaskStatus, useTasksChanged,
 } from '@/lib/tasks';
 import QuickAddTask from '@/components/tasks/QuickAddTask';
 import OverdueTasksDialog from '@/components/OverdueTasksDialog';
 
-const priorityColors = {
-  high: 'text-red-400',
-  normal: 'text-amber-400',
-  low: 'text-fg-disabled',
-};
-
 const dueTextColor: Record<DueTone, string> = {
   overdue: 'text-fg-critical font-medium',
-  today: 'text-orange-500 font-medium',
+  today: 'text-fg-warning font-medium',
   tomorrow: 'text-fg-brand',
   later: 'text-fg-neutral-muted',
 };
@@ -149,7 +143,7 @@ export default function MyTasks({ compact = false }: { compact?: boolean }) {
                   ) : task.status === 'in_progress' ? (
                     <CircleDot className="w-5 h-5 text-fg-informative" />
                   ) : (
-                    <Circle className={`w-5 h-5 ${priorityColors[task.priority]} hover:text-fg-brand`} />
+                    <Circle className={`w-5 h-5 ${PRIORITY_META[task.priority].fg} hover:text-fg-brand`} />
                   )}
                 </button>
                 <span className={cn('text-sm flex-1 min-w-0 truncate', task.status === 'done' ? 'line-through text-fg-neutral-muted' : 'text-fg-neutral-muted')}>

@@ -29,23 +29,9 @@ import { checkQuote } from '@/lib/profanity';
 import { displayName, TITLE_MODES } from '@/lib/callsign';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { isSubmitEnter } from '@/lib/utils';
+import { PRESENCE_META } from '@/lib/presence';
 
 const STATUS_OPTIONS: StatusPreset[] = ['출근', '집중 중', '업무 중', '휴식 중', '자리 비움', '스터디/회의 중', '점심 먹는 중', '저녁 먹는 중', '야식 먹는 중'];
-
-const statusColors: Record<StatusPreset, string> = {
-  '출근': 'bg-bg-positive-weak text-fg-positive border-stroke-positive-weak',
-  '집중 중': 'bg-bg-critical-weak text-fg-critical border-stroke-critical-weak',
-  '업무 중': 'bg-bg-informative-weak text-fg-informative border-stroke-informative-weak',
-  '휴식 중': 'bg-yellow-100 text-yellow-700 border-yellow-200',
-  '자리 비움': 'bg-bg-neutral-muted text-fg-neutral-muted border-stroke-neutral-subtle',
-  '스터디/회의 중': 'bg-purple-100 text-purple-700 border-purple-200',
-  '점심 먹는 중': 'bg-orange-100 text-orange-700 border-orange-200',
-  '저녁 먹는 중': 'bg-rose-100 text-rose-700 border-rose-200',
-  '야식 먹는 중': 'bg-violet-100 text-violet-700 border-violet-200',
-  '연차': 'bg-teal-100 text-teal-700 border-teal-200',
-  '휴가 중': 'bg-sky-100 text-sky-700 border-sky-200',
-  '퇴근': 'bg-slate-100 text-slate-500 border-slate-200',
-};
 
 export default function Home() {
   const { user, profile, signOut } = useAuth();
@@ -290,7 +276,7 @@ export default function Home() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => navigate('/profile')}
-                className="w-10 h-10 rounded-full bg-bg-brand-weak flex items-center justify-center text-lg hover:ring-2 hover:ring-amber-300 transition-shadow"
+                className="w-10 h-10 rounded-full bg-bg-brand-weak flex items-center justify-center text-lg hover:ring-2 hover:ring-stroke-brand-weak transition-shadow"
                 title="내 계정 관리"
               >
                 {profile?.avatar_url ? (
@@ -301,7 +287,7 @@ export default function Home() {
               </button>
               <div>
                 <p className="font-semibold text-fg-neutral">{myDisplay}</p>
-                <Badge variant="outline" className={`text-xs ${statusColors[currentStatus]}`}>
+                <Badge variant="outline" className={`text-xs ${PRESENCE_META[currentStatus].outline}`}>
                   {currentStatus}
                 </Badge>
               </div>
@@ -347,7 +333,7 @@ export default function Home() {
                     <DropdownMenuContent>
                       {STATUS_OPTIONS.map((s) => (
                         <DropdownMenuItem key={s} onClick={() => changeStatus(s)} className="cursor-pointer">
-                          <span className={`inline-block w-2 h-2 rounded-full mr-2 ${statusColors[s].split(' ')[0]}`} />
+                          <span className={`inline-block w-2 h-2 rounded-full mr-2 ${PRESENCE_META[s].dot}`} />
                           {s}
                         </DropdownMenuItem>
                       ))}
