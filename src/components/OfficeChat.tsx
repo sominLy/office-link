@@ -5,6 +5,7 @@ import { useOffice } from '@/contexts/OfficeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, Smile, X, Users } from 'lucide-react';
+import { toast } from 'sonner';
 import { defaultAvatar } from '@/lib/avatar';
 import { displayName } from '@/lib/callsign';
 
@@ -76,7 +77,8 @@ export default function OfficeChat() {
     if (data) setReads(Object.fromEntries(data.map(r => [r.user_id, r.last_read_at])));
   }, [office]);
 
-  // 내 마지막 읽은 시각 갱신
+  // 내 마지막 읽은 시각 갱신.
+  // 읽음 표시는 실패해도 사용자가 할 일이 없고 다음 렌더에서 다시 시도되므로 결과를 버린다.
   const markRead = useCallback(async () => {
     if (!user || !office) return;
     await supabase.from('chat_reads').upsert(
@@ -131,7 +133,12 @@ export default function OfficeChat() {
   };
 
   const del = async (id: string) => {
-    await supabase.from('chat_messages').delete().eq('id', id);
+    // 확인 없이 목록에서 지우면, 삭제가 거부돼도 사라진 것처럼 보이다가 다시 조회할 때 되살아난다
+    const { error } = await supabase.from('chat_messages').delete().eq('id', id);
+    if (error) {
+      toast.error('메시지를 삭제하지 못했어요');
+      return;
+    }
     setMessages(prev => prev.filter(m => m.id !== id));
   };
 

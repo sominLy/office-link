@@ -80,7 +80,9 @@ export default function ClockOut() {
   }, [fetchStats]);
 
   const handleClockOut = async () => {
-    await clockOut();
+    // 실패 안내는 clockOut이 직접 띄운다. 여기서 성공 안내와 이동까지 해버리면
+    // 아무것도 저장되지 않았는데 퇴근한 것처럼 보인다.
+    if (!await clockOut()) return;
     toast.success('퇴근 완료! 오늘도 수고했습니다 🙌');
     navigate('/');
   };

@@ -86,7 +86,11 @@ export default function Feed() {
   };
 
   const removeItem = async (id: string) => {
-    await supabase.from('office_feed').delete().eq('id', id);
+    const { error } = await supabase.from('office_feed').delete().eq('id', id);
+    if (error) {
+      toast.error('소식을 삭제하지 못했어요');
+      return;
+    }
     fetchFeed();
   };
 

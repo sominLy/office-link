@@ -10,6 +10,7 @@ import { displayName } from '@/lib/callsign';
 import { useOffice } from '@/contexts/OfficeContext';
 import { Clock, Target, CheckCircle2, Circle, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
+import { track } from '@/lib/analytics';
 
 interface Props {
   member: MemberStatus | null;
@@ -85,13 +86,17 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
     if (!member) return;
     const now = new Date().toISOString();
     // 열린 집중/근무/상태 세션을 모두 닫는다 (방장 권한 RLS)
-    await supabase.from('focus_sessions').update({ ended_at: now })
-      .eq('user_id', member.user_id).eq('office_id', officeId).is('ended_at', null);
-    const { error } = await supabase.from('work_sessions').update({ ended_at: now })
-      .eq('user_id', member.user_id).eq('office_id', officeId).is('ended_at', null);
-    await supabase.from('status_sessions').update({ ended_at: now })
-      .eq('user_id', member.user_id).eq('office_id', officeId).is('ended_at', null);
-    if (error) {
+    const closeOpen = (table: string) =>
+      supabase.from(table).update({ ended_at: now })
+        .eq('user_id', member.user_id).eq('office_id', officeId).is('ended_at', null);
+    // 세 테이블의 error를 모두 확인한다. 예전에는 work_sessions의 error를 받아두고도
+    // status_sessions를 먼저 실행한 뒤 검사해서, 실패해도 일부가 이미 닫힌 채 빠져나갔다.
+    const results = await Promise.all([
+      closeOpen('focus_sessions'),
+      closeOpen('work_sessions'),
+      closeOpen('status_sessions'),
+    ]);
+    if (results.some(result => result.error)) {
       toast.error('퇴근 처리에 실패했어요');
       return;
     }
@@ -103,10 +108,13 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
     if (!user || !member) return;
     const mine = reactions.find(r => r.task_id === task.id && r.user_id === user.id && r.emoji === emoji);
     if (mine) {
-      await supabase.from('task_reactions').delete()
+      const { error } = await supabase.from('task_reactions').delete()
         .eq('task_id', task.id).eq('user_id', user.id).eq('emoji', emoji);
+      if (error) toast.error('반응을 취소하지 못했어요');
     } else {
       const { error } = await supabase.from('task_reactions').insert({ task_id: task.id, user_id: user.id, emoji });
+      // 전부 적재하고 to_self로 구분한다. 상호작용 지표는 to_self=false만 세야 한다
+      if (!error) track('reaction_sent', { to_self: member.user_id === user.id });
       // 내 할 일이 아닐 때만 상대에게 응원 푸시
       if (!error && member.user_id !== user.id) {
         supabase.functions.invoke('push-notify', {

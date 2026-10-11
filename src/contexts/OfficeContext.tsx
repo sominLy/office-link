@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useAuth } from './AuthContext';
 import { Office, OfficeMember, StatusSession, WorkSession, MemberStatus, StatusPreset } from '@/lib/types';
 import { notify } from '@/lib/notify';
+import { track } from '@/lib/analytics';
 
 interface OfficeContextType {
   office: Office | null;
@@ -16,8 +17,10 @@ interface OfficeContextType {
   myStatusSession: StatusSession | null;
   loading: boolean;
   clockIn: () => Promise<void>;
-  clockOut: () => Promise<void>;
-  changeStatus: (status: StatusPreset) => Promise<void>;
+  /** 퇴근이 DB에 반영됐으면 true. 실패하면 호출부가 성공 안내를 띄우지 않아야 한다. */
+  clockOut: () => Promise<boolean>;
+  /** 새 상태가 DB에 반영됐으면 true. 실패 안내는 changeStatus가 직접 띄운다. */
+  changeStatus: (status: StatusPreset) => Promise<boolean>;
   joinOffice: (inviteCode: string) => Promise<{ error: string | null }>;
   createOffice: (name: string) => Promise<{ error: string | null }>;
 }
@@ -83,7 +86,11 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
     if (!target || target.id === office?.id) return;
     setOffice(target);
     setMembers([]);
-    await supabase.from('profiles').update({ current_office_id: officeId }).eq('id', user.id);
+    const { error } = await supabase.from('profiles').update({ current_office_id: officeId }).eq('id', user.id);
+    // 화면을 되돌리지는 않는다. 전환을 연속으로 하면 늦게 실패한 요청이 이미 지나간
+    // 오피스로 화면을 끌고 가고, 목록 로딩 중에 누르면 되돌릴 값이 null이라 화면이 멈춘다.
+    // 지금 보고 있는 오피스는 그대로 동작하고, 새로고침하면 저장된 오피스로 돌아간다.
+    if (error) toast.error('오피스 전환을 저장하지 못했어요. 새로고침하면 이전 오피스로 돌아가요');
   };
 
   const updateTitleMode = async (mode: Office['title_mode']) => {
@@ -249,10 +256,16 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       await fetchMySession();
       return;
     }
-    await changeStatus('출근');
+    // 매 출근을 적재한다. "첫 출근"은 분석 때 유저별 최초 시각으로 뽑는다
+    track('clock_in');
+    const statusOk = await changeStatus('출근');
     await fetchMySession();
     await fetchMembers();
-    // 소식 피드에 출근 기록
+    // work_session은 이미 들어갔으니 출근 자체는 유효하다. 다만 상태 반영이 실패했으면
+    // 멤버들에게 알리지 않는다. 카드에는 이전 상태가 그대로인데 "출근했어요" 푸시만 가면
+    // 받는 쪽에서 확인할 방법이 없다. 실패 안내는 changeStatus가 이미 띄웠다.
+    if (!statusOk) return;
+    // 소식 피드에 출근 기록. 실패해도 출근 자체는 유효하므로 의도적으로 결과를 버린다
     supabase.from('office_feed').insert({ office_id: office.id, user_id: user.id, type: 'clock_in' }).then(() => {});
     // 브라우저를 닫아둔 멤버에게도 웹푸시로 출근 소식 전송 (실패해도 무시)
     supabase.functions.invoke('push-notify', {
@@ -260,16 +273,24 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
     }).catch(() => {});
   };
 
-  const clockOut = async () => {
-    if (!user || !office || !myWorkSession) return;
+  // 반환값은 "퇴근이 DB에 반영됐는가". 호출부가 성공 안내를 띄울지 판단하는 데 쓴다.
+  const clockOut = async (): Promise<boolean> => {
+    if (!user || !office || !myWorkSession) return false;
     const now = new Date().toISOString();
     // 집중 중 퇴근하면 열린 집중 세션도 함께 종료 (안 닫으면 타이머가 무한히 자람)
-    await supabase
+    const { error: focusError } = await supabase
       .from('focus_sessions')
       .update({ ended_at: now })
       .eq('user_id', user.id)
       .eq('office_id', office.id)
       .is('ended_at', null);
+    if (focusError) {
+      // 못 닫으면 집중 세션이 열린 채 남지만, 퇴근을 막지는 않는다.
+      // 타이머가 수십 시간으로 자라는 건 FocusTimer의 12시간 자동 종료와
+      // 016 트리거(ended_at := now() + 12시간 clamp)가 이미 막는다.
+      // 반면 여기서 막으면 사용자가 퇴근 자체를 못 하게 된다.
+      console.error('집중 세션 종료 실패, 퇴근은 계속 진행', focusError);
+    }
     const { error } = await supabase
       .from('work_sessions')
       .update({ ended_at: now })
@@ -277,24 +298,37 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       .is('ended_at', null);
     if (error) {
       toast.error('퇴근 처리에 실패했습니다');
-      return;
+      return false;
     }
+    // 여기부터 퇴근은 DB에 반영됐다. 상태 표시 갱신이 실패해도 퇴근 자체는 유효하므로
+    // changeStatus의 결과로 퇴근 성공을 뒤집지 않는다 (실패는 changeStatus가 직접 알린다).
     await changeStatus('퇴근');
     await fetchMySession();
     await fetchMembers();
+    // 퇴근 기록. 실패해도 퇴근 자체는 유효하므로 의도적으로 결과를 버린다
     supabase.from('office_feed').insert({ office_id: office.id, user_id: user.id, type: 'clock_out' }).then(() => {});
+    return true;
   };
 
-  const changeStatus = async (status: StatusPreset) => {
-    if (!user || !office) return;
+  // 반환값은 "새 상태가 DB에 반영됐는가".
+  const changeStatus = async (status: StatusPreset): Promise<boolean> => {
+    if (!user || !office) return false;
     const now = new Date().toISOString();
     // state가 아닌 DB 기준으로 열린 상태 세션을 전부 닫는다 (탭 2개 상태 불일치 방지)
-    await supabase
+    const { error: closeError } = await supabase
       .from('status_sessions')
       .update({ ended_at: now })
       .eq('user_id', user.id)
       .eq('office_id', office.id)
       .is('ended_at', null);
+    if (closeError) {
+      // 닫지 못한 채 새 상태를 넣으면 열린 세션이 쌓여 멤버 카드 상태가 어긋난다.
+      // 조기 반환하더라도 화면이 DB와 어긋난 채 남지 않게 다시 읽는다.
+      toast.error('상태 변경에 실패했습니다');
+      await fetchMySession();
+      await fetchMembers();
+      return false;
+    }
     const { error } = await supabase.from('status_sessions').insert({
       office_id: office.id,
       user_id: user.id,
@@ -304,6 +338,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
     if (error) toast.error('상태 변경에 실패했습니다');
     await fetchMySession();
     await fetchMembers();
+    return !error;
   };
 
   const joinOffice = async (inviteCode: string) => {
@@ -321,7 +356,14 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       role: 'member',
     });
     if (error) return { error: '이미 가입된 오피스입니다' };
-    await supabase.from('profiles').update({ current_office_id: officeData.id }).eq('id', user.id);
+    // 가입 자체는 성공했으므로 실패를 반환하지 않는다. 다만 저장이 안 되면
+    // 다음 접속에서 다른 오피스로 열릴 수 있어 알려는 준다.
+    const { error: currentError } = await supabase
+      .from('profiles')
+      .update({ current_office_id: officeData.id })
+      .eq('id', user.id);
+    if (currentError) toast.error('가입은 됐지만 기본 오피스로 저장하지 못했어요');
+    track('office_joined', { method: 'invite' });
     await fetchOffice();
     return { error: null };
   };
@@ -347,11 +389,19 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
         role: 'admin',
       });
       if (memberError) {
-        // 고아 오피스 방지
-        await supabase.from('offices').delete().eq('id', newOffice.id);
+        // 고아 오피스 방지. 롤백까지 실패하면 사용자가 할 수 있는 일이 없으므로
+        // 토스트 대신 흔적만 남긴다 (초대 코드를 점유한 빈 오피스가 남는다)
+        const { error: rollbackError } = await supabase.from('offices').delete().eq('id', newOffice.id);
+        if (rollbackError) console.error('고아 오피스 롤백 실패', newOffice.id, rollbackError);
         return { error: '오피스 생성에 실패했습니다' };
       }
-      await supabase.from('profiles').update({ current_office_id: newOffice.id }).eq('id', user.id);
+      const { error: currentError } = await supabase
+        .from('profiles')
+        .update({ current_office_id: newOffice.id })
+        .eq('id', user.id);
+      if (currentError) toast.error('오피스는 만들어졌지만 기본 오피스로 저장하지 못했어요');
+      // method='create'가 많으면 콜드 스타트 신호다 — 혼자 있는 오피스가 늘어난다는 뜻
+      track('office_joined', { method: 'create' });
       await fetchOffice();
       return { error: null };
     }
