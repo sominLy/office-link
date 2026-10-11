@@ -30,7 +30,7 @@ export default function MemberCard({ member }: { member: MemberStatus }) {
   const shownName = displayName(member.nickname, office?.title_mode, member.rank_index);
 
   return (
-    <Card className={`p-4 border transition-all ${isOffline ? 'opacity-50 border-slate-100' : 'border-stroke-neutral-subtle shadow-sm'}`}>
+    <Card className={`p-4 border transition-all ${isOffline ? 'opacity-70 border-stroke-neutral-subtle' : 'border-stroke-neutral-subtle shadow-sm'}`}>
       <div className="flex items-center gap-3">
         <div className="relative">
           <div className="w-10 h-10 rounded-full bg-bg-brand-weak flex items-center justify-center text-t6 border border-stroke-brand-weak">
