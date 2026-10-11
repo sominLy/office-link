@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { ReactNode, useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
@@ -12,12 +12,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, ArrowLeft, Trash2, CheckCircle2, Circle, GripVertical, Pencil, FolderOpen, CalendarDays, Repeat, Lock, MoreVertical } from 'lucide-react';
+import { track } from '@/lib/analytics';
+import { Plus, ArrowLeft, Trash2, CheckCircle2, Circle, Pencil, FolderOpen, CalendarDays, Repeat, Lock, MoreVertical } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { addDays, getWeekEnd, getWeekStart, formatTimeLabel, kstToday } from '@/lib/dates';
 import { Calendar } from '@/components/ui/calendar';
 import BottomNav from '@/components/BottomNav';
+import SortableTaskList from '@/components/SortableTaskList';
+import { reorderTaskSubset, saveTaskOrder } from '@/lib/task-order';
 
 const priorityLabels = { high: '높음', normal: '보통', low: '낮음' };
 const priorityColors = {
@@ -40,10 +43,95 @@ function dueBadge(due: string, today: string): { label: string; cls: string } {
   return { label: `D-${diff}`, cls: 'bg-blue-50 text-blue-600 border-blue-200' };
 }
 
+function TaskItem({ task, dragHandle, busy, updateStatus, openEdit, deleteTask }: {
+  task: Task;
+  dragHandle?: ReactNode;
+  busy: boolean;
+  updateStatus: (task: Task, status: Task['status']) => void;
+  openEdit: (task: Task) => void;
+  deleteTask: (id: string) => void;
+}) {
+  return (
+    <div className="flex items-start gap-2 p-3 bg-white rounded-lg border border-gray-100 group hover:border-amber-200 transition-colors">
+      {dragHandle}
+      <button disabled={busy} onClick={() => updateStatus(task, task.status === 'done' ? 'todo' : 'done')} className="flex-shrink-0 mt-0.5">
+        {task.status === 'done' ? (
+          <CheckCircle2 className="w-5 h-5 text-green-500" />
+        ) : (
+          <Circle className="w-5 h-5 text-gray-300 hover:text-amber-400" />
+        )}
+      </button>
+      {/* 제목 + 배지: 제목이 우선 공간을 갖고, 배지는 좁으면 아래 줄로 감싸짐 */}
+      <div className="flex-1 min-w-0">
+        <span className={`block text-sm break-keep [overflow-wrap:anywhere] ${task.status === 'done' ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+          {task.title}
+          {task.routine_id && <Repeat className="w-3 h-3 text-amber-400 inline ml-1 align-text-bottom" />}
+          {task.is_private && <Lock className="w-3 h-3 text-gray-400 inline ml-1 align-text-bottom" />}
+        </span>
+        <div className="flex flex-wrap items-center gap-1 mt-1">
+          {/* 상태 직접 고르기: 아직 안 함 / 진행 중 / 완료 */}
+          <Select disabled={busy} value={task.status} onValueChange={(v) => updateStatus(task, v as Task['status'])}>
+            <SelectTrigger className={`h-6 w-[88px] px-2 text-xs ${statusTriggerColors[task.status]}`} aria-label="진행 상태">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todo" className="text-xs">시작 전</SelectItem>
+              <SelectItem value="in_progress" className="text-xs">진행 중</SelectItem>
+              <SelectItem value="done" className="text-xs">완료</SelectItem>
+            </SelectContent>
+          </Select>
+          {task.due_date && task.status !== 'done' && (() => {
+            const b = dueBadge(task.due_date, kstToday());
+            const t = formatTimeLabel(task.due_time);
+            return (
+              <Badge variant="outline" className={`text-xs whitespace-nowrap ${b.cls}`}>
+                <CalendarDays className="w-3 h-3 mr-0.5" />{b.label}{t ? ` ${t}` : ''}
+              </Badge>
+            );
+          })()}
+          <Badge variant="outline" className={`text-xs whitespace-nowrap ${priorityColors[task.priority]}`}>
+            {priorityLabels[task.priority]}
+          </Badge>
+        </div>
+      </div>
+      {/* 데스크톱: 호버 시 인라인 버튼 노출 (기존 유지) */}
+      <div className="hidden sm:flex items-center flex-shrink-0 gap-0.5">
+        <Button disabled={busy} variant="ghost" size="icon" className="w-7 h-7 text-gray-300 opacity-0 group-hover:opacity-100 hover:text-amber-600" onClick={() => openEdit(task)}>
+          <Pencil className="w-3.5 h-3.5" />
+        </Button>
+        <Button disabled={busy} variant="ghost" size="icon" className="w-7 h-7 text-gray-300 opacity-0 group-hover:opacity-100 hover:text-red-500" onClick={() => deleteTask(task.id)}>
+          <Trash2 className="w-3.5 h-3.5" />
+        </Button>
+      </div>
+      {/* 모바일: ⋯ 더보기 메뉴로 묶어 카드 우측을 깔끔하게 */}
+      <div className="sm:hidden flex-shrink-0">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button disabled={busy} variant="ghost" size="icon" className="w-7 h-7 text-gray-400" aria-label="할 일 메뉴">
+              <MoreVertical className="w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => openEdit(task)}>
+              <Pencil className="w-4 h-4 mr-2 text-amber-600" /> 수정
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => deleteTask(task.id)} className="text-red-500 focus:text-red-500">
+              <Trash2 className="w-4 h-4 mr-2" /> 삭제
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
+  );
+}
+
 export default function Tasks() {
   const { user } = useAuth();
   const { office } = useOffice();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [savingOrder, setSavingOrder] = useState(false);
+  const savingOrderRef = useRef(false);
+  const tasksRequestRef = useRef(0);
   const [newTitle, setNewTitle] = useState('');
   const [newCategory, setNewCategory] = useState('');
   const [newDueDate, setNewDueDate] = useState(kstToday());
@@ -91,15 +179,17 @@ export default function Tasks() {
     if (!user || !office) return;
     const first = new Date(calMonth.getFullYear(), calMonth.getMonth(), 1);
     const last = new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 0);
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('tasks')
       .select('*')
       .eq('user_id', user.id)
       .eq('office_id', office.id)
       .gte('due_date', fmtDate(first))
       .lte('due_date', fmtDate(last))
-      .order('sort_order');
-    setMonthTasks(data || []);
+      .order('sort_order')
+      .order('created_at')
+      .order('id');
+    if (!error) setMonthTasks(data || []);
   }, [user, office, calMonth]);
 
   useEffect(() => {
@@ -116,15 +206,18 @@ export default function Tasks() {
 
   // 이번 주 할 일 = ① 이번 주에 담아둔 것 + ② 캘린더에서 마감일을 이번 주로 잡아둔 것
   const fetchTasks = useCallback(async () => {
-    if (!user || !office) return;
-    const { data } = await supabase
+    if (!user || !office || savingOrderRef.current) return;
+    const request = ++tasksRequestRef.current;
+    const { data, error } = await supabase
       .from('tasks')
       .select('*')
       .eq('user_id', user.id)
       .eq('office_id', office.id)
       .or(`week_start.eq.${weekStart},and(due_date.gte.${weekStart},due_date.lte.${weekEnd})`)
-      .order('sort_order');
-    setTasks(data || []);
+      .order('sort_order')
+      .order('created_at')
+      .order('id');
+    if (!error && request === tasksRequestRef.current && !savingOrderRef.current) setTasks(data || []);
   }, [user, office, weekStart, weekEnd]);
 
   // 루틴 목록을 불러오고, 이번 주에 아직 생성 안 된 루틴 할 일을 자동 생성
@@ -149,7 +242,7 @@ export default function Tasks() {
     const missing = routineList.filter(r => !existingIds.has(r.id));
     if (missing.length === 0) return;
     // unique index(one_task_per_routine_week)가 중복 생성을 막아준다
-    await supabase.from('tasks').insert(missing.map(r => ({
+    const { error } = await supabase.from('tasks').insert(missing.map(r => ({
       office_id: office.id,
       user_id: user.id,
       title: r.title,
@@ -160,6 +253,9 @@ export default function Tasks() {
       sort_order: 999,
       routine_id: r.id,
     })));
+    // 23505는 탭 두 개가 같은 주를 동시에 동기화한 정상 경합이라 알리지 않는다.
+    // 그 밖의 실패는 루틴 할 일이 조용히 안 생기는 것이므로 알린다.
+    if (error && error.code !== '23505') toast.error('루틴 할 일을 만들지 못했어요');
     fetchTasks();
   }, [user, office, weekStart, fetchTasks]);
 
@@ -188,14 +284,19 @@ export default function Tasks() {
   };
 
   const deleteRoutine = async (id: string) => {
-    await supabase.from('routines').delete().eq('id', id);
+    const { error } = await supabase.from('routines').delete().eq('id', id);
+    if (error) {
+      toast.error('루틴을 삭제하지 못했어요');
+      return;
+    }
     toast.success('루틴이 삭제되었어요 (이미 만들어진 할 일은 그대로예요)');
     syncRoutines();
   };
 
   const addTask = async () => {
+    if (savingOrderRef.current) return;
     if (!user || !office || !newTitle.trim()) return;
-    const sortOrder = tasks.length;
+    const sortOrder = Math.max(-1, ...tasks.map(task => task.sort_order), ...monthTasks.map(task => task.sort_order)) + 1;
     const { error } = await supabase.from('tasks').insert({
       office_id: office.id,
       user_id: user.id,
@@ -213,6 +314,7 @@ export default function Tasks() {
       toast.error('추가에 실패했어요');
       return;
     }
+    track('task_created');
     setNewTitle('');
     setNewCategory('');
     setNewDueDate(kstToday());
@@ -236,6 +338,7 @@ export default function Tasks() {
   };
 
   const saveEdit = async () => {
+    if (savingOrderRef.current) return;
     if (!editTask || !editTitle.trim()) return;
     const { error } = await supabase
       .from('tasks')
@@ -260,98 +363,65 @@ export default function Tasks() {
   };
 
   const updateStatus = async (task: Task, status: 'todo' | 'in_progress' | 'done') => {
+    if (savingOrderRef.current) return;
     const now = new Date().toISOString();
-    await supabase
+    const { error } = await supabase
       .from('tasks')
       .update({ status, completed_at: status === 'done' ? now : null })
       .eq('id', task.id);
+    if (error) {
+      toast.error('할 일 상태를 바꾸지 못했어요');
+      return;
+    }
     fetchTasks();
     fetchMonthTasks();
   };
 
   const deleteTask = async (taskId: string) => {
-    await supabase.from('tasks').delete().eq('id', taskId);
+    if (savingOrderRef.current) return;
+    const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+    if (error) {
+      toast.error('할 일을 삭제하지 못했어요');
+      return;
+    }
     fetchTasks();
     fetchMonthTasks();
     toast.success('삭제되었습니다');
   };
 
+  const reorderTasks = async (orderedIds: string[]) => {
+    if (!user || !office || savingOrderRef.current) return;
+    const previous = tasks;
+    const next = reorderTaskSubset(previous, orderedIds);
+    if (next === previous) return;
+    savingOrderRef.current = true;
+    setSavingOrder(true);
+    ++tasksRequestRef.current; // Ignore a fetch that started before the drag was saved.
+    setTasks(next);
+    try {
+      await saveTaskOrder(previous, next, user.id, office.id);
+      await fetchMonthTasks();
+    } catch {
+      toast.error('순서를 저장하지 못했어요. 다시 시도해 주세요.');
+      setTasks(previous);
+    } finally {
+      savingOrderRef.current = false;
+      try {
+        await fetchTasks();
+      } finally {
+        setSavingOrder(false);
+      }
+    }
+  };
+
+  const renderTask = (task: Task, dragHandle?: ReactNode) => (
+    <TaskItem key={task.id} task={task} dragHandle={dragHandle} busy={savingOrder}
+      updateStatus={updateStatus} openEdit={openEdit} deleteTask={deleteTask} />
+  );
+
   const todoTasks = tasks.filter(t => t.status === 'todo');
   const inProgressTasks = tasks.filter(t => t.status === 'in_progress');
   const doneTasks = tasks.filter(t => t.status === 'done');
-
-  const TaskItem = ({ task }: { task: Task }) => (
-    <div className="flex items-start gap-2 p-3 bg-white rounded-lg border border-gray-100 group hover:border-amber-200 transition-colors">
-      <GripVertical className="w-4 h-4 text-gray-300 flex-shrink-0 mt-0.5" />
-      <button onClick={() => updateStatus(task, task.status === 'done' ? 'todo' : 'done')} className="flex-shrink-0 mt-0.5">
-        {task.status === 'done' ? (
-          <CheckCircle2 className="w-5 h-5 text-green-500" />
-        ) : (
-          <Circle className="w-5 h-5 text-gray-300 hover:text-amber-400" />
-        )}
-      </button>
-      {/* 제목 + 배지: 제목이 우선 공간을 갖고, 배지는 좁으면 아래 줄로 감싸짐 */}
-      <div className="flex-1 min-w-0">
-        <span className={`block text-sm break-keep [overflow-wrap:anywhere] ${task.status === 'done' ? 'line-through text-gray-400' : 'text-gray-700'}`}>
-          {task.title}
-          {task.routine_id && <Repeat className="w-3 h-3 text-amber-400 inline ml-1 align-text-bottom" />}
-          {task.is_private && <Lock className="w-3 h-3 text-gray-400 inline ml-1 align-text-bottom" />}
-        </span>
-        <div className="flex flex-wrap items-center gap-1 mt-1">
-          {/* 상태 직접 고르기: 아직 안 함 / 진행 중 / 완료 */}
-          <Select value={task.status} onValueChange={(v) => updateStatus(task, v as Task['status'])}>
-            <SelectTrigger className={`h-6 w-[88px] px-2 text-xs ${statusTriggerColors[task.status]}`} aria-label="진행 상태">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todo" className="text-xs">시작 전</SelectItem>
-              <SelectItem value="in_progress" className="text-xs">진행 중</SelectItem>
-              <SelectItem value="done" className="text-xs">완료</SelectItem>
-            </SelectContent>
-          </Select>
-          {task.due_date && task.status !== 'done' && (() => {
-            const b = dueBadge(task.due_date, kstToday());
-            const t = formatTimeLabel(task.due_time);
-            return (
-              <Badge variant="outline" className={`text-xs whitespace-nowrap ${b.cls}`}>
-                <CalendarDays className="w-3 h-3 mr-0.5" />{b.label}{t ? ` ${t}` : ''}
-              </Badge>
-            );
-          })()}
-          <Badge variant="outline" className={`text-xs whitespace-nowrap ${priorityColors[task.priority]}`}>
-            {priorityLabels[task.priority]}
-          </Badge>
-        </div>
-      </div>
-      {/* 데스크톱: 호버 시 인라인 버튼 노출 (기존 유지) */}
-      <div className="hidden sm:flex items-center flex-shrink-0 gap-0.5">
-        <Button variant="ghost" size="icon" className="w-7 h-7 text-gray-300 opacity-0 group-hover:opacity-100 hover:text-amber-600" onClick={() => openEdit(task)}>
-          <Pencil className="w-3.5 h-3.5" />
-        </Button>
-        <Button variant="ghost" size="icon" className="w-7 h-7 text-gray-300 opacity-0 group-hover:opacity-100 hover:text-red-500" onClick={() => deleteTask(task.id)}>
-          <Trash2 className="w-3.5 h-3.5" />
-        </Button>
-      </div>
-      {/* 모바일: ⋯ 더보기 메뉴로 묶어 카드 우측을 깔끔하게 */}
-      <div className="sm:hidden flex-shrink-0">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="w-7 h-7 text-gray-400" aria-label="할 일 메뉴">
-              <MoreVertical className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => openEdit(task)}>
-              <Pencil className="w-4 h-4 mr-2 text-amber-600" /> 수정
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => deleteTask(task.id)} className="text-red-500 focus:text-red-500">
-              <Trash2 className="w-4 h-4 mr-2" /> 삭제
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
@@ -364,12 +434,12 @@ export default function Tasks() {
             <h1 className="font-bold text-gray-800">이번 주 할 일</h1>
           </div>
           <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" className="border-amber-200 text-amber-700" onClick={() => setRoutineDialogOpen(true)}>
+          <Button disabled={savingOrder} size="sm" variant="outline" className="border-amber-200 text-amber-700" onClick={() => setRoutineDialogOpen(true)}>
             <Repeat className="w-4 h-4 mr-1" /> 루틴
           </Button>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white">
+              <Button disabled={savingOrder} size="sm" className="bg-amber-600 hover:bg-amber-700 text-white">
                 <Plus className="w-4 h-4 mr-1" /> 추가
               </Button>
             </DialogTrigger>
@@ -452,6 +522,9 @@ export default function Tasks() {
           </TabsList>
 
           <TabsContent value="list" className="space-y-5">
+            {tasks.length > 0 && <p className="text-xs text-gray-400 px-1" role="status">
+              {savingOrder ? '순서 저장 중…' : '왼쪽 손잡이를 위아래로 드래그하면 같은 카테고리 안에서 순서를 바꿀 수 있어요.'}
+            </p>}
             {tasks.length === 0 ? (
               <Card className="p-8 text-center border-dashed">
                 <p className="text-gray-400 text-sm">이번 주 할 일을 추가해 보세요</p>
@@ -469,6 +542,7 @@ export default function Tasks() {
                       <h3 className="text-sm font-semibold text-gray-700 truncate min-w-0">{cat ?? '기타'}</h3>
                       <Badge variant="secondary" className="text-xs bg-amber-50 text-amber-700 flex-shrink-0">{done}/{group.length}</Badge>
                       <button
+                        disabled={savingOrder}
                         onClick={() => { setNewCategory(cat ?? ''); setDialogOpen(true); }}
                         className="ml-auto flex-shrink-0 flex items-center gap-0.5 text-xs text-amber-600 hover:bg-amber-50 rounded-full px-2 py-0.5 border border-amber-200"
                         title={`${cat ?? '기타'}에 할 일 추가`}
@@ -476,7 +550,7 @@ export default function Tasks() {
                         <Plus className="w-3 h-3" /> 추가
                       </button>
                     </div>
-                    {group.map((task) => <TaskItem key={task.id} task={task} />)}
+                    <SortableTaskList tasks={group} disabled={savingOrder} onReorder={reorderTasks} renderTask={renderTask} />
                   </div>
                 );
               })
@@ -484,23 +558,26 @@ export default function Tasks() {
           </TabsContent>
 
           <TabsContent value="kanban">
+            {tasks.length > 0 && <p className="text-xs text-gray-400 px-1 mb-3" role="status">
+              {savingOrder ? '순서 저장 중…' : '왼쪽 손잡이를 위아래로 드래그하면 같은 진행 상태 안에서 순서를 바꿀 수 있어요.'}
+            </p>}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <h3 className="text-sm font-medium text-gray-500 px-1">할 일 ({todoTasks.length})</h3>
                 <div className="space-y-2 min-h-[100px] bg-gray-50/50 rounded-lg p-2">
-                  {todoTasks.map((task) => <TaskItem key={task.id} task={task} />)}
+                  <SortableTaskList tasks={todoTasks} disabled={savingOrder} onReorder={reorderTasks} renderTask={renderTask} />
                 </div>
               </div>
               <div className="space-y-2">
                 <h3 className="text-sm font-medium text-blue-600 px-1">진행 중 ({inProgressTasks.length})</h3>
                 <div className="space-y-2 min-h-[100px] bg-blue-50/30 rounded-lg p-2">
-                  {inProgressTasks.map((task) => <TaskItem key={task.id} task={task} />)}
+                  <SortableTaskList tasks={inProgressTasks} disabled={savingOrder} onReorder={reorderTasks} renderTask={renderTask} />
                 </div>
               </div>
               <div className="space-y-2">
                 <h3 className="text-sm font-medium text-green-600 px-1">완료 ({doneTasks.length})</h3>
                 <div className="space-y-2 min-h-[100px] bg-green-50/30 rounded-lg p-2">
-                  {doneTasks.map((task) => <TaskItem key={task.id} task={task} />)}
+                  <SortableTaskList tasks={doneTasks} disabled={savingOrder} onReorder={reorderTasks} renderTask={renderTask} />
                 </div>
               </div>
             </div>
@@ -534,7 +611,7 @@ export default function Tasks() {
                   </Card>
                 ) : (
                   <>
-                    {dayTasks.map((task) => <TaskItem key={task.id} task={task} />)}
+                    {dayTasks.map(task => renderTask(task))}
                     <Button size="sm" variant="ghost" className="text-amber-600"
                       onClick={() => { setNewDueDate(fmtDate(calDay)); setDialogOpen(true); }}>
                       <Plus className="w-3.5 h-3.5 mr-1" /> 이 날짜에 추가
