@@ -17,8 +17,18 @@
    기존 브랜드색 #d97706은 흰 글씨를 얹으면 대비 3.18:1, 흰 배경에 글씨로 쓰면
    같은 3.18:1로 본문 기준 4.5:1에 못 미친다. #b45309는 5.02:1이다.
    기존 #d97706은 carrot-500으로 옮겨 그래픽·강조용으로 쓴다.
+
+   선택자를 SEED와 똑같이 적는다. `:root`만 쓰면 덮이지 않는다 —
+   html에 data-seed-color-mode="light-only"를 붙이는 순간 SEED 쪽
+   `:root[data-seed-color-mode="light-only"]`가 특이도 (0,2,0)으로
+   `:root` (0,1,0)을 이긴다. 순서로는 이쪽이 뒤에 오지만 특이도가 먼저다.
+   같은 선택자로 맞추면 특이도가 같아지고 뒤에 온 이쪽이 적용된다.
+   다크 모드를 연결하게 되면 dark 선택자도 같이 덮어야 한다.
    ───────────────────────────────────────────────────────────────────────────── */
-:root {
+:root,
+:root[data-seed-color-mode="light-only"],
+:root [data-seed-color-mode="light-only"],
+:root[data-seed-color-mode="system"][data-seed-user-color-scheme="light"] {
   --seed-color-palette-carrot-100: #fffbeb;
   --seed-color-palette-carrot-200: #fef3c7;
   --seed-color-palette-carrot-300: #fde68a;
