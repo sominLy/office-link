@@ -3,14 +3,14 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
 import { supabase } from '@/lib/supabase';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { TextField, TextFieldInput } from '@/seed/ui/text-field';
+import { TextFieldTextarea } from '@/seed/ui/text-field';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/AppDialog';
 import { ArrowLeft, ChevronLeft, ChevronRight, Settings2, Trophy, CheckCircle2, Share2, CalendarPlus } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import BottomNav from '@/components/BottomNav';
 import AwardCertificate from '@/components/awards/AwardCertificate';
 import RetroSettingsDialog from '@/components/retro/RetroSettingsDialog';
@@ -25,6 +25,7 @@ import {
 } from '@/lib/retro';
 import { notifyTasksChanged } from '@/lib/tasks';
 
+import { Icon } from '@seed-design/react';
 // 완료한 일 카테고리 비율 — 검증한 범주형 팔레트(순서 고정), 6번째부터는 '기타' 회색
 const SERIES = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4'];
 const OTHER = '#a8a29e';
@@ -157,7 +158,7 @@ export default function Retro() {
     supabase.functions.invoke('push-notify', {
       body: { action: 'feed', kind: 'post', office_id: office.id, actor_id: user.id, target_id: null, content },
     }).catch(() => {});
-    toast.success('소식 탭에 자랑했어요! 응원이 쏟아질 거예요 🎉');
+    toast.success('소식 탭에 자랑했어요. 응원이 쏟아질 거예요 🎉');
   };
 
   // 다시 불러오지 않고 화면만 갱신 — 쓰던 칭찬 한마디가 지워지지 않게
@@ -182,38 +183,38 @@ export default function Retro() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
+    <div className="min-h-screen bg-background">
       <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-2.5 flex items-center gap-1">
-          <Button variant="ghost" size="icon" onClick={goBack} aria-label="뒤로">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
+          <ActionButton variant="ghost" layout="iconOnly" onClick={goBack} aria-label="뒤로">
+              <Icon svg={<ArrowLeft className="w-4 h-4" />} />
+            </ActionButton>
           <div className="min-w-0 flex-1">
             <h1 className="font-bold text-fg-neutral leading-tight">📬 주간 회고</h1>
             <p className="text-t1 text-fg-neutral-muted leading-tight">{describePrefs(prefs)} 도착</p>
           </div>
-          <Button variant="ghost" size="sm" className="text-fg-brand" onClick={() => navigate('/trophies')}>
+          <ActionButton variant="ghost" size="small" onClick={() => navigate('/trophies')}>
             <Trophy className="w-4 h-4 mr-1" /> 진열장
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(true)} aria-label="회고 시간 설정">
-            <Settings2 className="w-4 h-4" />
-          </Button>
+          </ActionButton>
+          <ActionButton variant="ghost" layout="iconOnly" onClick={() => setSettingsOpen(true)} aria-label="회고 시간 설정">
+              <Icon svg={<Settings2 className="w-4 h-4" />} />
+            </ActionButton>
         </div>
       </header>
 
       <main className="max-w-lg mx-auto px-4 py-5 pb-28 space-y-4">
         {/* 주 이동 */}
         <div className="flex items-center justify-between bg-bg-layer-default rounded-xl border border-stroke-neutral-subtle px-1.5 py-1 shadow-sm">
-          <Button variant="ghost" size="icon" onClick={() => goWeek(addDays(week, -7))} aria-label="지난 주">
-            <ChevronLeft className="w-4 h-4" />
-          </Button>
+          <ActionButton variant="ghost" layout="iconOnly" onClick={() => goWeek(addDays(week, -7))} aria-label="지난 주">
+              <Icon svg={<ChevronLeft className="w-4 h-4" />} />
+            </ActionButton>
           <div className="text-center">
             <p className="text-t4 font-semibold text-fg-neutral-muted">{weekRangeLabel(week)}</p>
             {!final && <p className="text-t1 text-fg-brand">진행 중인 주 · 상장은 {deliveryLabelFor(week, prefs)} 도착</p>}
           </div>
-          <Button variant="ghost" size="icon" disabled={addDays(week, 7) > thisWeek} onClick={() => goWeek(addDays(week, 7))} aria-label="다음 주" className="disabled:opacity-30">
-            <ChevronRight className="w-4 h-4" />
-          </Button>
+          <ActionButton variant="ghost" layout="iconOnly" disabled={addDays(week, 7) > thisWeek} onClick={() => goWeek(addDays(week, 7))} aria-label="다음 주" className="disabled:opacity-30">
+              <Icon svg={<ChevronRight className="w-4 h-4" />} />
+            </ActionButton>
         </div>
 
         {!data || !head || !rate ? (
@@ -227,7 +228,7 @@ export default function Retro() {
             {/* 한 줄 칭찬 */}
             {/* 밝은 그라데이션 위에 흰 글씨를 얹으면 대비가 1.7~2.9:1로 읽히지 않는다.
                 축하 화면이라 그라데이션은 밝게 두고 글자를 진한 중립색으로 바꿨다 (6:1 이상). */}
-            <section className="rounded-2xl bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 text-fg-neutral p-5 shadow-md rise-in">
+            <section className="rounded-2xl bg-bg-brand-solid text-white p-5 shadow-md rise-in">
               <p className="text-t12">{head.emoji}</p>
               <h2 className="mt-2 text-t7 font-bold leading-snug [word-break:keep-all]">{final ? head.title : '이번 주, 지금까지 이렇게 해냈어요'}</h2>
               <p className="mt-1.5 text-t4 font-medium">
@@ -247,10 +248,9 @@ export default function Retro() {
                 <AwardCertificate data={cert} />
                 <p className="text-center text-t2 text-fg-neutral-muted">상장은 매주 다른 디자인으로 와요 · 캡처해서 자랑해 보세요 📸</p>
                 {/* 상장 기록만 올라가요 (칭찬 한마디는 나만 보기) */}
-                <Button variant="outline" onClick={shareToFeed} disabled={sharing || shared}
-                  className="w-full border-stroke-brand-weak text-fg-brand hover:bg-bg-brand-weak">
+                <ActionButton variant="neutralOutline" onClick={shareToFeed} disabled={sharing || shared} className="w-full">
                   <Share2 className="w-4 h-4 mr-1" /> {shared ? '소식에 자랑했어요 ✓' : sharing ? '올리는 중…' : '이 상장 소식에 자랑하기'}
-                </Button>
+                </ActionButton>
               </section>
             ) : !final && hasActivity(data) ? (
               <Card className="p-5 text-center border-dashed border-stroke-brand-weak bg-white/70">
@@ -303,11 +303,11 @@ export default function Retro() {
               {rate.total > 0 ? (
                 <>
                   <div className="mt-2 h-2.5 rounded-full bg-bg-brand-weak overflow-hidden" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={rate.pct} aria-label="계획 완료율">
-                    <div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500" style={{ width: `${rate.pct}%` }} />
+                    <div className="h-full rounded-full bg-bg-brand-solid" style={{ width: `${rate.pct}%` }} />
                   </div>
                   <p className="mt-2 text-t2 text-fg-neutral-muted">
                     {rate.total}개 중 <b className="text-fg-neutral-muted">{rate.done}개</b> 완료
-                    {rate.pct >= 80 ? ' · 계획을 거의 다 지켰어요!' : rate.pct >= 50 ? ' · 절반 넘게 해냈어요' : ' · 시작한 것만으로도 의미 있어요'}
+                    {rate.pct >= 80 ? ' · 계획을 거의 다 지켰어요' : rate.pct >= 50 ? ' · 절반 넘게 해냈어요' : ' · 시작한 것만으로도 의미 있어요'}
                   </p>
                 </>
               ) : (
@@ -443,9 +443,9 @@ export default function Retro() {
                   {unfinished.length > 5 && <li className="text-t2 text-fg-neutral-muted">외 {unfinished.length - 5}개</li>}
                 </ul>
                 {carryable.length > 0 ? (
-                  <Button variant="outline" size="sm" disabled={carrying} onClick={carryOver} className="w-full border-stroke-brand-weak text-fg-brand hover:bg-bg-brand-weak">
+                  <ActionButton variant="neutralOutline" size="small" disabled={carrying} onClick={carryOver} className="w-full">
                     <CalendarPlus className="w-4 h-4 mr-1" /> {carryable.length}개 이번 주 할 일로 가져오기
-                  </Button>
+                  </ActionButton>
                 ) : (
                   <p className="text-t2 text-fg-positive-contrast text-center">이어서 할 일은 모두 이번 주에 있어요 👍</p>
                 )}
@@ -472,27 +472,16 @@ export default function Retro() {
                   </button>
                 ))}
               </div>
-              <Textarea
-                value={reflection.praise || ''}
-                onChange={(e) => { setReflection(r => ({ ...r, praise: e.target.value })); setSavedReflection(false); }}
-                placeholder="예: 피곤한 날에도 출근 버튼 누른 나, 진짜 대단해!"
-                maxLength={200}
-                rows={3}
-                aria-label="나에게 칭찬 한마디"
-                className="resize-none"
-              />
-              <Input
-                value={reflection.next_goal || ''}
-                onChange={(e) => { setReflection(r => ({ ...r, next_goal: e.target.value })); setSavedReflection(false); }}
-                placeholder="다음 주의 나에게: 예) 코테 하루 1문제만!"
-                maxLength={100}
-                aria-label="다음 주의 나에게"
-              />
+              <TextField value={reflection.praise || ''} onValueChange={(d) => { setReflection(r => ({ ...r, praise: d.value })); setSavedReflection(false); }} className="resize-none">
+<TextFieldTextarea placeholder="예: 피곤한 날에도 출근 버튼 누른 나, 진짜 대단해!" maxLength={200} aria-label="나에게 칭찬 한마디" />
+</TextField>
+              <TextField value={reflection.next_goal || ''} onValueChange={(d) => { setReflection(r => ({ ...r, next_goal: d.value })); setSavedReflection(false); }}>
+<TextFieldInput placeholder="다음 주의 나에게: 예) 코테 하루 1문제만!" maxLength={100} aria-label="다음 주의 나에게" />
+</TextField>
               {!reflectionReady && <p className="text-t2 text-fg-brand">아직 서버 준비 중이라 저장이 안 될 수 있어요 (관리자: 016 마이그레이션 실행)</p>}
-              <Button onClick={saveMine} disabled={saving || (!reflection.mood && !reflection.praise?.trim() && !reflection.next_goal?.trim())}
-                className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
+              <ActionButton variant="brandSolid" onClick={saveMine} disabled={saving || (!reflection.mood && !reflection.praise?.trim() && !reflection.next_goal?.trim())} className="w-full">
                 {saving ? '저장 중…' : savedReflection ? '저장됨 ✓' : '저장하기'}
-              </Button>
+              </ActionButton>
             </Card>
 
             <p className="text-center text-t2 text-fg-neutral-muted pt-1">
@@ -521,10 +510,10 @@ export default function Retro() {
             ))}
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" onClick={() => setCelebrate(null)}>회고 보기</Button>
-            <Button className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" onClick={() => navigate('/trophies')}>
+            <ActionButton variant="neutralOutline" onClick={() => setCelebrate(null)}>회고 보기</ActionButton>
+            <ActionButton variant="brandSolid" onClick={() => navigate('/trophies')}>
               <Trophy className="w-4 h-4 mr-1" /> 진열장
-            </Button>
+            </ActionButton>
           </div>
         </DialogContent>
       </Dialog>

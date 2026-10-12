@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { ActionButton } from '@/seed/ui/action-button';
+import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/AppDialog';
+import { toast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 import { formatTimeLabel } from '@/lib/dates';
 import { notificationsEnabled } from '@/lib/notify';
@@ -72,8 +72,9 @@ export default function RetroSettingsDialog({ open, onClose, onSaved }: { open: 
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="retro-time">시간</Label>
-            <Input id="retro-time" type="time" value={prefs.time} onChange={(e) => setPrefs(p => ({ ...p, time: e.target.value }))} />
+            <TextField label="시간" value={prefs.time} onValueChange={(d) => setPrefs(p => ({ ...p, time: d.value }))}>
+<TextFieldInput id="retro-time" type="time" />
+</TextField>
             <div className="flex flex-wrap gap-1.5">
               {TIME_PRESETS.map(t => (
                 <button key={t} type="button" onClick={() => setPrefs(p => ({ ...p, time: t }))}
@@ -92,9 +93,9 @@ export default function RetroSettingsDialog({ open, onClose, onSaved }: { open: 
             )}
           </div>
 
-          <Button onClick={save} disabled={saving || !prefs.time} className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
+          <ActionButton variant="brandSolid" onClick={save} disabled={saving || !prefs.time} className="w-full">
             {saving ? '저장 중…' : '저장'}
-          </Button>
+          </ActionButton>
         </div>
       </DialogContent>
     </Dialog>

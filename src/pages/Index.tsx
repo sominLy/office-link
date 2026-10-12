@@ -4,7 +4,7 @@ import AuthenticatedApp from '@/components/AuthenticatedApp';
 
 function SetupGuide() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-lg shadow-lg border-0">
         <CardHeader className="text-center">
           <div className="mx-auto mb-3 w-14 h-14 bg-bg-brand-weak rounded-xl flex items-center justify-center">

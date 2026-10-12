@@ -1,6 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
-import Login from '@/pages/Login';
+import Landing from '@/pages/Landing';
 import ProfileSetup from '@/pages/ProfileSetup';
 import OfficeSetup from '@/pages/OfficeSetup';
 import Home from '@/pages/Home';
@@ -11,7 +11,7 @@ export default function AuthenticatedApp() {
 
   if (authLoading || officeLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="w-12 h-12 bg-bg-brand-weak rounded-xl flex items-center justify-center mx-auto mb-3 animate-pulse">
             <span className="text-t9">🏢</span>
@@ -22,7 +22,7 @@ export default function AuthenticatedApp() {
     );
   }
 
-  if (!user) return <Login />;
+  if (!user) return <Landing />;
   if (!profile) return <ProfileSetup />;
   if (!office) return <OfficeSetup />;
   return <Home />;

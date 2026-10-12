@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { ActionButton } from '@/seed/ui/action-button';
+import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 export default function ProfileSetup() {
   const { user, refreshProfile } = useAuth();
@@ -27,14 +27,14 @@ export default function ProfileSetup() {
     if (error) {
       toast.error('프로필 저장 실패');
     } else {
-      toast.success('프로필이 저장되었습니다');
+      toast.success('프로필을 저장했어요');
       await refreshProfile();
     }
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md shadow-lg border-0">
         <CardHeader className="text-center">
           <div className="mx-auto mb-3 w-12 h-12 bg-bg-brand-weak rounded-xl flex items-center justify-center">
@@ -46,29 +46,18 @@ export default function ProfileSetup() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="nickname">닉네임</Label>
-              <Input
-                id="nickname"
-                placeholder="오피스에서 사용할 이름"
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
-                required
-                maxLength={20}
-              />
+              <TextField label="닉네임" value={nickname} onValueChange={(d) => setNickname(d.value)} required>
+<TextFieldInput id="nickname" placeholder="오피스에서 사용할 이름" maxLength={20} />
+</TextField>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="avatar">프로필 이미지 URL (선택)</Label>
-              <Input
-                id="avatar"
-                type="url"
-                placeholder="https://..."
-                value={avatarUrl}
-                onChange={(e) => setAvatarUrl(e.target.value)}
-              />
+              <TextField label="프로필 이미지 URL (선택)" value={avatarUrl} onValueChange={(d) => setAvatarUrl(d.value)}>
+<TextFieldInput id="avatar" type="url" placeholder="https://..." />
+</TextField>
             </div>
-            <Button type="submit" className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" disabled={loading}>
+            <ActionButton variant="brandSolid" type="submit" className="w-full" disabled={loading}>
               {loading ? '저장 중...' : '시작하기'}
-            </Button>
+            </ActionButton>
           </form>
         </CardContent>
       </Card>

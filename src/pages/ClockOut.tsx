@@ -2,16 +2,17 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { ArrowLeft, Clock, Target, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { kstStartOfTodayISO } from '@/lib/dates';
 import { useTasksChanged } from '@/lib/tasks';
 import LeftoverTasks from '@/components/tasks/LeftoverTasks';
 
+import { Icon } from '@seed-design/react';
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
 }
@@ -88,7 +89,7 @@ export default function ClockOut() {
     // 실패 안내는 clockOut이 직접 띄운다. 여기서 성공 안내와 이동까지 해버리면
     // 아무것도 저장되지 않았는데 퇴근한 것처럼 보인다.
     if (!await clockOut()) return;
-    toast.success('퇴근 완료! 오늘도 수고했습니다 🙌');
+    toast.success('퇴근했어요. 오늘도 수고했어요 🙌');
     navigate('/');
   };
 
@@ -102,12 +103,12 @@ export default function ClockOut() {
   const stayDuration = Math.floor((Date.now() - new Date(myWorkSession.started_at).getTime()) / 1000);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
+    <div className="min-h-screen bg-background">
       <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
+          <ActionButton variant="ghost" layout="iconOnly" aria-label="홈으로" onClick={() => navigate('/')}>
+              <Icon svg={<ArrowLeft className="w-4 h-4" />} />
+            </ActionButton>
           <h1 className="font-bold text-fg-neutral">퇴근 보고</h1>
         </div>
       </header>
@@ -162,17 +163,14 @@ export default function ClockOut() {
 
         <Card className="p-5 border-stroke-neutral-subtle">
           <label className="text-t4 font-medium text-fg-neutral-muted block mb-2">한 줄 회고 (선택)</label>
-          <Input
-            placeholder="오늘 하루를 한 줄로 정리해 보세요"
-            value={memo}
-            onChange={(e) => setMemo(e.target.value)}
-            maxLength={100}
-          />
+          <TextField value={memo} onValueChange={(d) => setMemo(d.value)}>
+<TextFieldInput placeholder="오늘 하루를 한 줄로 정리해 보세요" maxLength={100} aria-label="오늘 하루를 한 줄로 정리해 보세요" />
+</TextField>
         </Card>
 
-        <Button onClick={handleClockOut} className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white h-12 text-t5">
+        <ActionButton variant="brandSolid" onClick={handleClockOut} className="w-full h-12 text-t5">
           퇴근하기
-        </Button>
+        </ActionButton>
       </main>
     </div>
   );

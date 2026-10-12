@@ -4,9 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
 import { Task } from '@/lib/types';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Circle, CalendarClock } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { addDays, kstNowHM, kstToday } from '@/lib/dates';
 import { dueInfo, moveTaskDue, sortTasks, updateTaskStatus, withoutPending } from '@/lib/tasks';
 
@@ -83,17 +83,17 @@ export default function LeftoverTasks() {
                 <span className="block text-t4 text-fg-neutral-muted truncate">{task.title}</span>
                 {due && <span className={`block text-t1 ${due.tone === 'overdue' ? 'text-fg-critical-contrast' : 'text-orange-500'}`}>{due.label}</span>}
               </span>
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-t2 text-fg-brand flex-shrink-0" onClick={() => toTomorrow(task)}>
+              <ActionButton variant="ghost" size="small" className="h-7 px-2 text-t2 flex-shrink-0" onClick={() => toTomorrow(task)}>
                 <CalendarClock className="w-3.5 h-3.5 mr-1" /> 내일로
-              </Button>
+              </ActionButton>
             </li>
           );
         })}
       </ul>
       {tasks.length > 1 && (
-        <Button variant="outline" size="sm" disabled={busy} onClick={allToTomorrow} className="w-full mt-3 border-stroke-brand-weak text-fg-brand hover:bg-bg-brand-weak">
+        <ActionButton variant="neutralOutline" size="small" disabled={busy} onClick={allToTomorrow} className="w-full mt-3">
           남은 {tasks.length}개 모두 내일로 넘기기
-        </Button>
+        </ActionButton>
       )}
     </Card>
   );

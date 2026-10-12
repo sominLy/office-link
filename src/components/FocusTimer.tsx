@@ -3,11 +3,11 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
 import { FocusSession, Task } from '@/lib/types';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Play, Square, Timer } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { kstStartOfTodayISO } from '@/lib/dates';
 import { track } from '@/lib/funnel';
 import { sortTasks, updateTaskStatus, useTasksChanged, withoutPending } from '@/lib/tasks';
@@ -125,7 +125,7 @@ export default function FocusTimer() {
     });
     if (error) {
       // 23505 = DB unique 제약(one_open_focus) 위반: 다른 탭에서 이미 집중 시작함
-      toast.error(error.code === '23505' ? '이미 집중 중입니다' : '집중 시작 실패');
+      toast.error(error.code === '23505' ? '다른 탭에서 이미 집중을 시작했어요' : '집중 시작 실패');
       await fetchActiveFocus();
     } else {
       track('focus_started');
@@ -134,7 +134,7 @@ export default function FocusTimer() {
       if (task && task.status === 'todo') updateTaskStatus(task, 'in_progress');
       await changeStatus('집중 중');
       await fetchActiveFocus();
-      toast.success(task ? `"${task.title}" 집중 시작!` : '집중 시작!');
+      toast.success(task ? `"${task.title}" 집중을 시작했어요` : '집중을 시작했어요');
     }
     setStarting(false);
   };
@@ -152,7 +152,7 @@ export default function FocusTimer() {
       .eq('id', activeFocus.id)
       .is('ended_at', null);
     if (error) {
-      toast.error('집중 종료에 실패했습니다');
+      toast.error('집중을 끝내지 못했어요. 잠시 후 다시 시도해 주세요');
       return;
     }
     await changeStatus('업무 중');
@@ -165,7 +165,7 @@ export default function FocusTimer() {
     const shown = formatDuration(Math.min(MAX_FOCUS_SECONDS, duration));
     // 할 일과 함께 집중했다면 바로 완료 처리할 수 있게
     if (focusedTask) {
-      toast.success(`${shown} 집중 완료!`, {
+      toast.success(`${shown} 집중했어요`, {
         description: `"${focusedTask.title}" 다 끝냈나요?`,
         duration: 8000,
         action: {
@@ -176,7 +176,7 @@ export default function FocusTimer() {
         },
       });
     } else {
-      toast.success(`${shown} 집중 완료!`);
+      toast.success(`${shown} 집중했어요`);
     }
   };
 
@@ -198,10 +198,10 @@ export default function FocusTimer() {
               </p>
             )}
           </div>
-          <Button onClick={stopFocus} variant="outline" className="border-stroke-critical-weak text-fg-critical-contrast hover:bg-bg-critical-weak">
+          <ActionButton onClick={stopFocus} variant="neutralOutline" className="text-fg-critical-contrast">
             <Square className="w-4 h-4 mr-1" />
             종료
-          </Button>
+          </ActionButton>
         </div>
       ) : (
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
@@ -216,10 +216,10 @@ export default function FocusTimer() {
               ))}
             </SelectContent>
           </Select>
-          <Button onClick={startFocus} disabled={starting} className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
+          <ActionButton variant="brandSolid" onClick={startFocus} disabled={starting} >
             <Play className="w-4 h-4 mr-1" />
             집중 시작
-          </Button>
+          </ActionButton>
         </div>
       )}
     </Card>

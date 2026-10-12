@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { MemberStatus } from '@/lib/types';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { ListButtonItem } from '@/seed/ui/list';
 import { defaultAvatar } from '@/lib/avatar';
 import { displayName } from '@/lib/callsign';
 import { useOffice } from '@/contexts/OfficeContext';
@@ -15,7 +14,12 @@ function formatElapsed(startedAt: string): string {
   return `${minutes}분`;
 }
 
-export default function MemberCard({ member }: { member: MemberStatus }) {
+/**
+ * 오피스 멤버 한 줄. 카드 격자였던 것을 SEED List 행으로 바꿨다.
+ * 멤버가 늘어나도 세로로 훑으면서 상태를 비교할 수 있고, 한 줄에 담기는 정보가
+ * 이름·상태·경과 시간으로 정리된다.
+ */
+export default function MemberCard({ member, onSelect }: { member: MemberStatus; onSelect: () => void }) {
   const [elapsed, setElapsed] = useState(formatElapsed(member.status_started_at));
 
   useEffect(() => {
@@ -28,37 +32,36 @@ export default function MemberCard({ member }: { member: MemberStatus }) {
   const isOffline = member.current_status === '퇴근';
   const { office } = useOffice();
   const shownName = displayName(member.nickname, office?.title_mode, member.rank_index);
+  const meta = PRESENCE_META[member.current_status];
 
   return (
-    <Card className={`p-4 border transition-all ${isOffline ? 'opacity-70 border-stroke-neutral-subtle' : 'border-stroke-neutral-subtle shadow-sm'}`}>
-      <div className="flex items-center gap-3">
-        <div className="relative">
-          <div className="w-10 h-10 rounded-full bg-bg-brand-weak flex items-center justify-center text-t6 border border-stroke-brand-weak">
-            {member.avatar_url ? (
-              <img src={member.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
-            ) : (
-              <span className="text-t6">{defaultAvatar(member.nickname)}</span>
-            )}
-          </div>
-          <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${PRESENCE_META[member.current_status].dot}`} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-medium text-fg-neutral text-t4 truncate">{shownName}</p>
-          <div className="flex items-center gap-2 mt-0.5">
-            <Badge variant="secondary" className={`text-t2 px-1.5 py-0 ${PRESENCE_META[member.current_status].chip}`}>
-              {member.current_status}
-            </Badge>
-            {!isOffline && (
-              <span className="text-t2 text-fg-neutral-muted">{elapsed}</span>
-            )}
-          </div>
+    <ListButtonItem
+      onClick={onSelect}
+      alignItems="flex-start"
+      prefix={
+        <span className="relative inline-flex">
+          <span className="w-x10 h-x10 rounded-full bg-bg-brand-weak grid place-items-center text-t6 overflow-hidden">
+            {member.avatar_url
+              ? <img src={member.avatar_url} alt="" className="w-x10 h-x10 rounded-full object-cover" />
+              : defaultAvatar(member.nickname)}
+          </span>
+          {/* 상태 점은 아바타에 붙여 목록을 훑을 때 색만으로 구분되게 한다 */}
+          <span
+            aria-hidden="true"
+            className={`absolute -bottom-0.5 -right-0.5 w-x3 h-x3 rounded-full border-2 border-bg-layer-default ${meta.dot}`}
+          />
+        </span>
+      }
+      title={<span className={isOffline ? 'text-fg-neutral-muted' : undefined}>{shownName}</span>}
+      detail={
+        <span className="flex flex-wrap items-center gap-x1_5">
+          <span className={`rounded-full px-x1_5 py-px t2-medium ${meta.chip}`}>{member.current_status}</span>
+          {!isOffline && <span className="text-fg-neutral-muted">{elapsed}</span>}
           {member.is_focusing && (
-            <p className="text-t2 text-fg-critical-contrast mt-1 truncate">
-              🎯 {member.focus_task_title || '자유 집중'} 집중 중
-            </p>
+            <span className="text-fg-brand">🎯 {member.focus_task_title || '자유 집중'}</span>
           )}
-        </div>
-      </div>
-    </Card>
+        </span>
+      }
+    />
   );
 }

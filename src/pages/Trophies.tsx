@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/AppDialog';
 import { ArrowLeft, ChevronRight, Lock } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
 import AwardCertificate from '@/components/awards/AwardCertificate';
@@ -16,6 +16,7 @@ import {
 } from '@/lib/awards';
 import { fetchRetro, readRetroPrefs, weeklyCertificate } from '@/lib/retro';
 
+import { Icon } from '@seed-design/react';
 /** 내 진열장 — 회고 스티커가 쌓이고, 누적 기록으로 트로피가 열리고, 매주 받은 상장이 모인다 */
 export default function Trophies() {
   const { user, profile } = useAuth();
@@ -74,12 +75,12 @@ export default function Trophies() {
   for (let i = 0; i < trophies.length; i += 4) shelves.push(trophies.slice(i, i + 4));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
+    <div className="min-h-screen bg-background">
       <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-2.5 flex items-center gap-1">
-          <Button variant="ghost" size="icon" onClick={() => ((window.history.state?.idx ?? 0) > 0 ? navigate(-1) : navigate('/'))} aria-label="뒤로">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
+          <ActionButton variant="ghost" layout="iconOnly" onClick={() => ((window.history.state?.idx ?? 0) > 0 ? navigate(-1) : navigate('/'))} aria-label="뒤로">
+              <Icon svg={<ArrowLeft className="w-4 h-4" />} />
+            </ActionButton>
           <div className="min-w-0 flex-1">
             <h1 className="font-bold text-fg-neutral leading-tight">🏆 내 진열장</h1>
             {stats && (
@@ -88,9 +89,9 @@ export default function Trophies() {
               </p>
             )}
           </div>
-          <Button variant="ghost" size="sm" className="text-fg-brand" onClick={() => navigate('/retro')}>
+          <ActionButton variant="ghost" size="small" onClick={() => navigate('/retro')}>
             📬 회고
-          </Button>
+          </ActionButton>
         </div>
       </header>
 
@@ -145,7 +146,7 @@ export default function Trophies() {
                       </span>
                     </div>
                     <div className="mt-1 h-2 rounded-full bg-bg-brand-weak overflow-hidden" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={`${track.name} 다음 트로피 진행률`}>
-                      <div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500" style={{ width: `${pct}%` }} />
+                      <div className="h-full rounded-full bg-bg-brand-solid" style={{ width: `${pct}%` }} />
                     </div>
                   </li>
                 ))}
@@ -180,9 +181,9 @@ export default function Trophies() {
               {certificates.length === 0 ? (
                 <div className="text-center py-4">
                   <p className="text-t4 text-fg-neutral-muted">아직 받은 상장이 없어요</p>
-                  <Button size="sm" variant="outline" className="mt-2 border-stroke-brand-weak text-fg-brand" onClick={() => navigate('/retro')}>
+                  <ActionButton size="small" variant="neutralOutline" className="mt-2" onClick={() => navigate('/retro')}>
                     📬 회고 열어보기
-                  </Button>
+                  </ActionButton>
                 </div>
               ) : (
                 <ul className="divide-y divide-amber-100">

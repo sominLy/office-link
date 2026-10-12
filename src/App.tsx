@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { Toaster } from '@/components/ui/sonner';
+import { SnackbarProvider } from '@/seed/ui/snackbar';
+import { SnackbarBridge } from '@/lib/toast';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { lazy, Suspense } from 'react';
@@ -16,6 +17,7 @@ import Profile from './pages/Profile';
 import Feed from './pages/Feed';
 import OfficeSetup from './pages/OfficeSetup';
 import Guide from './pages/Guide';
+import LoginRoute from './pages/LoginRoute';
 import Retro from './pages/Retro';
 import Trophies from './pages/Trophies';
 import TrophyWatcher from '@/components/awards/TrophyWatcher';
@@ -25,6 +27,7 @@ import UsageTracker from '@/components/UsageTracker';
 const Admin = lazy(() => import('./pages/Admin'));
 
 const queryClient = new QueryClient();
+
 
 // 앱 진입 1회(app_open)와 화면 이동(page_view)을 적재한다.
 // 체류 시간은 같은 visitor_id의 첫·마지막 이벤트 간격으로 분석 때 계산한다.
@@ -53,9 +56,10 @@ const App = () => (
     <AuthProvider>
       <OfficeProvider>
         <TooltipProvider>
-          <Toaster />
-          <Analytics />
-          <BrowserRouter>
+          <SnackbarProvider>
+            <SnackbarBridge />
+            <Analytics />
+            <BrowserRouter>
             {/* 퍼널 이벤트 적재 (화면에 그리는 것 없음) */}
             <RouteTracker />
             {/* 할 일 완료·집중·출근 때 새 트로피가 열리면 축하 */}
@@ -71,11 +75,13 @@ const App = () => (
               <Route path="/feed" element={<Feed />} />
               <Route path="/office-setup" element={<OfficeSetup />} />
               <Route path="/guide" element={<Guide />} />
+              <Route path="/login" element={<LoginRoute />} />
               <Route path="/retro" element={<Retro />} />
               <Route path="/trophies" element={<Trophies />} />
               <Route path="/admin" element={<Suspense fallback={null}><Admin /></Suspense>} />
             </Routes>
           </BrowserRouter>
+          </SnackbarProvider>
         </TooltipProvider>
       </OfficeProvider>
     </AuthProvider>

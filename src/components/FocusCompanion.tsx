@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/AppDialog';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Play, Pause, RotateCcw, Eye, Clock } from 'lucide-react';
 import { notify } from '@/lib/notify';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
+import { Icon } from '@seed-design/react';
 // 감시 모드/퇴근 알림 설정은 localStorage에 저장 → Home의 백그라운드 타이머가 읽어 실행
 export const WATCH_KEY = 'watch_interval_min';   // 0=off
 export const CLOCKOUT_KEY = 'clockout_target';    // "HH:MM" (오늘 기준)
@@ -47,12 +48,12 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
         if (prev > 1) return prev - 1;
         // 단계 종료 → 전환
         if (phase === 'focus') {
-          notify('집중 끝! 잠깐 쉬어요 ☕', `${preset.brk}분 휴식 시작`);
+          notify('집중 끝났어요. 잠깐 쉬어요 ☕', `${preset.brk}분 휴식 시작`);
           setPhase('break');
           setRounds(r => r + 1);
           return preset.brk * 60;
         } else {
-          notify('휴식 끝! 다시 집중해요 💪', `${preset.focus}분 집중 시작`);
+          notify('휴식 끝났어요. 다시 집중해요 💪', `${preset.focus}분 집중 시작`);
           setPhase('focus');
           return preset.focus * 60;
         }
@@ -71,7 +72,7 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
 
   // ── 캐릭터 표정 ──
   const face = !running ? '🐥' : phase === 'focus' ? '🔥' : '☕';
-  const speech = !running ? '같이 시작해볼까요?' : phase === 'focus' ? '같이 집중해요! 💪' : '잠깐 쉬어가요~';
+  const speech = !running ? '같이 시작해볼까요?' : phase === 'focus' ? '같이 집중해요 💪' : '잠깐 쉬어가요~';
 
   // ── 감시 모드 ──
   const [watch, setWatch] = useState<number>(() => Number(localStorage.getItem(WATCH_KEY) || 0));
@@ -140,10 +141,12 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
 
               {/* 컨트롤 */}
               <div className="flex gap-2 w-full">
-                <Button onClick={() => setRunning(r => !r)} className="flex-1 bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
+                <ActionButton variant="brandSolid" onClick={() => setRunning(r => !r)} className="flex-1">
                   {running ? <><Pause className="w-4 h-4 mr-1" /> 일시정지</> : <><Play className="w-4 h-4 mr-1" /> 시작</>}
-                </Button>
-                <Button onClick={reset} variant="outline" size="icon" className="border-stroke-brand-weak"><RotateCcw className="w-4 h-4" /></Button>
+                </ActionButton>
+                <ActionButton onClick={reset} variant="neutralOutline" layout="iconOnly" aria-label="타이머 처음으로" >
+              <Icon svg={<RotateCcw className="w-4 h-4" />} />
+            </ActionButton>
               </div>
             </div>
           </TabsContent>
@@ -177,11 +180,11 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
             </div>
             <p className="text-center text-t2 text-fg-neutral-muted">→ {humanMin(draft)}마다</p>
             <div className="flex gap-2">
-              <Button onClick={() => setWatchMode(draft)} className="flex-1 bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
+              <ActionButton variant="brandSolid" onClick={() => setWatchMode(draft)} className="flex-1">
                 {watch === draft && watch > 0 ? '이 간격으로 켜짐' : '이 간격으로 켜기'}
-              </Button>
+              </ActionButton>
               {watch > 0 && (
-                <Button variant="outline" className="border-stroke-brand-weak text-fg-neutral-muted" onClick={() => setWatchMode(0)}>끄기</Button>
+                <ActionButton variant="neutralOutline" className="text-fg-neutral-muted" onClick={() => setWatchMode(0)}>끄기</ActionButton>
               )}
             </div>
             <p className="text-t2 text-center text-fg-neutral-muted">
@@ -197,13 +200,13 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
             <div className="flex flex-col items-center gap-1 py-1">
               <div className="text-t14 float-bob">🏃</div>
               <p className="text-t4 font-semibold text-fg-neutral-muted">예상 퇴근 시간 알림</p>
-              <p className="text-t2 text-fg-neutral-muted text-center">예상 퇴근 시간을 정해두면, 그 시간에<br/>"아직 일하고 계신가요?" 알림이 와요.</p>
+              <p className="text-t2 text-fg-neutral-muted text-center">예상 퇴근 시간을 정해두면, 그 시간에<br/>"아직 일하고 있나요?" 알림이 와요.</p>
             </div>
             <div className="flex items-center gap-2 justify-center">
               <Clock className="w-4 h-4 text-fg-brand" />
               <input type="time" value={clockout} onChange={(e) => saveClockout(e.target.value)}
                 className="border border-stroke-neutral-subtle rounded-lg px-3 py-2 text-t4" />
-              {clockout && <Button variant="ghost" size="sm" className="text-fg-neutral-muted" onClick={() => saveClockout('')}>끄기</Button>}
+              {clockout && <ActionButton variant="ghost" size="small" className="text-fg-neutral-muted" onClick={() => saveClockout('')}>끄기</ActionButton>}
             </div>
             <p className="text-t2 text-center text-fg-neutral-muted">{clockout ? `🟢 ${clockout}에 알림 예정` : '⚪ 설정 안 됨'}</p>
           </TabsContent>

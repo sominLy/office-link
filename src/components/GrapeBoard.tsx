@@ -2,13 +2,14 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent } from '@/components/AppDialog';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Award, ChevronLeft, ChevronRight } from 'lucide-react';
 import AwardCertificate from '@/components/awards/AwardCertificate';
 import { certDate, templateAt } from '@/lib/awards';
 import { kstToday } from '@/lib/dates';
 
+import { Icon } from '@seed-design/react';
 // 포도 스티커판: 출근한 날 1알 + 할 일 3개 완료마다 1알. 30알 = 한 판 완성 → 상장!
 const BOARD_SIZE = 30;
 // 포도송이 모양 줄 배치 (합 30)
@@ -49,7 +50,7 @@ export default function GrapeBoard() {
   let grapeIndex = 0;
 
   return (
-    <Card className="border-purple-100 bg-gradient-to-br from-purple-50/60 to-amber-50/40">
+    <Card className="border-stroke-neutral-subtle bg-bg-neutral-muted">
       <CardHeader>
         <CardTitle className="text-t5 flex items-center gap-2">🍇 포도 스티커판</CardTitle>
         <CardDescription>
@@ -102,9 +103,9 @@ export default function GrapeBoard() {
             <p className="text-t4 text-fg-neutral-muted">
               🏆 완성한 포도판 <b className="text-fg-brand">{completedBoards}개</b>
             </p>
-            <Button size="sm" variant="outline" className="border-stroke-brand-weak text-fg-brand" onClick={() => { setCertNo(completedBoards); setCertOpen(true); }}>
+            <ActionButton size="small" variant="neutralOutline" onClick={() => { setCertNo(completedBoards); setCertOpen(true); }}>
               <Award className="w-3.5 h-3.5 mr-1" /> 상장 보기
-            </Button>
+            </ActionButton>
           </div>
         )}
 
@@ -127,13 +128,13 @@ export default function GrapeBoard() {
             />
             {completedBoards > 1 && (
               <div className="flex items-center justify-center gap-3">
-                <Button variant="ghost" size="icon" disabled={certNo <= 1} onClick={() => setCertNo(n => n - 1)} aria-label="이전 상장">
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
+                <ActionButton variant="ghost" layout="iconOnly" disabled={certNo <= 1} onClick={() => setCertNo(n => n - 1)} aria-label="이전 상장">
+              <Icon svg={<ChevronLeft className="w-4 h-4" />} />
+            </ActionButton>
                 <span className="text-t4 text-fg-neutral-muted">{certNo} / {completedBoards}</span>
-                <Button variant="ghost" size="icon" disabled={certNo >= completedBoards} onClick={() => setCertNo(n => n + 1)} aria-label="다음 상장">
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
+                <ActionButton variant="ghost" layout="iconOnly" disabled={certNo >= completedBoards} onClick={() => setCertNo(n => n + 1)} aria-label="다음 상장">
+              <Icon svg={<ChevronRight className="w-4 h-4" />} />
+            </ActionButton>
               </div>
             )}
             <p className="text-center text-t1 text-fg-neutral-muted">판을 채울 때마다 다른 디자인의 상장이 나와요 · 캡처해서 자랑해 보세요!</p>

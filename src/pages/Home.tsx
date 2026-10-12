@@ -4,16 +4,16 @@ import { StatusPreset } from '@/lib/types';
 import MemberCard from '@/components/MemberCard';
 import FocusTimer from '@/components/FocusTimer';
 import MyTasks from '@/components/MyTasks';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { LogOut, ChevronDown, Clock, Copy, Bell, Building2, Plus, Tag, Check, UtensilsCrossed, Palmtree, BellOff, BookOpenText, NotebookPen, Sparkles, MessageSquarePlus, RotateCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { supabase } from '@/lib/supabase';
 import { defaultAvatar } from '@/lib/avatar';
-import { useState, useEffect } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import { MemberStatus } from '@/lib/types';
 import MemberStatsDialog from '@/components/MemberStatsDialog';
 import MenuPickDialog from '@/components/MenuPickDialog';
@@ -27,9 +27,11 @@ import { kstToday } from '@/lib/dates';
 import { todayQuoteFrom, randomQuoteFrom } from '@/lib/quotes';
 import { checkQuote } from '@/lib/profanity';
 import { displayName, TITLE_MODES } from '@/lib/callsign';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/AppDialog';
 import { isSubmitEnter } from '@/lib/utils';
 import { PRESENCE_META } from '@/lib/presence';
+import { List, ListDivider } from '@/seed/ui/list';
+import { ListHeader } from '@/seed/ui/list-header';
 
 const STATUS_OPTIONS: StatusPreset[] = ['출근', '집중 중', '업무 중', '휴식 중', '자리 비움', '스터디/회의 중', '점심 먹는 중', '저녁 먹는 중', '야식 먹는 중'];
 
@@ -69,10 +71,10 @@ export default function Home() {
     }
     const { error } = await supabase.from('quotes').insert({ text: quoteText.trim(), created_by: user.id });
     if (error) {
-      toast.error('등록에 실패했어요. 잠시 후 다시 시도해 주세요');
+      toast.error('한마디를 올리지 못했어요. 잠시 후 다시 시도해 주세요');
       return;
     }
-    toast.success('응원 글귀가 등록됐어요! 언젠가 모두의 홈에 떠요 💌');
+    toast.success('응원 글귀를 올렸어요. 언젠가 모두의 홈에 떠요 💌');
     setQuoteText('');
     setQuoteDialogOpen(false);
     supabase.from('quotes').select('text').eq('approved', true).then(({ data }) => {
@@ -132,8 +134,8 @@ export default function Home() {
     if (granted) {
       const pushed = user ? await subscribePush(user.id) : false;
       toast.success(pushed
-        ? '알림이 켜졌어요! 브라우저를 닫아도 출근 소식과 근무 알림이 와요 🔔'
-        : '알림이 켜졌어요! (이 브라우저는 사이트가 열려 있을 때만 알림이 와요)');
+        ? '알림을 켰어요. 브라우저를 닫아도 출근 소식과 근무 알림이 와요 🔔'
+        : '알림을 켰어요. (이 브라우저는 사이트가 열려 있을 때만 알림이 와요)');
       notify('연결오피스 알림 켜짐 🔔', '이렇게 알림이 도착해요');
     } else {
       toast.error('브라우저에서 알림이 차단되어 있어요. 주소창 왼쪽 자물쇠에서 허용해 주세요');
@@ -156,7 +158,7 @@ export default function Home() {
       const key = `nudge-${kstToday()}`;
       if (localStorage.getItem(key)) return;
       localStorage.setItem(key, '1');
-      notify('오늘 일 안 하나요? 👀', `설정한 근무 시작 시간(${profile.work_start.slice(0, 5)})이 지났어요. 출근 버튼이 기다리고 있어요!`);
+      notify('오늘 일 안 하나요? 👀', `설정한 근무 시작 시간(${profile.work_start.slice(0, 5)})이 지났어요. 출근 버튼이 기다리고 있어요`);
       toast('👀 오늘 일 안 하나요? 근무 시작 시간이 지났어요');
     };
     check();
@@ -174,7 +176,7 @@ export default function Home() {
         const last = Number(localStorage.getItem('watch_last') || 0);
         if (Date.now() - last >= interval * 60 * 1000) {
           localStorage.setItem('watch_last', String(Date.now()));
-          notify('👁 아직 집중하고 계신가요?', '스스로와의 약속, 지금도 잘하고 있어요!');
+          notify('👁 아직 집중하고 있나요?', '지금도 잘하고 있어요');
         }
       }
       // ② 예상 퇴근 시간 알림 (하루 한 번)
@@ -184,7 +186,7 @@ export default function Home() {
         const firedKey = `clockout_fired-${kstToday()}`;
         if (nowHM >= target && !localStorage.getItem(firedKey)) {
           localStorage.setItem(firedKey, '1');
-          notify('🏃 예상 퇴근 시간이에요!', '아직 일하고 계신가요? 무리하지 말고 마무리해도 좋아요 💛');
+          notify('🏃 예상 퇴근 시간이에요', '아직 일하고 있나요? 무리하지 말고 마무리해도 좋아요 💛');
           toast('🏃 예상 퇴근 시간이 됐어요');
         }
       }
@@ -195,7 +197,7 @@ export default function Home() {
   }, [myWorkSession]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
@@ -230,7 +232,7 @@ export default function Home() {
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(office.invite_code);
-                  toast.success(`초대 코드 ${office.invite_code} 복사됨! 친구에게 공유하세요`);
+                  toast.success(`초대 코드를 복사했어요. 친구에게 공유해 보세요`);
                 }}
                 className="flex items-center gap-1 text-t2 bg-bg-brand-weak hover:bg-bg-brand-weak-pressed text-fg-brand border border-stroke-brand-weak rounded-full px-2.5 py-1 transition-colors flex-shrink-0"
                 title="초대 코드 복사"
@@ -246,7 +248,7 @@ export default function Home() {
 
       <main className="max-w-5xl mx-auto px-4 py-6 pb-24 space-y-6">
         {/* 오늘의 응원 한마디 — 🔄 새로고침으로 다른 글귀, ✏️ 로 제보 */}
-        <div className="rise-in flex items-center gap-2 bg-gradient-to-r from-amber-100/80 to-orange-100/60 border border-stroke-neutral-subtle rounded-xl px-4 py-2.5 shadow-sm">
+        <div className="rise-in flex items-center gap-2 bg-bg-brand-weak border border-stroke-neutral-subtle rounded-xl px-4 py-2.5 shadow-sm">
           <span className="text-t6 animate-pulse flex-shrink-0">💌</span>
           <p className="text-t4 text-fg-brand-contrast leading-snug flex-1 min-w-0">{quote}</p>
           <button
@@ -295,25 +297,32 @@ export default function Home() {
             <div className="flex items-center gap-2 w-full sm:w-auto">
               {!isWorking ? (
                 <>
-                <Button onClick={() => {
-                  const now = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
-                  setClockInBase(now);
-                  setOffTarget(now); // 기본값 = 출근한 지금 시각
-                  setClockInOpen(true);
-                }} className="bg-bg-positive-solid hover:bg-bg-positive-solid-pressed text-white flex-1 sm:flex-none">
+                <ActionButton
+                  variant="brandSolid"
+                  onClick={() => {
+                    const now = new Intl.DateTimeFormat('en-GB', {
+                      timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false,
+                    }).format(new Date());
+                    // 기본값 = 출근한 지금 시각
+                    setClockInBase(now);
+                    setOffTarget(now);
+                    setClockInOpen(true);
+                  }}
+                  className="flex-1 sm:flex-none"
+                >
                   <Clock className="w-4 h-4 mr-1" />
                   출근하기
-                </Button>
+                </ActionButton>
                 {onVacation ? (
-                  <Button variant="outline" onClick={() => changeStatus('퇴근')} className="border-teal-200 text-teal-700 flex-1 sm:flex-none">
+                  <ActionButton variant="neutralOutline" onClick={() => changeStatus('퇴근')} className="border-teal-200 text-teal-700 flex-1 sm:flex-none">
                     <Palmtree className="w-4 h-4 mr-1" /> 복귀하기
-                  </Button>
+                  </ActionButton>
                 ) : (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="border-teal-200 text-teal-700 flex-1 sm:flex-none">
+                      <ActionButton variant="neutralOutline" className="border-teal-200 text-teal-700 flex-1 sm:flex-none">
                         <Palmtree className="w-4 h-4 mr-1" /> 연차/휴가 <ChevronDown className="w-3.5 h-3.5 ml-1" />
-                      </Button>
+                      </ActionButton>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
                       <DropdownMenuItem onClick={() => changeStatus('연차')} className="cursor-pointer">🌴 오늘 연차예요</DropdownMenuItem>
@@ -326,9 +335,9 @@ export default function Home() {
                 <>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="flex-1 sm:flex-none border-stroke-brand-weak">
+                      <ActionButton variant="neutralOutline" className="flex-1 sm:flex-none">
                         상태 변경 <ChevronDown className="w-4 h-4 ml-1" />
-                      </Button>
+                      </ActionButton>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
                       {STATUS_OPTIONS.map((s) => (
@@ -339,9 +348,9 @@ export default function Home() {
                       ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  <Button onClick={() => navigate('/clock-out')} variant="outline" className="border-stroke-critical-weak text-fg-critical-contrast hover:bg-bg-critical-weak flex-1 sm:flex-none">
+                  <ActionButton onClick={() => navigate('/clock-out')} variant="neutralOutline" className="flex-1 sm:flex-none">
                     퇴근하기
-                  </Button>
+                  </ActionButton>
                 </>
               )}
             </div>
@@ -355,20 +364,26 @@ export default function Home() {
         {isWorking && <MyTasks compact />}
 
         {/* Office Members */}
-        <section>
-          <h2 className="text-t4 font-medium text-fg-neutral-muted mb-3 px-1">오피스 멤버 <span className="text-fg-neutral-muted">· 카드를 누르면 기록이 보여요</span></h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {members.map((member) => (
-              <button key={member.user_id} onClick={() => setSelectedMember(member)} className="lift text-left rounded-xl">
-                <MemberCard member={member} />
-              </button>
-            ))}
-            {members.length === 0 && (
-              <p className="text-fg-neutral-muted text-t4 col-span-full text-center py-8">
-                아직 멤버가 없습니다
-              </p>
-            )}
-          </div>
+        <section aria-labelledby="office-members">
+          <ListHeader as="h2" id="office-members">오피스 멤버</ListHeader>
+          <p className="px-x4 pb-x2 t2-regular text-fg-neutral-muted">누르면 그 사람의 기록이 보여요</p>
+          {members.length > 0 ? (
+            <div className="rounded-r3 bg-bg-layer-default overflow-hidden">
+              <List itemBorderRadius="r3">
+                {members.map((member, i) => (
+                  <Fragment key={member.user_id}>
+                    {i > 0 && <ListDivider />}
+                    <MemberCard member={member} onSelect={() => setSelectedMember(member)} />
+                  </Fragment>
+                ))}
+              </List>
+            </div>
+          ) : (
+            <div className="rounded-r3 bg-bg-layer-default px-x5 py-x10 text-center">
+              <p className="t5-bold text-fg-neutral">아직 멤버가 없어요</p>
+              <p className="mt-x1 t4-regular text-fg-neutral-muted">초대 코드를 공유하면 같이 출근할 수 있어요</p>
+            </div>
+          )}
         </section>
       </main>
 
@@ -423,7 +438,7 @@ export default function Home() {
         )}
         <button
           onClick={() => setMoreOpen(o => !o)}
-          className={`w-[52px] h-[52px] rounded-full shadow-lg flex items-center justify-center transition-transform ${moreOpen ? 'bg-bg-brand-solid rotate-45' : 'bg-gradient-to-br from-amber-400 to-orange-500'}`}
+          className={`w-[52px] h-[52px] rounded-full shadow-lg flex items-center justify-center transition-transform ${moreOpen ? 'bg-bg-brand-solid rotate-45' : 'bg-bg-brand-solid'}`}
           aria-label="더보기"
         >
           <Sparkles className="w-5 h-5 text-white" />
@@ -439,15 +454,11 @@ export default function Home() {
             <DialogTitle className="flex items-center gap-2"><MessageSquarePlus className="w-4 h-4 text-fg-brand" /> 응원 글귀 제보</DialogTitle>
           </DialogHeader>
           <p className="text-t4 text-fg-neutral-muted -mt-1">모두의 홈에 뜨는 "오늘의 한마디"를 함께 채워요. 따뜻한 응원 한마디를 남겨주세요 💛</p>
-          <Input
-            value={quoteText}
-            onChange={(e) => setQuoteText(e.target.value)}
-            onKeyDown={(e) => isSubmitEnter(e) && submitQuote()}
-            placeholder="예: 오늘도 조용히 애쓰는 당신을 응원해요 🌱"
-            maxLength={60}
-          />
+          <TextField value={quoteText} onValueChange={(d) => setQuoteText(d.value)}>
+<TextFieldInput onKeyDown={(e) => isSubmitEnter(e) && submitQuote()} placeholder="예: 오늘도 조용히 애쓰는 당신을 응원해요 🌱" maxLength={60} aria-label="예: 오늘도 조용히 애쓰는 당신을 응원해요 🌱" />
+</TextField>
           <p className="text-t2 text-fg-neutral-muted">비속어·차별 표현은 자동으로 걸러져요. {quoteText.length}/60</p>
-          <Button onClick={submitQuote} disabled={!quoteText.trim()} className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">등록하기</Button>
+          <ActionButton variant="brandSolid" onClick={submitQuote} disabled={!quoteText.trim()} className="w-full">등록하기</ActionButton>
         </DialogContent>
       </Dialog>
 
@@ -462,7 +473,7 @@ export default function Home() {
             <DialogTitle>🟢 출근하기</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <p className="text-t4 text-fg-neutral-muted">예상 퇴근 시간을 정해두면, 그 시간에 <b>"아직 일하고 계신가요?"</b> 알림을 보내드려요.</p>
+            <p className="text-t4 text-fg-neutral-muted">예상 퇴근 시간을 정해두면, 그 시간에 <b>"아직 일하고 있나요?"</b> 알림을 보내드려요.</p>
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-fg-brand flex-shrink-0" />
               <input type="time" value={offTarget} onChange={(e) => setOffTarget(e.target.value)}
@@ -485,19 +496,26 @@ export default function Home() {
               <input type="checkbox" checked={offTarget === ''} onChange={(e) => setOffTarget(e.target.checked ? '' : clockInBase)} className="accent-amber-500" />
               일단 퇴근 시간 설정하지 않음
             </label>
-            <Button
-              className="w-full bg-bg-positive-solid hover:bg-bg-positive-solid-pressed text-white"
+            <ActionButton
+              variant="brandSolid"
+              className="w-full"
               onClick={() => {
-                if (offTarget) { localStorage.setItem(CLOCKOUT_KEY, offTarget); localStorage.removeItem(`clockout_fired-${kstToday()}`); }
-                else { localStorage.removeItem(CLOCKOUT_KEY); }
+                if (offTarget) {
+                  localStorage.setItem(CLOCKOUT_KEY, offTarget);
+                  localStorage.removeItem(`clockout_fired-${kstToday()}`);
+                } else {
+                  localStorage.removeItem(CLOCKOUT_KEY);
+                }
                 setClockInOpen(false);
                 clockIn();
-                toast.success(offTarget ? `출근! ${offTarget}에 퇴근 알림을 보낼게요 🏃` : '출근했어요! 오늘도 화이팅 💪');
+                toast.success(
+                  offTarget ? `출근했어요. ${offTarget}에 퇴근 알림을 보낼게요 🏃` : '출근했어요. 오늘도 화이팅 💪',
+                );
                 checkOverdueTasks();
               }}
             >
               출근하기
-            </Button>
+            </ActionButton>
           </div>
         </DialogContent>
       </Dialog>

@@ -1,9 +1,9 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { ActionButton } from '@/seed/ui/action-button';
+import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/AppDialog';
 import { Lock, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addDays, formatDateLabel, formatTimeLabel, kstToday } from '@/lib/dates';
@@ -79,29 +79,16 @@ export default function TaskFormDialog({ open, mode, initial, categories, onClos
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="task-title">제목</Label>
-            <Input
-              id="task-title"
-              autoFocus={mode === 'create'}
-              placeholder="예: 자소서 1번 문항 초안 쓰기"
-              value={draft.title}
-              onChange={(e) => set('title', e.target.value)}
-              maxLength={100}
-              enterKeyHint="done"
-            />
+            <TextField label="제목" value={draft.title} onValueChange={(d) => set('title', d.value)}>
+<TextFieldInput id="task-title" autoFocus={mode === 'create'} placeholder="예: 자소서 1번 문항 초안 쓰기" maxLength={100} enterKeyHint="done" />
+</TextField>
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="task-category">카테고리 <span className="text-fg-neutral-muted font-normal">(선택)</span></Label>
             <div className="relative">
-              <Input
-                id="task-category"
-                placeholder="예: 자소서, 코딩테스트, 영어"
-                value={draft.category}
-                onChange={(e) => set('category', e.target.value)}
-                maxLength={20}
-                className={draft.category ? 'pr-8' : undefined}
-              />
+              <TextField label="카테고리" indicator="선택" value={draft.category} onValueChange={(d) => set('category', d.value)} className={draft.category ? 'pr-8' : undefined}>
+<TextFieldInput id="task-category" placeholder="예: 자소서, 코딩테스트, 영어" maxLength={20} aria-label="예: 자소서, 코딩테스트, 영어" />
+</TextField>
               {draft.category && (
                 <button type="button" onClick={() => set('category', '')} aria-label="카테고리 지우기"
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-fg-neutral-subtle hover:text-fg-neutral-muted">
@@ -136,10 +123,12 @@ export default function TaskFormDialog({ open, mode, initial, categories, onClos
               })}
             </div>
             <div className="flex gap-2">
-              <Input type="date" value={draft.due_date} onChange={(e) => set('due_date', e.target.value)}
-                className="flex-1 min-w-0" aria-label="마감일" />
-              <Input type="time" value={draft.due_time} onChange={(e) => set('due_time', e.target.value)}
-                disabled={!draft.due_date} aria-label="마감 시간" className="w-32 flex-shrink-0" />
+              <TextField value={draft.due_date} onValueChange={(d) => set('due_date', d.value)} className="flex-1 min-w-0">
+<TextFieldInput type="date" aria-label="마감일" />
+</TextField>
+              <TextField value={draft.due_time} onValueChange={(d) => set('due_time', d.value)} disabled={!draft.due_date} className="w-32 flex-shrink-0">
+<TextFieldInput type="time" aria-label="마감 시간" />
+</TextField>
             </div>
             <p className="text-t2 text-fg-neutral-muted flex items-center gap-1 min-h-[1rem]">
               {draft.due_date
@@ -189,9 +178,9 @@ export default function TaskFormDialog({ open, mode, initial, categories, onClos
             <Switch id="task-private" checked={draft.is_private} onCheckedChange={(v) => set('is_private', v)} />
           </label>
 
-          <Button type="submit" disabled={!draft.title.trim() || saving} className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
+          <ActionButton variant="brandSolid" type="submit" disabled={!draft.title.trim() || saving} className="w-full">
             {saving ? '저장 중…' : mode === 'create' ? '추가하기' : '저장'}
-          </Button>
+          </ActionButton>
         </form>
       </DialogContent>
     </Dialog>

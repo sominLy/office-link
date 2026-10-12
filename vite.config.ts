@@ -38,6 +38,8 @@ function ensureBuildOutDir() {
   };
 }
 
+import { seedDesignPlugin } from '@seed-design/vite-plugin';
+
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
   const blogPrerenderRoutes = command === 'build' ? getBlogRoutes() : [];
@@ -48,10 +50,12 @@ export default defineConfig(({ command }) => {
         prefix: 'mgx', // Prefix used to identify source locations; do not change.
       }),
       react(),
+      // SEED 색 모드·테마 처리. 이 앱은 다크 모드를 연결하지 않아 라이트로 고정한다.
+      seedDesignPlugin({ colorMode: 'light-only' }),
       atoms(),
       ensureBuildOutDir(),
       Sitemap({
-        hostname: 'https://atoms.template.com',
+        hostname: 'https://office-link.vercel.app',
         lastmod: getSitemapLastmod(),
         readable: true,
         generateRobotsTxt: true,

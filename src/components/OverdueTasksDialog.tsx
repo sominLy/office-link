@@ -2,12 +2,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
 import { Task } from '@/lib/types';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { TextField, TextFieldInput } from '@/seed/ui/text-field';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/AppDialog';
 import { CalendarDays, CheckCheck, Clock, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { addDays, daysBetween, formatDateLabel, formatShortDate, formatTimeLabel, kstToday } from '@/lib/dates';
 import { deleteWithUndo, fetchOverdueTasks, moveTaskDue, updateTaskStatus } from '@/lib/tasks';
 
@@ -79,7 +79,7 @@ export default function OverdueTasksDialog({ open, onClose, onChanged }: { open:
   const complete = async (task: Task) => {
     if (!(await updateTaskStatus(task, 'done'))) return;
     done(task);
-    toast.success('완료 처리했어요 🎉');
+    toast.success('완료했어요 🎉');
   };
 
   const remove = (task: Task) => {
@@ -115,17 +115,16 @@ export default function OverdueTasksDialog({ open, onClose, onChanged }: { open:
           <div className="text-center py-6 space-y-1">
             <p className="text-t11">✨</p>
             <p className="text-t4 font-medium text-fg-neutral-muted">
-              {handled > 0 ? `${handled}개 정리 완료! 깔끔해졌어요` : '밀린 할 일이 없어요. 깔끔하네요'}
+              {handled > 0 ? `밀린 할 일 ${handled}개를 정리했어요` : '밀린 할 일이 없어요. 깔끔하네요'}
             </p>
             <p className="text-t2 text-fg-neutral-muted">오늘도 가볍게 시작해 봐요</p>
           </div>
         ) : (
           <>
             {tasks.length > 1 && (
-              <Button variant="outline" size="sm" disabled={busy} onClick={moveAllToday}
-                className="w-full border-stroke-brand-weak text-fg-brand hover:bg-bg-brand-weak">
+              <ActionButton variant="neutralOutline" size="small" disabled={busy} onClick={moveAllToday} className="w-full">
                 <CalendarDays className="w-4 h-4 mr-1" /> {tasks.length}개 모두 오늘 할 일로 옮기기
-              </Button>
+              </ActionButton>
             )}
             <ul className="space-y-2">
               {tasks.map((task) => {
@@ -170,28 +169,28 @@ export default function OverdueTasksDialog({ open, onClose, onChanged }: { open:
                     {pickerFor === task.id ? (
                       // 날짜를 고른 뒤 '옮기기'로 확정 — 입력 중 중간값으로 바로 옮겨지지 않게
                       <div className="flex gap-1.5">
-                        <Input type="date" value={pickedDate} min={today} onChange={(e) => setPickedDate(e.target.value)}
-                          className="h-9 flex-1 min-w-0 text-t4" aria-label="새 마감일" autoFocus />
-                        <Button size="sm" className="h-9 bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" disabled={!pickedDate}
-                          onClick={() => pickedDate && move(task, pickedDate)}>
+                        <TextField value={pickedDate} onValueChange={(d) => setPickedDate(d.value)} className="h-9 flex-1 min-w-0 text-t4">
+<TextFieldInput type="date" min={today} aria-label="새 마감일" autoFocus />
+</TextField>
+                        <ActionButton variant="brandSolid" size="small" className="h-9" disabled={!pickedDate} onClick={() => pickedDate && move(task, pickedDate)}>
                           옮기기
-                        </Button>
-                        <Button size="sm" variant="ghost" className="h-9 px-2 text-fg-neutral-muted" onClick={() => setPickerFor(null)}>
+                        </ActionButton>
+                        <ActionButton size="small" variant="ghost" className="h-9 px-2 text-fg-neutral-muted" onClick={() => setPickerFor(null)}>
                           취소
-                        </Button>
+                        </ActionButton>
                       </div>
                     ) : (
                       <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm" className="h-8 px-2 text-t2 text-fg-neutral-muted"
+                        <ActionButton variant="ghost" size="small" className="h-8 px-2 text-t2 text-fg-neutral-muted"
                           onClick={() => { setPickerFor(task.id); setPickedDate(addDays(today, 1)); }}>
                           <CalendarDays className="w-3.5 h-3.5 mr-1" /> 날짜 고르기
-                        </Button>
-                        <Button variant="ghost" size="sm" className="h-8 px-2 text-t2 text-fg-positive-contrast" onClick={() => complete(task)}>
+                        </ActionButton>
+                        <ActionButton variant="ghost" size="small" className="h-8 px-2 text-t2 text-fg-positive-contrast" onClick={() => complete(task)}>
                           <CheckCheck className="w-3.5 h-3.5 mr-1" /> 이미 했어요
-                        </Button>
-                        <Button variant="ghost" size="sm" className="h-8 px-2 text-t2 text-fg-critical-contrast ml-auto" onClick={() => remove(task)}>
+                        </ActionButton>
+                        <ActionButton variant="ghost" size="small" className="h-8 px-2 text-t2 text-fg-critical-contrast ml-auto" onClick={() => remove(task)}>
                           <Trash2 className="w-3.5 h-3.5 mr-1" /> 삭제
-                        </Button>
+                        </ActionButton>
                       </div>
                     )}
                   </li>
@@ -200,10 +199,13 @@ export default function OverdueTasksDialog({ open, onClose, onChanged }: { open:
             </ul>
           </>
         )}
-        <Button variant={empty ? 'default' : 'outline'} onClick={onClose}
-          className={empty ? 'w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white' : 'w-full border-stroke-brand-weak text-fg-brand'}>
+        <ActionButton
+          variant={empty ? 'brandSolid' : 'neutralOutline'}
+          onClick={onClose}
+          className="w-full"
+        >
           {empty ? '닫기' : '나중에 하기'}
-        </Button>
+        </ActionButton>
       </DialogContent>
     </Dialog>
   );

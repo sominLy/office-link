@@ -42,7 +42,7 @@ export default function AnnouncementBoard() {
   const isNew = !lastSeen || latest.created_at > lastSeen;
 
   return (
-    <section className="rounded-2xl border border-stroke-brand-weak bg-gradient-to-br from-amber-50 to-orange-50/70 p-4 shadow-sm" aria-label="업데이트 공지">
+    <section className="rounded-2xl border border-stroke-brand-weak bg-bg-brand-weak p-4 shadow-sm" aria-label="업데이트 공지">
       <div className="flex items-center gap-1.5 mb-1.5">
         <Megaphone className="w-4 h-4 text-fg-brand" />
         <h2 className="text-t4 font-semibold text-fg-brand-contrast">업데이트 소식</h2>

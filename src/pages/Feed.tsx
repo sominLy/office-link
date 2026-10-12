@@ -3,14 +3,14 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
 import { FeedItem } from '@/lib/types';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Send, Trash2, Sun, Moon, Hand, MessageCircleHeart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { defaultAvatar } from '@/lib/avatar';
 import { displayName } from '@/lib/callsign';
 import BottomNav from '@/components/BottomNav';
@@ -18,6 +18,7 @@ import OfficeChat from '@/components/OfficeChat';
 import AnnouncementBoard from '@/components/AnnouncementBoard';
 import { isSubmitEnter } from '@/lib/utils';
 
+import { Icon } from '@seed-design/react';
 function timeAgo(iso: string): string {
   const sec = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
   if (sec < 60) return '방금';
@@ -104,7 +105,7 @@ export default function Feed() {
       content: content.trim(),
     });
     if (error) {
-      toast.error('등록에 실패했어요');
+      toast.error('올리지 못했어요. 잠시 후 다시 시도해 주세요');
     } else {
       // 대상에게(또는 전체에게) 푸시
       supabase.functions.invoke('push-notify', {
@@ -153,12 +154,12 @@ export default function Feed() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
+    <div className="min-h-screen bg-background">
       <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
+          <ActionButton variant="ghost" layout="iconOnly" aria-label="홈으로" onClick={() => navigate('/')}>
+              <Icon svg={<ArrowLeft className="w-4 h-4" />} />
+            </ActionButton>
           <h1 className="font-bold text-fg-neutral flex items-center gap-1.5">
             <MessageCircleHeart className="w-4 h-4 text-fg-brand" /> 소식
           </h1>
@@ -196,17 +197,12 @@ export default function Feed() {
                 ))}
               </SelectContent>
             </Select>
-            <Input
-              className="min-w-0"
-              placeholder={targetId === 'all' ? '모두에게 응원 한마디!' : '칭찬이나 응원을 남겨보세요'}
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              onKeyDown={(e) => isSubmitEnter(e) && post()}
-              maxLength={200}
-            />
-            <Button onClick={post} disabled={posting || !content.trim()} size="icon" className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white flex-shrink-0">
-              <Send className="w-4 h-4" />
-            </Button>
+            <TextField className="min-w-0" value={content} onValueChange={(d) => setContent(d.value)}>
+<TextFieldInput placeholder={targetId === 'all' ? '모두에게 응원 한마디' : '칭찬이나 응원을 남겨보세요'} onKeyDown={(e) => isSubmitEnter(e) && post()} maxLength={200} />
+</TextField>
+            <ActionButton variant="brandSolid" onClick={post} disabled={posting || !content.trim()} layout="iconOnly" aria-label="소식 올리기" className="flex-shrink-0">
+              <Icon svg={<Send className="w-4 h-4" />} />
+            </ActionButton>
           </div>
         </Card>
 
@@ -246,9 +242,9 @@ export default function Feed() {
           </ul>
         )}
         {hasMore && (
-          <Button variant="ghost" onClick={loadMore} disabled={loadingMore} className="w-full text-fg-brand">
+          <ActionButton variant="ghost" onClick={loadMore} disabled={loadingMore} className="w-full">
             {loadingMore ? '불러오는 중…' : '이전 소식 더 보기'}
-          </Button>
+          </ActionButton>
         )}
         </TabsContent>
        </Tabs>

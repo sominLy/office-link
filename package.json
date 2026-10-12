@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
+    "@karrotmarket/react-monochrome-icon": "^1.29.0",
     "@metagptx/vite-plugin-source-locator": "latest",
     "@metagptx/web-sdk": "latest",
     "@playwright/mcp": "^0.0.36",
@@ -42,6 +43,7 @@
     "@radix-ui/react-toggle-group": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.1.4",
     "@seed-design/css": "^3.0.2",
+    "@seed-design/react": "^3.0.0",
     "@seed-design/tailwind3-plugin": "^3.0.1",
     "@supabase/supabase-js": "^2.110.2",
     "@tanstack/react-query": "^5.56.2",
@@ -73,6 +75,8 @@
   "devDependencies": {
     "@eslint/js": "^9.9.0",
     "@playwright/test": "^1.55.0",
+    "@seed-design/cli": "^1.7.2",
+    "@seed-design/vite-plugin": "^2.1.1",
     "@tailwindcss/aspect-ratio": "^0.4.2",
     "@tailwindcss/typography": "^0.5.15",
     "@types/node": "^22.5.5",

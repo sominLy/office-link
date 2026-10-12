@@ -2,14 +2,15 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { ActionButton } from '@/seed/ui/action-button';
+import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { Send, Smile, X, Users } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { defaultAvatar } from '@/lib/avatar';
 import { displayName } from '@/lib/callsign';
 import { isSubmitEnter } from '@/lib/utils';
 
+import { Icon } from '@seed-design/react';
 interface ChatMsg {
   id: string;
   user_id: string;
@@ -171,7 +172,7 @@ export default function OfficeChat() {
       <div className="flex-1 overflow-y-auto space-y-3 pr-1">
         {shown.length === 0 ? (
           <p className="text-center text-fg-neutral-muted text-t4 py-10">
-            {peer === null ? '아직 대화가 없어요. 첫 인사를 건네보세요! 👋' : `${nameOf(peer)}님과의 첫 대화를 시작해보세요 💬`}
+            {peer === null ? '아직 대화가 없어요. 첫 인사를 건네보세요 👋' : `${nameOf(peer)}님과의 첫 대화를 시작해보세요 💬`}
           </p>
         ) : (
           shown.map((m, i) => {
@@ -232,17 +233,12 @@ export default function OfficeChat() {
         <button onClick={() => setShowStickers(v => !v)} className={`flex-shrink-0 p-2 rounded-full ${showStickers ? 'text-fg-brand bg-bg-brand-weak' : 'text-fg-neutral-muted'}`} aria-label="이모티콘">
           <Smile className="w-5 h-5" />
         </button>
-        <Input
-          className="min-w-0"
-          placeholder={peer === null ? '단체방에 메시지 보내기' : `${nameOf(peer)}님에게 보내기`}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => isSubmitEnter(e) && send()}
-          maxLength={500}
-        />
-        <Button onClick={send} disabled={sending || !text.trim()} size="icon" className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white flex-shrink-0">
-          <Send className="w-4 h-4" />
-        </Button>
+        <TextField className="min-w-0" value={text} onValueChange={(d) => setText(d.value)}>
+<TextFieldInput placeholder={peer === null ? '단체방에 메시지 보내기' : `${nameOf(peer)}님에게 보내기`} onKeyDown={(e) => isSubmitEnter(e) && send()} maxLength={500} />
+</TextField>
+        <ActionButton variant="brandSolid" onClick={send} disabled={sending || !text.trim()} layout="iconOnly" aria-label="메시지 보내기" className="flex-shrink-0">
+              <Icon svg={<Send className="w-4 h-4" />} />
+            </ActionButton>
       </div>
     </div>
   );

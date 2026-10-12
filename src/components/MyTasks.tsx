@@ -4,11 +4,11 @@ import { useOffice } from '@/contexts/OfficeContext';
 import { Task } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle2, Circle, CircleDot, ArrowRight, Clock, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { kstNowHM, kstToday } from '@/lib/dates';
 import { cn } from '@/lib/utils';
 import {
@@ -98,14 +98,14 @@ export default function MyTasks({ compact = false }: { compact?: boolean }) {
           </Badge>
         </div>
         {compact && (
-          <Button variant="ghost" size="sm" onClick={() => navigate('/tasks')} className="text-fg-brand text-t2 -mr-2">
+          <ActionButton variant="ghost" size="small" onClick={() => navigate('/tasks')} className="text-t2 -mr-2">
             전체 보기 <ArrowRight className="w-3 h-3 ml-1" />
-          </Button>
+          </ActionButton>
         )}
       </div>
 
       {tasks.length > 0 && (
-        <Progress value={progress} className="h-1.5 mb-3 bg-bg-brand-weak [&>div]:bg-gradient-to-r [&>div]:from-amber-400 [&>div]:to-orange-500" aria-label="이번 주 진행률" />
+        <Progress value={progress} className="h-1.5 mb-3 bg-bg-brand-weak [&>div]:bg-bg-brand-solid" aria-label="이번 주 진행률" />
       )}
 
       {overdueCount > 0 && (

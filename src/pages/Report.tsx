@@ -2,17 +2,18 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, Calendar, Target, CheckCircle2, Clock, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/AppDialog';
+import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { useNavigate } from 'react-router-dom';
 import { addDays, getWeekStart, kstStartOfWeekISO } from '@/lib/dates';
 import BottomNav from '@/components/BottomNav';
 
+import { Icon } from '@seed-design/react';
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
@@ -71,7 +72,7 @@ export default function Report() {
       .update({ started_at: started.toISOString(), ended_at: ended ? ended.toISOString() : null })
       .eq('id', editSession.id);
     if (error) {
-      toast.error('수정에 실패했어요');
+      toast.error('고치지 못했어요. 잠시 후 다시 시도해 주세요');
       return;
     }
     toast.success('출퇴근 기록이 수정되었어요');
@@ -147,12 +148,12 @@ export default function Report() {
   const completionRate = stats.totalTasks > 0 ? Math.round((stats.completedTasks / stats.totalTasks) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
+    <div className="min-h-screen bg-background">
       <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
+          <ActionButton variant="ghost" layout="iconOnly" aria-label="홈으로" onClick={() => navigate('/')}>
+              <Icon svg={<ArrowLeft className="w-4 h-4" />} />
+            </ActionButton>
           <h1 className="font-bold text-fg-neutral">리포트</h1>
         </div>
       </header>
@@ -160,19 +161,19 @@ export default function Report() {
       <main className="max-w-lg mx-auto px-4 py-6 pb-24 space-y-4">
         {/* 주간 이동 — 지난 주로 넘겨서 과거 기록 확인 */}
         <div className="flex items-center justify-between bg-bg-layer-default rounded-xl border border-stroke-neutral-subtle px-2 py-1.5 shadow-sm">
-          <Button variant="ghost" size="icon" onClick={() => setWeeksAgo(w => w + 1)} aria-label="지난 주">
-            <ChevronLeft className="w-4 h-4" />
-          </Button>
+          <ActionButton variant="ghost" layout="iconOnly" onClick={() => setWeeksAgo(w => w + 1)} aria-label="지난 주">
+              <Icon svg={<ChevronLeft className="w-4 h-4" />} />
+            </ActionButton>
           <span className="text-t4 font-semibold text-fg-neutral-muted">{stats.rangeLabel}</span>
-          <Button variant="ghost" size="icon" disabled={weeksAgo === 0} onClick={() => setWeeksAgo(w => Math.max(0, w - 1))} aria-label="다음 주" className="disabled:opacity-30">
-            <ChevronRight className="w-4 h-4" />
-          </Button>
+          <ActionButton variant="ghost" layout="iconOnly" disabled={weeksAgo === 0} onClick={() => setWeeksAgo(w => Math.max(0, w - 1))} aria-label="다음 주" className="disabled:opacity-30">
+              <Icon svg={<ChevronRight className="w-4 h-4" />} />
+            </ActionButton>
         </div>
 
         {/* 이 주의 회고·상장으로 */}
         <button
           onClick={() => navigate(`/retro?week=${addDays(getWeekStart(), -7 * weeksAgo)}`)}
-          className="w-full flex items-center gap-3 rounded-xl border border-stroke-brand-weak bg-gradient-to-r from-amber-50 to-rose-50 px-4 py-3 text-left hover:from-amber-100"
+          className="w-full flex items-center gap-3 rounded-xl border border-stroke-brand-weak bg-bg-brand-weak hover:bg-bg-brand-weak-pressed px-4 py-3 text-left"
         >
           <span className="text-t9">📬</span>
           <span className="flex-1 min-w-0">
@@ -269,7 +270,7 @@ export default function Report() {
 
         {stats.totalWork === 0 && stats.totalTasks === 0 && (
           <p className="text-center text-fg-neutral-muted text-t4 py-4">
-            {weeksAgo === 0 ? '이번 주 활동 기록이 없습니다. 출근해서 시작해 보세요!' : '이 주에는 활동 기록이 없어요.'}
+            {weeksAgo === 0 ? '이번 주 기록이 아직 없어요. 출근하면 쌓여요' : '이 주에는 활동 기록이 없어요.'}
           </p>
         )}
       </main>
@@ -280,14 +281,16 @@ export default function Report() {
           </DialogHeader>
           <div className="space-y-3 pt-1">
             <div className="space-y-1.5">
-              <Label>출근 시간</Label>
-              <Input type="datetime-local" value={editStart} onChange={(e) => setEditStart(e.target.value)} />
+              <TextField label="출근 시간" value={editStart} onValueChange={(d) => setEditStart(d.value)}>
+<TextFieldInput type="datetime-local" />
+</TextField>
             </div>
             <div className="space-y-1.5">
-              <Label>퇴근 시간 (비우면 "근무 중"으로)</Label>
-              <Input type="datetime-local" value={editEnd} onChange={(e) => setEditEnd(e.target.value)} />
+              <TextField label={'퇴근 시간 (비우면 "근무 중"으로)'} value={editEnd} onValueChange={(d) => setEditEnd(d.value)}>
+<TextFieldInput type="datetime-local" />
+</TextField>
             </div>
-            <Button onClick={saveSession} className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">저장</Button>
+            <ActionButton variant="brandSolid" onClick={saveSession} className="w-full">저장</ActionButton>
           </div>
         </DialogContent>
       </Dialog>

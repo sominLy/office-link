@@ -3,42 +3,39 @@
 @tailwind utilities;
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   SEED 브랜드 램프를 연결오피스 앰버로 교체
+   브랜드 램프 — 연결오피스 인디고 바이올렛
 
-   SEED의 fg-brand·bg-brand-solid는 carrot-600(#f60), 당근 캐럿 오렌지다.
+   SEED의 fg-brand·bg-brand-solid는 carrot-600, 당근 캐럿 오렌지(#f60)다.
    구조 토큰(중립색·의미색·간격·반경·타이포)은 SEED를 그대로 쓰고 브랜드 색만 덮는다.
    팔레트를 덮으면 brand-weak·stroke-brand 같은 파생 토큰까지 한 번에 따라온다.
 
-   어느 레이어에도 넣지 않는다. base.css가 레이어 없는 스타일이라 @layer 안에 두면
-   레이어 밖 스타일에 밀린다. 레이어 밖에 두고 main.tsx에서 base.css보다 나중에
-   불러서 순서로 이긴다.
-
-   carrot-600 = #b45309. 이 토큰이 bg-brand-solid와 fg-brand를 함께 움직이는데,
-   기존 브랜드색 #d97706은 흰 글씨를 얹으면 대비 3.18:1, 흰 배경에 글씨로 쓰면
-   같은 3.18:1로 본문 기준 4.5:1에 못 미친다. #b45309는 5.02:1이다.
-   기존 #d97706은 carrot-500으로 옮겨 그래픽·강조용으로 쓴다.
+   #5B4BDB를 고른 이유
+   SEED 의미색이 빨강=위험, 초록=완료, 파랑=정보, 노랑=주의를 이미 차지하고 있다.
+   브랜드색이 그중 하나와 가까우면 "완료"인지 "브랜드"인지 구분이 안 간다.
+   인디고 바이올렛은 넷 어디와도 겹치지 않는다.
+   대비는 흰 배경에 글씨로 6.04:1, 배경으로 쓰고 흰 글씨를 얹어도 6.04:1이다.
+   weak(100) 위 brand(600)은 5.36:1.
 
    선택자를 SEED와 똑같이 적는다. `:root`만 쓰면 덮이지 않는다 —
    html에 data-seed-color-mode="light-only"를 붙이는 순간 SEED 쪽
    `:root[data-seed-color-mode="light-only"]`가 특이도 (0,2,0)으로
    `:root` (0,1,0)을 이긴다. 순서로는 이쪽이 뒤에 오지만 특이도가 먼저다.
-   같은 선택자로 맞추면 특이도가 같아지고 뒤에 온 이쪽이 적용된다.
    다크 모드를 연결하게 되면 dark 선택자도 같이 덮어야 한다.
    ───────────────────────────────────────────────────────────────────────────── */
 :root,
 :root[data-seed-color-mode="light-only"],
 :root [data-seed-color-mode="light-only"],
 :root[data-seed-color-mode="system"][data-seed-user-color-scheme="light"] {
-  --seed-color-palette-carrot-100: #fffbeb;
-  --seed-color-palette-carrot-200: #fef3c7;
-  --seed-color-palette-carrot-300: #fde68a;
-  --seed-color-palette-carrot-400: #fcd34d;
-  --seed-color-palette-carrot-500: #d97706;
-  --seed-color-palette-carrot-600: #b45309;
-  --seed-color-palette-carrot-700: #92400e;
-  --seed-color-palette-carrot-800: #78350f;
-  --seed-color-palette-carrot-900: #601f09;
-  --seed-color-palette-carrot-1000: #451a03;
+  --seed-color-palette-carrot-100: #f1f0fd;
+  --seed-color-palette-carrot-200: #e0ddfb;
+  --seed-color-palette-carrot-300: #c2bcf8;
+  --seed-color-palette-carrot-400: #978bf6;
+  --seed-color-palette-carrot-500: #6452f2;
+  --seed-color-palette-carrot-600: #5b4bdb;
+  --seed-color-palette-carrot-700: #3320c8;
+  --seed-color-palette-carrot-800: #291b9a;
+  --seed-color-palette-carrot-900: #20166c;
+  --seed-color-palette-carrot-1000: #15103f;
 }
 
 @layer base {
@@ -61,7 +58,7 @@
     --popover: 0 0% 100%;             /* gray-00 */
     --popover-foreground: 220 10% 11%;
 
-    --primary: 26 90% 37%;            /* 연결오피스 앰버 #b45309 — 흰 글씨 5.02:1 */
+    --primary: 247 67% 58%;           /* 연결오피스 인디고 #5b4bdb — 흰 글씨 6.04:1 */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 210 9% 96%;          /* gray-200 #f3f4f5 */
@@ -110,13 +107,10 @@
     font-feature-settings: "kern" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* 카드 사이 여백에도 은은한 따뜻함이 감돌도록 겹친 방사형 배경 */
+    /* 배경은 비워 둔다. 예전에는 따뜻한 방사형 그라데이션 세 겹을 깔았는데,
+       그게 화면 전체의 인상을 정하고 있었다. 지금은 표면을 가라앉히고
+       색은 상태·브랜드에만 쓴다. */
     background-color: hsl(var(--background));
-    background-image:
-      radial-gradient(1200px 600px at 100% -10%, hsl(25 80% 92% / 0.55), transparent 60%),
-      radial-gradient(900px 500px at -10% 0%, hsl(350 80% 94% / 0.45), transparent 55%),
-      radial-gradient(1000px 800px at 50% 120%, hsl(35 85% 90% / 0.5), transparent 60%);
-    background-attachment: fixed;
   }
 
   /* 제목은 살짝 조여 또렷하게, 줄바꿈은 균형있게 */
@@ -132,26 +126,25 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* 텍스트 선택 색을 브랜드 앰버로 */
   ::selection {
-    background: hsl(25 70% 45% / 0.18);
+    background: hsl(247 67% 58% / 0.18);
   }
 
-  /* 얇고 따뜻한 스크롤바 */
+  /* 얇은 중립 스크롤바 */
   * {
     scrollbar-width: thin;
-    scrollbar-color: hsl(25 25% 82%) transparent;
+    scrollbar-color: var(--seed-color-palette-gray-400) transparent;
   }
   *::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
   *::-webkit-scrollbar-thumb {
-    background: hsl(25 25% 82%);
+    background: var(--seed-color-palette-gray-400);
     border-radius: 999px;
   }
   *::-webkit-scrollbar-thumb:hover {
-    background: hsl(25 25% 72%);
+    background: var(--seed-color-palette-gray-500);
   }
 
   /* 버튼에 살짝 눌리는 촉감 (동작 줄이기 설정 시 자동 비활성) */

@@ -1,9 +1,10 @@
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, BookOpenText, Share, PlusSquare, Smartphone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '@/components/BottomNav';
 
+import { Icon } from '@seed-design/react';
 // 연결오피스 200% 활용 공략집 + 아이폰/안드로이드 앱 설치 가이드
 const TIPS: { emoji: string; title: string; body: string }[] = [
   { emoji: '🌅', title: '하루의 시작은 출근 버튼', body: '출근하면 멤버들에게 알림이 가고 소식 탭에 기록돼요. "나 시작했다!"는 선언이 최고의 동기부여예요.' },
@@ -33,12 +34,12 @@ export default function Guide() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
+    <div className="min-h-screen bg-background">
       <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
+          <ActionButton variant="ghost" layout="iconOnly" aria-label="뒤로" onClick={() => navigate(-1)}>
+              <Icon svg={<ArrowLeft className="w-4 h-4" />} />
+            </ActionButton>
           <h1 className="font-bold text-fg-neutral flex items-center gap-1.5">
             <BookOpenText className="w-4 h-4 text-fg-brand" /> 200% 활용 공략집
           </h1>
@@ -47,7 +48,7 @@ export default function Guide() {
 
       <main className="max-w-lg mx-auto px-4 py-6 pb-24 space-y-4">
         {/* 아이폰 앱 설치 */}
-        <Card className="p-5 border-stroke-brand-weak bg-gradient-to-br from-amber-50 to-orange-50">
+        <Card className="p-5 border-stroke-brand-weak bg-bg-brand-weak">
           <h2 className="font-semibold text-fg-neutral mb-1 flex items-center gap-1.5">
             📱 앱처럼 설치하기 (강력 추천!)
           </h2>

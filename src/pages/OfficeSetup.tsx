@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useOffice } from '@/contexts/OfficeContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { ActionButton } from '@/seed/ui/action-button';
+import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { useNavigate } from 'react-router-dom';
 
 export default function OfficeSetup() {
@@ -20,7 +20,7 @@ export default function OfficeSetup() {
     setLoading(true);
     const { error } = await joinOffice(inviteCode);
     if (error) toast.error(error);
-    else { toast.success('오피스에 가입했습니다!'); navigate('/'); }
+    else { toast.success('오피스에 들어왔어요'); navigate('/'); }
     setLoading(false);
   };
 
@@ -29,12 +29,12 @@ export default function OfficeSetup() {
     setLoading(true);
     const { error } = await createOffice(officeName);
     if (error) toast.error(error);
-    else { toast.success('오피스가 생성되었습니다!'); navigate('/'); }
+    else { toast.success('오피스를 만들었어요'); navigate('/'); }
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md shadow-lg border-0">
         <CardHeader className="text-center">
           <div className="mx-auto mb-3 w-12 h-12 bg-bg-brand-weak rounded-xl flex items-center justify-center">
@@ -52,37 +52,25 @@ export default function OfficeSetup() {
             <TabsContent value="join">
               <form onSubmit={handleJoin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="invite-code">초대 코드</Label>
-                  <Input
-                    id="invite-code"
-                    placeholder="ABC123"
-                    value={inviteCode}
-                    onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                    required
-                    maxLength={6}
-                  />
+                  <TextField label="초대 코드" value={inviteCode} onValueChange={(d) => setInviteCode(d.value.toUpperCase())} required>
+<TextFieldInput id="invite-code" placeholder="ABC123" maxLength={6} />
+</TextField>
                 </div>
-                <Button type="submit" className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" disabled={loading}>
+                <ActionButton variant="brandSolid" type="submit" className="w-full" disabled={loading}>
                   {loading ? '처리 중...' : '가입하기'}
-                </Button>
+                </ActionButton>
               </form>
             </TabsContent>
             <TabsContent value="create">
               <form onSubmit={handleCreate} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="office-name">오피스 이름</Label>
-                  <Input
-                    id="office-name"
-                    placeholder="우리 팀 오피스"
-                    value={officeName}
-                    onChange={(e) => setOfficeName(e.target.value)}
-                    required
-                    maxLength={30}
-                  />
+                  <TextField label="오피스 이름" value={officeName} onValueChange={(d) => setOfficeName(d.value)} required>
+<TextFieldInput id="office-name" placeholder="우리 팀 오피스" maxLength={30} />
+</TextField>
                 </div>
-                <Button type="submit" className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" disabled={loading}>
+                <ActionButton variant="brandSolid" type="submit" className="w-full" disabled={loading}>
                   {loading ? '처리 중...' : '만들기'}
-                </Button>
+                </ActionButton>
               </form>
             </TabsContent>
           </Tabs>

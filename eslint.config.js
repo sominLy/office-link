@@ -5,7 +5,9 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist'] },
+  // src/seed/ui는 SEED CLI가 내려준 스니펫이다. 확장점으로 비워둔 interface가 많아
+  // no-empty-object-type에 걸리는데 우리가 고칠 코드가 아니다.
+  { ignores: ['dist', 'src/seed/ui/**'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['**/*.{ts,tsx}'],

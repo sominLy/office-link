@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { ActionButton } from '@/seed/ui/action-button';
+import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ArrowLeft, Camera, Trash2, X, BellRing } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { defaultAvatar } from '@/lib/avatar';
 import BottomNav from '@/components/BottomNav';
 import MyTasksByOffice from '@/components/MyTasksByOffice';
@@ -19,11 +19,18 @@ import GrapeBoard from '@/components/GrapeBoard';
 import RetroSettingsDialog from '@/components/retro/RetroSettingsDialog';
 import { describePrefs, nextDeliveryLabel, readRetroPrefs } from '@/lib/retro';
 
+import { Icon } from '@seed-design/react';
 export default function Profile() {
   const [retroSettingsOpen, setRetroSettingsOpen] = useState(false);
   const { user, profile, refreshProfile, signOut } = useAuth();
   const navigate = useNavigate();
   const [nickname, setNickname] = useState(profile?.nickname || '');
+
+  // 프로필은 마운트 뒤에 비동기로 도착한다. useState 초기값만 쓰면 주소로 바로 들어왔을 때
+  // 입력칸이 빈 채로 남는다. 사용자가 고쳐 둔 값은 덮지 않도록 프로필이 바뀔 때만 맞춘다.
+  useEffect(() => {
+    if (profile?.nickname) setNickname(profile.nickname);
+  }, [profile?.nickname]);
   const [workStart, setWorkStart] = useState(profile?.work_start?.slice(0, 5) || '');
   const [savingTime, setSavingTime] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -50,14 +57,14 @@ export default function Profile() {
     const path = `${user.id}/avatar-${Date.now()}.${ext}`;
     const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
     if (uploadError) {
-      toast.error('사진 업로드에 실패했어요');
+      toast.error('사진을 올리지 못했어요. 잠시 후 다시 시도해 주세요');
       setUploading(false);
       return;
     }
     const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
     const { error } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
     if (error) {
-      toast.error('프로필 반영에 실패했어요');
+      toast.error('사진을 바꾸지 못했어요. 잠시 후 다시 시도해 주세요');
     } else {
       await refreshProfile();
       toast.success('프로필 사진이 변경되었어요');
@@ -69,7 +76,7 @@ export default function Profile() {
     if (!user) return;
     const { error } = await supabase.from('profiles').update({ avatar_url: null }).eq('id', user.id);
     if (error) {
-      toast.error('사진 삭제에 실패했어요');
+      toast.error('사진을 지우지 못했어요. 잠시 후 다시 시도해 주세요');
       return;
     }
     // 저장소에 남은 이전 사진 파일도 정리
@@ -87,7 +94,7 @@ export default function Profile() {
     setSaving(true);
     const { error } = await supabase.from('profiles').update({ nickname: nickname.trim() }).eq('id', user.id);
     if (error) {
-      toast.error('저장에 실패했어요');
+      toast.error('저장하지 못했어요. 잠시 후 다시 시도해 주세요');
     } else {
       await refreshProfile();
       toast.success('닉네임이 변경되었어요');
@@ -103,7 +110,7 @@ export default function Profile() {
       .update({ work_start: workStart || null })
       .eq('id', user.id);
     if (error) {
-      toast.error('저장에 실패했어요');
+      toast.error('저장하지 못했어요. 잠시 후 다시 시도해 주세요');
     } else {
       await refreshProfile();
       toast.success(workStart ? `${workStart}까지 출근 안 하면 알려드릴게요` : '근무 시간 알림을 껐어요');
@@ -120,17 +127,17 @@ export default function Profile() {
       return;
     }
     await signOut();
-    toast.success('계정이 삭제되었습니다. 그동안 함께해 주셔서 감사했어요');
+    toast.success('계정을 지웠어요. 그동안 함께해 줘서 고마웠어요');
     navigate('/');
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
+    <div className="min-h-screen bg-background">
       <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
+          <ActionButton variant="ghost" layout="iconOnly" aria-label="홈으로" onClick={() => navigate('/')}>
+              <Icon svg={<ArrowLeft className="w-4 h-4" />} />
+            </ActionButton>
           <h1 className="font-bold text-fg-neutral">내 계정</h1>
         </div>
       </header>
@@ -168,28 +175,23 @@ export default function Profile() {
                   {uploading ? '업로드 중...' : '카메라 버튼을 눌러 사진을 변경하세요 (5MB 이하)'}
                 </p>
                 {profile?.avatar_url && (
-                  <Button type="button" variant="ghost" size="sm" onClick={handleAvatarRemove} className="text-fg-neutral-muted hover:text-fg-critical-contrast h-7 px-2">
+                  <ActionButton type="button" variant="ghost" size="small" onClick={handleAvatarRemove} className="text-fg-neutral-muted hover:text-fg-critical-contrast h-7 px-2">
                     <X className="w-3.5 h-3.5 mr-1" />
                     사진 삭제 (기본 이미지로)
-                  </Button>
+                  </ActionButton>
                 )}
               </div>
             </div>
 
             {/* 닉네임 */}
             <form onSubmit={handleSave} className="space-y-2">
-              <Label htmlFor="nickname">닉네임</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="nickname"
-                  value={nickname}
-                  onChange={(e) => setNickname(e.target.value)}
-                  maxLength={20}
-                  required
-                />
-                <Button type="submit" disabled={saving || nickname.trim() === profile?.nickname} className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
+              <div className="flex gap-2 items-end">
+                <TextField label="닉네임" className="flex-1" value={nickname} onValueChange={(d) => setNickname(d.value)} required>
+<TextFieldInput id="nickname" maxLength={20} />
+</TextField>
+                <ActionButton variant="brandSolid" type="submit" disabled={saving || nickname.trim() === profile?.nickname} >
                   {saving ? '저장 중...' : '저장'}
-                </Button>
+                </ActionButton>
               </div>
             </form>
           </CardContent>
@@ -198,7 +200,7 @@ export default function Profile() {
         {/* 공략집 바로가기 */}
         <button
           onClick={() => navigate('/guide')}
-          className="w-full flex items-center gap-3 bg-gradient-to-r from-amber-100 to-orange-100 border border-stroke-brand-weak rounded-xl px-4 py-3 hover:from-amber-200 hover:to-orange-200 transition-colors"
+          className="w-full flex items-center gap-3 bg-bg-brand-weak border border-stroke-brand-weak rounded-xl px-4 py-3 hover:bg-bg-brand-weak-pressed transition-colors"
         >
           <span className="text-t9">📖</span>
           <span className="text-left flex-1">
@@ -229,9 +231,9 @@ export default function Profile() {
             </CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-3 gap-2">
-            <Button variant="outline" size="sm" className="border-stroke-brand-weak text-fg-brand" onClick={() => setRetroSettingsOpen(true)}>시간 바꾸기</Button>
-            <Button variant="outline" size="sm" className="border-stroke-brand-weak text-fg-brand" onClick={() => navigate('/retro')}>회고 보기</Button>
-            <Button size="sm" className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" onClick={() => navigate('/trophies')}>진열장</Button>
+            <ActionButton variant="neutralOutline" size="small" onClick={() => setRetroSettingsOpen(true)}>시간 바꾸기</ActionButton>
+            <ActionButton variant="neutralOutline" size="small" onClick={() => navigate('/retro')}>회고 보기</ActionButton>
+            <ActionButton variant="brandSolid" size="small" onClick={() => navigate('/trophies')}>진열장</ActionButton>
           </CardContent>
         </Card>
         <RetroSettingsDialog open={retroSettingsOpen} onClose={() => setRetroSettingsOpen(false)} />
@@ -255,10 +257,12 @@ export default function Profile() {
           </CardHeader>
           <CardContent>
             <div className="flex gap-2">
-              <Input type="time" value={workStart} onChange={(e) => setWorkStart(e.target.value)} className="flex-1" />
-              <Button onClick={handleSaveWorkStart} disabled={savingTime} className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
+              <TextField value={workStart} onValueChange={(d) => setWorkStart(d.value)} className="flex-1">
+<TextFieldInput type="time" />
+</TextField>
+              <ActionButton variant="brandSolid" onClick={handleSaveWorkStart} disabled={savingTime} >
                 {savingTime ? '저장 중...' : '저장'}
-              </Button>
+              </ActionButton>
             </div>
           </CardContent>
         </Card>
@@ -274,10 +278,10 @@ export default function Profile() {
           <CardContent>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline" className="border-stroke-critical-weak text-fg-critical-contrast hover:bg-bg-critical-weak">
+                <ActionButton variant="neutralOutline" className="text-fg-critical-contrast">
                   <Trash2 className="w-4 h-4 mr-1" />
                   계정 삭제하기
-                </Button>
+                </ActionButton>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>

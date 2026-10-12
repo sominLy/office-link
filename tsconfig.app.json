@@ -25,7 +25,8 @@
 
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "seed-design/*": ["./src/seed/*"]
     }
   },
   "include": ["src"]
