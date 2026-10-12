@@ -5,7 +5,7 @@ import { useOffice } from '@/contexts/OfficeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, Smile, X, Users } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { defaultAvatar } from '@/lib/avatar';
 import { displayName } from '@/lib/callsign';
 import { isSubmitEnter } from '@/lib/utils';

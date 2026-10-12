@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CalendarDays, CheckCheck, Clock, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { addDays, daysBetween, formatDateLabel, formatShortDate, formatTimeLabel, kstToday } from '@/lib/dates';
 import { deleteWithUndo, fetchOverdueTasks, moveTaskDue, updateTaskStatus } from '@/lib/tasks';
 

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { TROPHY_CHECK_EVENT, earnedTrophies, fetchLifetimeStats, readSeenTrophies, writeSeenTrophies } from '@/lib/awards';
 

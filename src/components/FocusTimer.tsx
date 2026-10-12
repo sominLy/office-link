@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Play, Square, Timer } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { kstStartOfTodayISO } from '@/lib/dates';
 import { track } from '@/lib/funnel';
 import { sortTasks, updateTaskStatus, useTasksChanged, withoutPending } from '@/lib/tasks';

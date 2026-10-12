@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Send, Trash2, Sun, Moon, Hand, MessageCircleHeart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { defaultAvatar } from '@/lib/avatar';
 import { displayName } from '@/lib/callsign';
 import BottomNav from '@/components/BottomNav';

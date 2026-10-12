@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, RefreshCw, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { BarList, ChartCard, ColumnChart, DataTable, TrendChart } from '@/components/admin/charts';
 import { BLUE_RAMP, fmt, longDay, Marker, shortDay } from '@/components/admin/format';
 

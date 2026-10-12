@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { Toaster } from '@/components/ui/sonner';
+import { SnackbarProvider } from '@/seed/ui/snackbar';
+import { SnackbarBridge } from '@/lib/toast';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { lazy, Suspense } from 'react';
@@ -53,9 +54,10 @@ const App = () => (
     <AuthProvider>
       <OfficeProvider>
         <TooltipProvider>
-          <Toaster />
-          <Analytics />
-          <BrowserRouter>
+          <SnackbarProvider>
+            <SnackbarBridge />
+            <Analytics />
+            <BrowserRouter>
             {/* 퍼널 이벤트 적재 (화면에 그리는 것 없음) */}
             <RouteTracker />
             {/* 할 일 완료·집중·출근 때 새 트로피가 열리면 축하 */}
@@ -76,6 +78,7 @@ const App = () => (
               <Route path="/admin" element={<Suspense fallback={null}><Admin /></Suspense>} />
             </Routes>
           </BrowserRouter>
+          </SnackbarProvider>
         </TooltipProvider>
       </OfficeProvider>
     </AuthProvider>

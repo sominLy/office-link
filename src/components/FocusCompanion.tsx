@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Play, Pause, RotateCcw, Eye, Clock } from 'lucide-react';
 import { notify } from '@/lib/notify';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 // 감시 모드/퇴근 알림 설정은 localStorage에 저장 → Home의 백그라운드 타이머가 읽어 실행
 export const WATCH_KEY = 'watch_interval_min';   // 0=off

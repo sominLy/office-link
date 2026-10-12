@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useRef, ReactNode, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { useAuth } from './AuthContext';
 import { Office, OfficeMember, StatusSession, WorkSession, MemberStatus, StatusPreset } from '@/lib/types';
 import { notify } from '@/lib/notify';

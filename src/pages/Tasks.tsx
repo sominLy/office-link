@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, ArrowLeft, Trash2, FolderOpen, Repeat, ChevronRight, Clock, CalendarDays, Columns3, List } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { dateFromStr, formatDateLabel, getWeekEnd, getWeekStart, kstNowHM, kstToday, strFromDate, weekStartOf } from '@/lib/dates';
 import { cn, isSubmitEnter } from '@/lib/utils';
 import {

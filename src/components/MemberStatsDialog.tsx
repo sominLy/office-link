@@ -9,7 +9,7 @@ import { defaultAvatar } from '@/lib/avatar';
 import { displayName } from '@/lib/callsign';
 import { useOffice } from '@/contexts/OfficeContext';
 import { Clock, Target, CheckCircle2, Circle, CalendarDays } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { track } from '@/lib/funnel';
 
 interface Props {

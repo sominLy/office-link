@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ArrowLeft, Camera, Trash2, X, BellRing } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { defaultAvatar } from '@/lib/avatar';
 import BottomNav from '@/components/BottomNav';
 import MyTasksByOffice from '@/components/MyTasksByOffice';

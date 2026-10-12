@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { LogOut, ChevronDown, Clock, Copy, Bell, Building2, Plus, Tag, Check, UtensilsCrossed, Palmtree, BellOff, BookOpenText, NotebookPen, Sparkles, MessageSquarePlus, RotateCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { supabase } from '@/lib/supabase';
 import { defaultAvatar } from '@/lib/avatar';
 import { useState, useEffect } from 'react';

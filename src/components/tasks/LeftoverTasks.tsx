@@ -6,7 +6,7 @@ import { Task } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Circle, CalendarClock } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { addDays, kstNowHM, kstToday } from '@/lib/dates';
 import { dueInfo, moveTaskDue, sortTasks, updateTaskStatus, withoutPending } from '@/lib/tasks';
 

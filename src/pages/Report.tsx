@@ -8,7 +8,7 @@ import { ArrowLeft, Calendar, Target, CheckCircle2, Clock, Pencil, ChevronLeft, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { useNavigate } from 'react-router-dom';
 import { addDays, getWeekStart, kstStartOfWeekISO } from '@/lib/dates';
 import BottomNav from '@/components/BottomNav';

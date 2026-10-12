@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle2, Circle, CircleDot, ArrowRight, Clock, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { kstNowHM, kstToday } from '@/lib/dates';
 import { cn } from '@/lib/utils';
 import {

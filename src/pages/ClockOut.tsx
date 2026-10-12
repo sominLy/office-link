@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Clock, Target, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import { kstStartOfTodayISO } from '@/lib/dates';
 import { useTasksChanged } from '@/lib/tasks';
 import LeftoverTasks from '@/components/tasks/LeftoverTasks';

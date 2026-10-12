@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ArrowLeft, ChevronLeft, ChevronRight, Settings2, Trophy, CheckCircle2, Share2, CalendarPlus } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 import BottomNav from '@/components/BottomNav';
 import AwardCertificate from '@/components/awards/AwardCertificate';
 import RetroSettingsDialog from '@/components/retro/RetroSettingsDialog';
