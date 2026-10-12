@@ -12,11 +12,11 @@ import AwardCertificate from '@/components/awards/AwardCertificate';
 import { cn } from '@/lib/utils';
 import {
   AchievementRow, CertificateData, LifetimeStats, STICKERS, earnedTrophies, fetchLifetimeStats, mainAward,
-  readSeenTrophies, shortPeriod, trackProgress, writeSeenTrophies,
-} from '@/lib/awards';
+  readSeenTrophies, shortPeriod, trackProgress, writeSeenTrophies, TROPHY_ART } from '@/lib/awards';
 import { fetchRetro, readRetroPrefs, weeklyCertificate } from '@/lib/retro';
 
 import { Icon } from '@seed-design/react';
+import RewardArt from '@/components/illustrations/RewardArt';
 /** 내 진열장 — 회고 스티커가 쌓이고, 누적 기록으로 트로피가 열리고, 매주 받은 상장이 모인다 */
 export default function Trophies() {
   const { user, profile } = useAuth();
@@ -118,8 +118,13 @@ export default function Trophies() {
                     <div className="grid grid-cols-4 gap-1 px-1">
                       {row.map(t => (
                         <div key={t.id} className={cn('flex flex-col items-center text-center', newIds.has(t.id) && 'sticker-pop')}>
-                          <span className="relative text-t12 leading-none drop-shadow-[0_3px_2px_rgba(120,60,0,0.25)]">
-                            {t.emoji}
+                          <span className="relative leading-none">
+                            <RewardArt
+                              name={TROPHY_ART[t.id]}
+                              emoji={t.emoji}
+                              className="block w-x12 h-x12 text-t12"
+                              title={t.title}
+                            />
                             {newIds.has(t.id) && <span className="absolute -top-1 -right-3 text-t1 font-bold text-fg-critical-contrast bg-bg-critical-weak rounded-full px-1">NEW</span>}
                           </span>
                           <span className="mt-1 text-t1 font-medium text-fg-brand-contrast leading-tight [word-break:keep-all]">{t.title}</span>
@@ -142,7 +147,7 @@ export default function Trophies() {
                     <div className="flex items-center justify-between text-t4 gap-2">
                       <span className="text-fg-neutral-muted">{track.name} <b className="text-fg-neutral tabular-nums">{value}{track.unit}</b></span>
                       <span className="text-t2 text-fg-neutral-muted flex-shrink-0">
-                        {next ? <>{next.emoji} {next.title}까지 <b className="text-fg-brand">{next.at - value}{track.unit}</b></> : '🎉 모두 달성!'}
+                        {next ? <><RewardArt name={TROPHY_ART[`${track.key}:${next.at}`]} emoji={next.emoji} className="inline-block align-[-3px] w-x4 h-x4" /> {next.title}까지 <b className="text-fg-brand">{next.at - value}{track.unit}</b></> : '🎉 모두 달성!'}
                       </span>
                     </div>
                     <div className="mt-1 h-2 rounded-full bg-bg-brand-weak overflow-hidden" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={`${track.name} 다음 트로피 진행률`}>
@@ -164,7 +169,11 @@ export default function Trophies() {
                   const n = stickerCounts.get(s.code) || 0;
                   return (
                     <div key={s.code} className={cn('relative flex flex-col items-center rounded-xl border p-1.5 text-center', n > 0 ? 'bg-bg-brand-weak border-stroke-brand-weak' : 'bg-bg-neutral-muted border-dashed border-stroke-neutral-subtle')}>
-                      <span className={cn('text-t9 leading-tight', n === 0 && 'grayscale opacity-30')}>{s.emoji}</span>
+                      <RewardArt
+                        name={s.code}
+                        emoji={s.emoji}
+                        className={cn('block w-x10 h-x10 text-t9 leading-tight', n === 0 && 'grayscale opacity-30')}
+                      />
                       <span className={cn('mt-0.5 text-t1 leading-tight [word-break:keep-all]', n > 0 ? 'text-fg-neutral-muted' : 'text-fg-neutral-muted')}>{n > 0 ? s.title : '???'}</span>
                       {n > 1 && <span className="absolute -top-1.5 -right-1.5 text-t1 font-bold text-white bg-bg-brand-solid rounded-full min-w-[1.1rem] px-1">×{n}</span>}
                       {n === 0 && <Lock className="absolute top-1 right-1 w-2.5 h-2.5 text-fg-neutral-subtle" />}

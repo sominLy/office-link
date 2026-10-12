@@ -12,6 +12,7 @@ import { ArrowLeft, Send, Trash2, Sun, Moon, Hand, MessageCircleHeart } from 'lu
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/lib/toast';
 import { defaultAvatar } from '@/lib/avatar';
+import { AvatarIcon } from '@/components/illustrations/RewardIcon';
 import { displayName } from '@/lib/callsign';
 import BottomNav from '@/components/BottomNav';
 import OfficeChat from '@/components/OfficeChat';
@@ -237,7 +238,7 @@ export default function Feed() {
                   ) : item.type === 'wave' ? (
                     <Hand className="w-4 h-4 text-fg-brand" />
                   ) : (
-                    defaultAvatar(item.author?.nickname)
+                    <AvatarIcon name={defaultAvatar(item.author?.nickname)} className="w-x7 h-x7" />
                   )}
                 </span>
                 <div className="flex-1 min-w-0">

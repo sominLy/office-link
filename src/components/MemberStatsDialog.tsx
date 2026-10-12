@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/A
 import { Badge } from '@/components/ui/badge';
 import { kstStartOfTodayISO, kstStartOfWeekISO, getWeekStart } from '@/lib/dates';
 import { defaultAvatar } from '@/lib/avatar';
+import { AvatarIcon } from '@/components/illustrations/RewardIcon';
 import { displayName } from '@/lib/callsign';
 import { useOffice } from '@/contexts/OfficeContext';
 import { Clock, Target, CheckCircle2, Circle, CalendarDays } from 'lucide-react';
@@ -200,7 +201,7 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
                   {member.avatar_url ? (
                     <img src={member.avatar_url} alt="" className="w-9 h-9 rounded-full object-cover" />
                   ) : (
-                    defaultAvatar(member.nickname)
+                    <AvatarIcon name={defaultAvatar(member.nickname)} className="w-x8 h-x8" />
                   )}
                 </span>
                 {displayName(member.nickname, office?.title_mode, member.rank_index)}의 기록

@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from '@/lib/toast';
 import { supabase } from '@/lib/supabase';
 import { defaultAvatar } from '@/lib/avatar';
+import { AvatarIcon } from '@/components/illustrations/RewardIcon';
 import { Fragment, useState, useEffect } from 'react';
 import { MemberStatus } from '@/lib/types';
 import MemberStatsDialog from '@/components/MemberStatsDialog';
@@ -285,7 +286,7 @@ export default function Home() {
                 {profile?.avatar_url ? (
                   <img src={profile.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
                 ) : (
-                  defaultAvatar(profile?.nickname)
+                  <AvatarIcon name={defaultAvatar(profile?.nickname)} className="w-x8 h-x8" />
                 )}
               </button>
               <div>

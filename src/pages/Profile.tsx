@@ -13,6 +13,7 @@ import { ArrowLeft, Camera, Trash2, X, BellRing } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/lib/toast';
 import { defaultAvatar } from '@/lib/avatar';
+import { AvatarIcon } from '@/components/illustrations/RewardIcon';
 import BottomNav from '@/components/BottomNav';
 import MyTasksByOffice from '@/components/MyTasksByOffice';
 import GrapeBoard from '@/components/GrapeBoard';
@@ -156,7 +157,7 @@ export default function Profile() {
                   {profile?.avatar_url ? (
                     <img src={profile.avatar_url} alt="" className="w-20 h-20 object-cover" />
                   ) : (
-                    defaultAvatar(profile?.nickname)
+                    <AvatarIcon name={defaultAvatar(profile?.nickname)} className="w-x10 h-x10" />
                   )}
                 </div>
                 <button

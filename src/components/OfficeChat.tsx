@@ -7,6 +7,7 @@ import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { Send, Smile, X, Users } from 'lucide-react';
 import { toast } from '@/lib/toast';
 import { defaultAvatar } from '@/lib/avatar';
+import { AvatarIcon } from '@/components/illustrations/RewardIcon';
 import { displayName } from '@/lib/callsign';
 import { isSubmitEnter } from '@/lib/utils';
 
@@ -162,7 +163,9 @@ export default function OfficeChat() {
         {otherMembers.map(m => (
           <button key={m.user_id} onClick={() => setPeer(m.user_id)}
             className={`flex items-center gap-1 text-t2 whitespace-nowrap rounded-full px-2.5 py-1.5 border flex-shrink-0 ${peer === m.user_id ? 'bg-bg-brand-solid text-white border-stroke-brand-solid' : 'bg-bg-layer-default text-fg-neutral-muted border-stroke-neutral-subtle'}`}>
-            <span className="text-t4">{m.avatar_url ? '🙂' : defaultAvatar(m.nickname)}</span>
+            <span className="grid place-items-center w-x6 h-x6">{m.avatar_url
+              ? <img src={m.avatar_url} alt="" className="w-x6 h-x6 rounded-full object-cover" />
+              : <AvatarIcon name={defaultAvatar(m.nickname)} className="w-x6 h-x6" />}</span>
             {displayName(m.nickname, office?.title_mode, m.rank_index)}
           </button>
         ))}
@@ -186,7 +189,7 @@ export default function OfficeChat() {
               <div key={m.id} className={`flex gap-2 group ${mine ? 'flex-row-reverse' : ''}`}>
                 {!mine && (
                   <span className="w-8 h-8 rounded-full bg-bg-brand-weak flex items-center justify-center text-t5 overflow-hidden flex-shrink-0 self-end">
-                    {showHead ? (av.url ? <img src={av.url} alt="" className="w-8 h-8 rounded-full object-cover" /> : defaultAvatar(av.nickname)) : ''}
+                    {showHead ? (av.url ? <img src={av.url} alt="" className="w-8 h-8 rounded-full object-cover" /> : <AvatarIcon name={defaultAvatar(av.nickname)} className="w-x7 h-x7" />) : ''}
                   </span>
                 )}
                 <div className={`flex flex-col max-w-[72%] ${mine ? 'items-end' : 'items-start'}`}>

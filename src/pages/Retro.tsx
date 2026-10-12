@@ -26,6 +26,7 @@ import {
 import { notifyTasksChanged } from '@/lib/tasks';
 
 import { Icon } from '@seed-design/react';
+import RewardArt from '@/components/illustrations/RewardArt';
 // 완료한 일 카테고리 비율 — 검증한 범주형 팔레트(순서 고정), 6번째부터는 '기타' 회색
 const SERIES = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4'];
 const OTHER = '#a8a29e';
@@ -270,7 +271,7 @@ export default function Retro() {
                 <div className="grid grid-cols-2 gap-2">
                   {stickers.map(s => (
                     <div key={s.code} className={cn('flex items-center gap-2 rounded-xl border px-3 py-2', final ? 'bg-bg-brand-weak border-stroke-brand-weak' : 'bg-bg-layer-default border-dashed border-stroke-neutral-subtle opacity-80')}>
-                      <span className="text-t9">{s.emoji}</span>
+                      <RewardArt name={s.code} emoji={s.emoji} className="block w-x10 h-x10 text-t9" />
                       <span className="min-w-0">
                         <span className="block text-t4 font-semibold text-fg-neutral truncate">{s.title}</span>
                         <span className="block text-t1 text-fg-neutral-muted truncate">{s.desc}</span>

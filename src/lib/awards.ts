@@ -128,6 +128,19 @@ export const TROPHY_TRACKS: TrophyTrack[] = [
   },
 ];
 
+/**
+ * 트로피 티어 중 직접 그린 아이콘이 있는 것. 키는 reward-glyphs의 이름이다.
+ * 아직 트랙별 첫 단계만 그렸고, 나머지는 이모지로 보인다.
+ */
+export const TROPHY_ART: Record<string, string> = {
+  'tasks:1': 'first_check',
+  'focus:1': 'first_focus',
+  'days:1': 'first_clockin',
+  'stickers:1': 'first_sticker',
+  'certs:1': 'first_award',
+  'streak:2': 'first_streak',
+};
+
 export interface Trophy { id: string; emoji: string; title: string; track: string }
 
 export function earnedTrophies(stats: LifetimeStats): Trophy[] {
