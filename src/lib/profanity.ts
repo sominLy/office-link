@@ -29,12 +29,17 @@ export function checkQuote(raw: string): { ok: boolean; reason?: string } {
   return checkContent(text);
 }
 
+// 소식 글은 글귀(60자)보다 길고 일상 문장이라, 평범한 말에 들어가는 낱말은 빼고 본다.
+// "해보지 못했어요", "자지 말고 조금만 더", "불이 꺼져 있었어요", "뒤져봤어요"가 막히면 안 된다.
+const TOO_COMMON_FOR_POSTS = new Set(['보지', '자지', '새끼', '꺼져', '뒤져', '닥쳐', '걸레', '홍어', '한남', '애비', '이기야', '운지']);
+const POST_BLOCKLIST = BLOCKLIST.filter((word) => !TOO_COMMON_FOR_POSTS.has(word));
+
 /** 공개 오피스 소식 글 검사. 글귀와 달리 길이는 입력칸의 maxLength가 정한다. */
 export function checkPublicPost(raw: string): { ok: boolean; reason?: string } {
-  return checkContent(raw.trim());
+  return checkContent(raw.trim(), POST_BLOCKLIST);
 }
 
-function checkContent(text: string): { ok: boolean; reason?: string } {
+function checkContent(text: string, blocklist: string[] = BLOCKLIST): { ok: boolean; reason?: string } {
   // URL·연락처 등 스팸성 차단
   if (/https?:\/\/|www\.|\d{2,3}-\d{3,4}-\d{4}|@[\w.]+\.\w/i.test(text)) {
     return { ok: false, reason: '링크나 연락처는 넣을 수 없어요' };
@@ -42,9 +47,9 @@ function checkContent(text: string): { ok: boolean; reason?: string } {
 
   // 소문자만 통일(영문). 공백은 그대로 두어 지명 오탐 방지.
   const lower = text.toLowerCase();
-  for (const bad of BLOCKLIST) {
+  for (const bad of blocklist) {
     if (lower.includes(bad)) {
-      return { ok: false, reason: '부적절한 표현이 포함돼 있어요' };
+      return { ok: false, reason: '쓸 수 없는 표현이 들어 있어요' };
     }
   }
   return { ok: true };

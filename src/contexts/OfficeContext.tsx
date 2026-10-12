@@ -393,10 +393,12 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
     if (!user) return { error: '로그인하고 다시 시도해 주세요' };
     const { data: joinedId, error: rpcError } = await supabase.rpc('join_office_by_code', { p_code: inviteCode });
     if (!rpcError) {
+      // 틀린 코드는 오류가 아니라 null로 온다. 함수가 틀린 횟수를 기록해야 해서 예외를 던지지 않는다.
+      if (!joinedId) return { error: '초대 코드를 다시 확인해 주세요' };
       await enterJoinedOffice(joinedId as string, 'invite');
       return { error: null };
     }
-    if (rpcError.code === 'P0002') return { error: '초대 코드를 다시 확인해 주세요' };
+    if (rpcError.code === 'P0003') return { error: '여러 번 틀렸어요. 한 시간 뒤에 다시 시도해 주세요' };
     if (rpcError.code === '23505') return { error: '이미 가입한 오피스예요' };
     if (rpcError.code !== 'PGRST202') return { error: '오피스에 들어가지 못했어요. 잠시 후 다시 시도해 주세요' };
 

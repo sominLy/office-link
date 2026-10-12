@@ -15,6 +15,8 @@ export default function OfficeSetup() {
   const [officeName, setOfficeName] = useState('');
   const [loading, setLoading] = useState(false);
   const [publicOffice, setPublicOffice] = useState<{ id: string; name: string } | null>(null);
+  // 조회가 끝나기 전에 폼을 그리면 카드가 뒤늦게 끼어들어 버튼이 아래로 밀리고 색이 바뀐다
+  const [publicChecked, setPublicChecked] = useState(false);
 
   // 초대 코드가 없는 가입자가 혼자 있는 빈 오피스를 만들지 않도록 공개 오피스를 먼저 보여준다.
   // is_public 열이 아직 없는 DB(022 적용 전)에서는 data가 null로 와서 카드를 그리지 않는다.
@@ -26,7 +28,10 @@ export default function OfficeSetup() {
       .order('created_at')
       .limit(1)
       .maybeSingle()
-      .then(({ data }) => setPublicOffice(data));
+      .then(({ data }) => {
+        setPublicOffice(data);
+        setPublicChecked(true);
+      });
   }, []);
 
   const canJoinPublic = publicOffice !== null && !offices.some((o) => o.id === publicOffice.id);
@@ -70,16 +75,17 @@ export default function OfficeSetup() {
           </div>
           <CardTitle className="text-t7 font-bold text-fg-neutral">오피스 참여</CardTitle>
           <CardDescription>
-            {canJoinPublic ? '공개 오피스에 바로 들어가거나, 초대받은 오피스에 들어가요' : '오피스에 가입하거나 새로 만들어 보세요'}
+            {canJoinPublic ? '들어갈 오피스를 골라 주세요' : '오피스에 가입하거나 새로 만들어 보세요'}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className={publicChecked ? undefined : 'invisible'} aria-busy={!publicChecked}>
           {canJoinPublic && (
             <section className="mb-x6 rounded-r3 bg-bg-brand-weak p-x4">
               <h2 className="text-t5 font-bold text-fg-neutral">{publicOffice.name}</h2>
               <p className="mt-x1 text-t3 leading-relaxed text-fg-neutral-muted [word-break:keep-all]">
-                초대 코드 없이 들어가요. 닉네임, 상태, 출근·집중 시간, 공개로 둔 할 일이 이 오피스 사람들에게 보여요.
-                할 일은 하나씩 비공개로 바꿀 수 있고, 채팅은 꺼져 있어요.
+                초대 코드 없이 누구나 들어올 수 있는 오피스예요. 여기 있는 사람들에게 닉네임, 프로필 사진, 상태,
+                출근과 집중 시간, 할 일, 소식 글이 보여요. 할 일은 처음에 공개로 만들어지고 하나씩 비공개로 바꿀 수 있어요.
+                채팅은 없어요.
               </p>
               <ActionButton
                 variant="brandSolid"
