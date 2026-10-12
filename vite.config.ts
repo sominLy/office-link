@@ -42,7 +42,10 @@ import { seedDesignPlugin } from '@seed-design/vite-plugin';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
-  const blogPrerenderRoutes = command === 'build' ? getBlogRoutes() : [];
+  // getBlogRoutes는 글이 없어도 '/blog/'를 돌려준다. 그대로 두면 템플릿의 빈 블로그 화면
+  // ("Blog Starter")이 /blog와 sitemap에 올라가므로, 글이 생겼을 때만 미리 그린다.
+  const blogRoutes = command === 'build' ? getBlogRoutes() : [];
+  const blogPrerenderRoutes = blogRoutes.length > 1 ? blogRoutes : [];
 
   return {
     plugins: [
