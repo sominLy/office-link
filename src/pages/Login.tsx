@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { track } from '@/lib/funnel';
-import { trackAnonVisitOnce } from '@/lib/analytics';
 import { toast } from '@/lib/toast';
 import { ActionButton } from '@/seed/ui/action-button';
 import { TextField, TextFieldInput } from '@/seed/ui/text-field';
@@ -11,17 +11,12 @@ type Mode = 'login' | 'register';
 
 export default function Login() {
   const { signIn, signUp } = useAuth();
-  const [mode, setMode] = useState<Mode>('login');
+  const [searchParams] = useSearchParams();
+  // 랜딩의 "시작하기"로 들어오면 회원가입 쪽이 먼저 열린다.
+  const [mode, setMode] = useState<Mode>(searchParams.get('mode') === 'register' ? 'register' : 'login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-
-  // 비로그인 상태로 첫 화면에 도달한 지점. 유입 → 가입 전환의 분모가 된다.
-  // trackAnonVisitOnce는 하루 1번 방문 집계, track은 전환 계산용 이벤트 원본이라 둘 다 보낸다.
-  useEffect(() => {
-    void trackAnonVisitOnce();
-    track('landing_view');
-  }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();

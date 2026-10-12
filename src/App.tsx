@@ -17,6 +17,7 @@ import Profile from './pages/Profile';
 import Feed from './pages/Feed';
 import OfficeSetup from './pages/OfficeSetup';
 import Guide from './pages/Guide';
+import LoginRoute from './pages/LoginRoute';
 import Retro from './pages/Retro';
 import Trophies from './pages/Trophies';
 import TrophyWatcher from '@/components/awards/TrophyWatcher';
@@ -74,6 +75,7 @@ const App = () => (
               <Route path="/feed" element={<Feed />} />
               <Route path="/office-setup" element={<OfficeSetup />} />
               <Route path="/guide" element={<Guide />} />
+              <Route path="/login" element={<LoginRoute />} />
               <Route path="/retro" element={<Retro />} />
               <Route path="/trophies" element={<Trophies />} />
               <Route path="/admin" element={<Suspense fallback={null}><Admin /></Suspense>} />

@@ -1,6 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
-import Login from '@/pages/Login';
+import Landing from '@/pages/Landing';
 import ProfileSetup from '@/pages/ProfileSetup';
 import OfficeSetup from '@/pages/OfficeSetup';
 import Home from '@/pages/Home';
@@ -22,7 +22,7 @@ export default function AuthenticatedApp() {
     );
   }
 
-  if (!user) return <Login />;
+  if (!user) return <Landing />;
   if (!profile) return <ProfileSetup />;
   if (!office) return <OfficeSetup />;
   return <Home />;
