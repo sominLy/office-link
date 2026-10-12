@@ -54,7 +54,7 @@ export default function RetroBanner() {
   if (!userId || !officeId || dismissed || !delivered || seen || !active) return null;
 
   return (
-    <div className="rise-in relative overflow-hidden rounded-2xl border border-stroke-brand-weak bg-gradient-to-r from-amber-100 via-orange-50 to-rose-100 shadow-sm">
+    <div className="rise-in relative overflow-hidden rounded-2xl border border-stroke-brand-weak bg-bg-brand-weak shadow-sm">
       <button
         onClick={() => navigate(`/retro?week=${week}`)}
         className="w-full flex items-center gap-3 px-4 py-3.5 text-left"

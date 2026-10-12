@@ -350,7 +350,7 @@ export default function Tasks() {
   const itemProps = { today, nowHM, onToggle: toggle, onStatus: changeStatus, onEdit: openEdit, onPostpone: postpone, onDelete: remove };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
+    <div className="min-h-screen bg-background">
       <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-5xl mx-auto px-4 py-2.5 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1 min-w-0">
@@ -385,7 +385,7 @@ export default function Tasks() {
                 <b className="text-fg-brand text-t4">{doneTasks.length}</b> / {tasks.length} 완료 · {progress}%
               </p>
             </div>
-            <Progress value={progress} className="h-2 mt-2 bg-bg-brand-weak [&>div]:bg-gradient-to-r [&>div]:from-amber-400 [&>div]:to-orange-500" aria-label="이번 주 진행률" />
+            <Progress value={progress} className="h-2 mt-2 bg-bg-brand-weak [&>div]:bg-bg-brand-solid" aria-label="이번 주 진행률" />
             {(dueTodayCount > 0 || inProgressCount > 0) && (
               <div className="flex flex-wrap gap-1.5 mt-2.5">
                 {dueTodayCount > 0 && (

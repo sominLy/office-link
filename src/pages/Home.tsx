@@ -195,7 +195,7 @@ export default function Home() {
   }, [myWorkSession]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
@@ -246,7 +246,7 @@ export default function Home() {
 
       <main className="max-w-5xl mx-auto px-4 py-6 pb-24 space-y-6">
         {/* 오늘의 응원 한마디 — 🔄 새로고침으로 다른 글귀, ✏️ 로 제보 */}
-        <div className="rise-in flex items-center gap-2 bg-gradient-to-r from-amber-100/80 to-orange-100/60 border border-stroke-neutral-subtle rounded-xl px-4 py-2.5 shadow-sm">
+        <div className="rise-in flex items-center gap-2 bg-bg-brand-weak border border-stroke-neutral-subtle rounded-xl px-4 py-2.5 shadow-sm">
           <span className="text-t6 animate-pulse flex-shrink-0">💌</span>
           <p className="text-t4 text-fg-brand-contrast leading-snug flex-1 min-w-0">{quote}</p>
           <button
@@ -339,7 +339,7 @@ export default function Home() {
                       ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  <Button onClick={() => navigate('/clock-out')} variant="outline" className="border-stroke-critical-weak text-fg-critical-contrast hover:bg-bg-critical-weak flex-1 sm:flex-none">
+                  <Button onClick={() => navigate('/clock-out')} variant="outline" className="flex-1 sm:flex-none">
                     퇴근하기
                   </Button>
                 </>
@@ -423,7 +423,7 @@ export default function Home() {
         )}
         <button
           onClick={() => setMoreOpen(o => !o)}
-          className={`w-[52px] h-[52px] rounded-full shadow-lg flex items-center justify-center transition-transform ${moreOpen ? 'bg-bg-brand-solid rotate-45' : 'bg-gradient-to-br from-amber-400 to-orange-500'}`}
+          className={`w-[52px] h-[52px] rounded-full shadow-lg flex items-center justify-center transition-transform ${moreOpen ? 'bg-bg-brand-solid rotate-45' : 'bg-bg-brand-solid'}`}
           aria-label="더보기"
         >
           <Sparkles className="w-5 h-5 text-white" />

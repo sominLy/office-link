@@ -105,7 +105,7 @@ export default function MyTasks({ compact = false }: { compact?: boolean }) {
       </div>
 
       {tasks.length > 0 && (
-        <Progress value={progress} className="h-1.5 mb-3 bg-bg-brand-weak [&>div]:bg-gradient-to-r [&>div]:from-amber-400 [&>div]:to-orange-500" aria-label="이번 주 진행률" />
+        <Progress value={progress} className="h-1.5 mb-3 bg-bg-brand-weak [&>div]:bg-bg-brand-solid" aria-label="이번 주 진행률" />
       )}
 
       {overdueCount > 0 && (

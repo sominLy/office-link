@@ -1,11 +1,11 @@
 {
   "name": "연결오피스",
   "short_name": "연결오피스",
-  "description": "함께 일하는 가상 오피스",
+  "description": "같이 출근하고, 서로 뭘 하는지 보이는 가상 오피스",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#fffbeb",
-  "theme_color": "#d97706",
+  "background_color": "#f7f8f9",
+  "theme_color": "#5b4bdb",
   "icons": [
     {
       "src": "/favicon.svg",

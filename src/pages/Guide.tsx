@@ -33,7 +33,7 @@ export default function Guide() {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
+    <div className="min-h-screen bg-background">
       <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
@@ -47,7 +47,7 @@ export default function Guide() {
 
       <main className="max-w-lg mx-auto px-4 py-6 pb-24 space-y-4">
         {/* 아이폰 앱 설치 */}
-        <Card className="p-5 border-stroke-brand-weak bg-gradient-to-br from-amber-50 to-orange-50">
+        <Card className="p-5 border-stroke-brand-weak bg-bg-brand-weak">
           <h2 className="font-semibold text-fg-neutral mb-1 flex items-center gap-1.5">
             📱 앱처럼 설치하기 (강력 추천!)
           </h2>

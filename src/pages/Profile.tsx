@@ -125,7 +125,7 @@ export default function Profile() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
+    <div className="min-h-screen bg-background">
       <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
@@ -198,7 +198,7 @@ export default function Profile() {
         {/* 공략집 바로가기 */}
         <button
           onClick={() => navigate('/guide')}
-          className="w-full flex items-center gap-3 bg-gradient-to-r from-amber-100 to-orange-100 border border-stroke-brand-weak rounded-xl px-4 py-3 hover:from-amber-200 hover:to-orange-200 transition-colors"
+          className="w-full flex items-center gap-3 bg-bg-brand-weak border border-stroke-brand-weak rounded-xl px-4 py-3 hover:bg-bg-brand-weak-pressed transition-colors"
         >
           <span className="text-t9">📖</span>
           <span className="text-left flex-1">

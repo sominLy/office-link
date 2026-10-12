@@ -49,7 +49,7 @@ export default function GrapeBoard() {
   let grapeIndex = 0;
 
   return (
-    <Card className="border-purple-100 bg-gradient-to-br from-purple-50/60 to-amber-50/40">
+    <Card className="border-stroke-neutral-subtle bg-bg-neutral-muted">
       <CardHeader>
         <CardTitle className="text-t5 flex items-center gap-2">🍇 포도 스티커판</CardTitle>
         <CardDescription>

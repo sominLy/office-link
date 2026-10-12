@@ -182,7 +182,7 @@ export default function Retro() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
+    <div className="min-h-screen bg-background">
       <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-2.5 flex items-center gap-1">
           <Button variant="ghost" size="icon" onClick={goBack} aria-label="뒤로">
@@ -227,7 +227,7 @@ export default function Retro() {
             {/* 한 줄 칭찬 */}
             {/* 밝은 그라데이션 위에 흰 글씨를 얹으면 대비가 1.7~2.9:1로 읽히지 않는다.
                 축하 화면이라 그라데이션은 밝게 두고 글자를 진한 중립색으로 바꿨다 (6:1 이상). */}
-            <section className="rounded-2xl bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 text-fg-neutral p-5 shadow-md rise-in">
+            <section className="rounded-2xl bg-bg-brand-solid text-white p-5 shadow-md rise-in">
               <p className="text-t12">{head.emoji}</p>
               <h2 className="mt-2 text-t7 font-bold leading-snug [word-break:keep-all]">{final ? head.title : '이번 주, 지금까지 이렇게 해냈어요'}</h2>
               <p className="mt-1.5 text-t4 font-medium">
@@ -303,7 +303,7 @@ export default function Retro() {
               {rate.total > 0 ? (
                 <>
                   <div className="mt-2 h-2.5 rounded-full bg-bg-brand-weak overflow-hidden" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={rate.pct} aria-label="계획 완료율">
-                    <div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500" style={{ width: `${rate.pct}%` }} />
+                    <div className="h-full rounded-full bg-bg-brand-solid" style={{ width: `${rate.pct}%` }} />
                   </div>
                   <p className="mt-2 text-t2 text-fg-neutral-muted">
                     {rate.total}개 중 <b className="text-fg-neutral-muted">{rate.done}개</b> 완료

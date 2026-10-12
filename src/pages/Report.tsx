@@ -147,7 +147,7 @@ export default function Report() {
   const completionRate = stats.totalTasks > 0 ? Math.round((stats.completedTasks / stats.totalTasks) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
+    <div className="min-h-screen bg-background">
       <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
@@ -172,7 +172,7 @@ export default function Report() {
         {/* 이 주의 회고·상장으로 */}
         <button
           onClick={() => navigate(`/retro?week=${addDays(getWeekStart(), -7 * weeksAgo)}`)}
-          className="w-full flex items-center gap-3 rounded-xl border border-stroke-brand-weak bg-gradient-to-r from-amber-50 to-rose-50 px-4 py-3 text-left hover:from-amber-100"
+          className="w-full flex items-center gap-3 rounded-xl border border-stroke-brand-weak bg-bg-brand-weak hover:bg-bg-brand-weak-pressed px-4 py-3 text-left"
         >
           <span className="text-t9">📬</span>
           <span className="flex-1 min-w-0">
