@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { AlertCircle } from 'lucide-react';
 
 export default function AuthErrorPage() {
@@ -75,9 +75,9 @@ export default function AuthErrorPage() {
 
         {/* Return to home button */}
         <div className="flex justify-center pt-2">
-          <Button onClick={handleReturnHome} className="px-6">
+          <ActionButton variant="brandSolid" onClick={handleReturnHome} className="px-6">
             Return to Home
-          </Button>
+          </ActionButton>
         </div>
       </div>
     </div>

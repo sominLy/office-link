@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { CalendarDays, Check, ChevronDown, Plus, SlidersHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -80,10 +80,10 @@ export default function QuickAddTask({ onAdd, onOpenDetail, defaultDue = kstToda
           )}
         </DropdownMenuContent>
       </DropdownMenu>
-      <Button type="submit" size="sm" disabled={!title.trim() || saving}
+      <ActionButton variant="brandSolid" type="submit" size="small" disabled={!title.trim() || saving}
         className="h-8 px-3 bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white flex-shrink-0">
         추가
-      </Button>
+      </ActionButton>
     </form>
   );
 }

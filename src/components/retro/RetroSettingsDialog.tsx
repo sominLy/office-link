@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -92,9 +92,9 @@ export default function RetroSettingsDialog({ open, onClose, onSaved }: { open: 
             )}
           </div>
 
-          <Button onClick={save} disabled={saving || !prefs.time} className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
+          <ActionButton variant="brandSolid" onClick={save} disabled={saving || !prefs.time} className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
             {saving ? '저장 중…' : '저장'}
-          </Button>
+          </ActionButton>
         </div>
       </DialogContent>
     </Dialog>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useOffice } from '@/contexts/OfficeContext';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -62,9 +62,9 @@ export default function OfficeSetup() {
                     maxLength={6}
                   />
                 </div>
-                <Button type="submit" className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" disabled={loading}>
+                <ActionButton variant="brandSolid" type="submit" className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" disabled={loading}>
                   {loading ? '처리 중...' : '가입하기'}
-                </Button>
+                </ActionButton>
               </form>
             </TabsContent>
             <TabsContent value="create">
@@ -80,9 +80,9 @@ export default function OfficeSetup() {
                     maxLength={30}
                   />
                 </div>
-                <Button type="submit" className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" disabled={loading}>
+                <ActionButton variant="brandSolid" type="submit" className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" disabled={loading}>
                   {loading ? '처리 중...' : '만들기'}
-                </Button>
+                </ActionButton>
               </form>
             </TabsContent>
           </Tabs>

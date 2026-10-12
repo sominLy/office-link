@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
 import { FeedItem } from '@/lib/types';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -156,9 +156,9 @@ export default function Feed() {
     <div className="min-h-screen bg-background">
       <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+          <ActionButton variant="ghost" layout="iconOnly" aria-label="홈으로" onClick={() => navigate('/')}>
             <ArrowLeft className="w-4 h-4" />
-          </Button>
+          </ActionButton>
           <h1 className="font-bold text-fg-neutral flex items-center gap-1.5">
             <MessageCircleHeart className="w-4 h-4 text-fg-brand" /> 소식
           </h1>
@@ -204,9 +204,9 @@ export default function Feed() {
               onKeyDown={(e) => isSubmitEnter(e) && post()}
               maxLength={200}
             />
-            <Button onClick={post} disabled={posting || !content.trim()} size="icon" className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white flex-shrink-0">
+            <ActionButton variant="brandSolid" onClick={post} disabled={posting || !content.trim()} layout="iconOnly" aria-label="소식 올리기" className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white flex-shrink-0">
               <Send className="w-4 h-4" />
-            </Button>
+            </ActionButton>
           </div>
         </Card>
 
@@ -246,9 +246,9 @@ export default function Feed() {
           </ul>
         )}
         {hasMore && (
-          <Button variant="ghost" onClick={loadMore} disabled={loadingMore} className="w-full text-fg-brand">
+          <ActionButton variant="ghost" onClick={loadMore} disabled={loadingMore} className="w-full text-fg-brand">
             {loadingMore ? '불러오는 중…' : '이전 소식 더 보기'}
-          </Button>
+          </ActionButton>
         )}
         </TabsContent>
        </Tabs>

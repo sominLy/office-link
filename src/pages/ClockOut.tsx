@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Clock, Target, CheckCircle2 } from 'lucide-react';
@@ -105,9 +105,9 @@ export default function ClockOut() {
     <div className="min-h-screen bg-background">
       <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+          <ActionButton variant="ghost" layout="iconOnly" aria-label="홈으로" onClick={() => navigate('/')}>
             <ArrowLeft className="w-4 h-4" />
-          </Button>
+          </ActionButton>
           <h1 className="font-bold text-fg-neutral">퇴근 보고</h1>
         </div>
       </header>
@@ -170,9 +170,9 @@ export default function ClockOut() {
           />
         </Card>
 
-        <Button onClick={handleClockOut} className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white h-12 text-t5">
+        <ActionButton variant="brandSolid" onClick={handleClockOut} className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white h-12 text-t5">
           퇴근하기
-        </Button>
+        </ActionButton>
       </main>
     </div>
   );

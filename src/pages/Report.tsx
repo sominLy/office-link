@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, Calendar, Target, CheckCircle2, Clock, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -150,9 +150,9 @@ export default function Report() {
     <div className="min-h-screen bg-background">
       <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+          <ActionButton variant="ghost" layout="iconOnly" aria-label="홈으로" onClick={() => navigate('/')}>
             <ArrowLeft className="w-4 h-4" />
-          </Button>
+          </ActionButton>
           <h1 className="font-bold text-fg-neutral">리포트</h1>
         </div>
       </header>
@@ -160,13 +160,13 @@ export default function Report() {
       <main className="max-w-lg mx-auto px-4 py-6 pb-24 space-y-4">
         {/* 주간 이동 — 지난 주로 넘겨서 과거 기록 확인 */}
         <div className="flex items-center justify-between bg-bg-layer-default rounded-xl border border-stroke-neutral-subtle px-2 py-1.5 shadow-sm">
-          <Button variant="ghost" size="icon" onClick={() => setWeeksAgo(w => w + 1)} aria-label="지난 주">
+          <ActionButton variant="ghost" layout="iconOnly" onClick={() => setWeeksAgo(w => w + 1)} aria-label="지난 주">
             <ChevronLeft className="w-4 h-4" />
-          </Button>
+          </ActionButton>
           <span className="text-t4 font-semibold text-fg-neutral-muted">{stats.rangeLabel}</span>
-          <Button variant="ghost" size="icon" disabled={weeksAgo === 0} onClick={() => setWeeksAgo(w => Math.max(0, w - 1))} aria-label="다음 주" className="disabled:opacity-30">
+          <ActionButton variant="ghost" layout="iconOnly" disabled={weeksAgo === 0} onClick={() => setWeeksAgo(w => Math.max(0, w - 1))} aria-label="다음 주" className="disabled:opacity-30">
             <ChevronRight className="w-4 h-4" />
-          </Button>
+          </ActionButton>
         </div>
 
         {/* 이 주의 회고·상장으로 */}
@@ -287,7 +287,7 @@ export default function Report() {
               <Label>퇴근 시간 (비우면 "근무 중"으로)</Label>
               <Input type="datetime-local" value={editEnd} onChange={(e) => setEditEnd(e.target.value)} />
             </div>
-            <Button onClick={saveSession} className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">저장</Button>
+            <ActionButton variant="brandSolid" onClick={saveSession} className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">저장</ActionButton>
           </div>
         </DialogContent>
       </Dialog>

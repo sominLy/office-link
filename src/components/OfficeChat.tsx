@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Input } from '@/components/ui/input';
 import { Send, Smile, X, Users } from 'lucide-react';
 import { toast } from '@/lib/toast';
@@ -240,9 +240,9 @@ export default function OfficeChat() {
           onKeyDown={(e) => isSubmitEnter(e) && send()}
           maxLength={500}
         />
-        <Button onClick={send} disabled={sending || !text.trim()} size="icon" className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white flex-shrink-0">
+        <ActionButton variant="brandSolid" onClick={send} disabled={sending || !text.trim()} layout="iconOnly" aria-label="메시지 보내기" className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white flex-shrink-0">
           <Send className="w-4 h-4" />
-        </Button>
+        </ActionButton>
       </div>
     </div>
   );

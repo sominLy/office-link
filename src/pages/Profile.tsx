@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -128,9 +128,9 @@ export default function Profile() {
     <div className="min-h-screen bg-background">
       <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+          <ActionButton variant="ghost" layout="iconOnly" aria-label="홈으로" onClick={() => navigate('/')}>
             <ArrowLeft className="w-4 h-4" />
-          </Button>
+          </ActionButton>
           <h1 className="font-bold text-fg-neutral">내 계정</h1>
         </div>
       </header>
@@ -168,10 +168,10 @@ export default function Profile() {
                   {uploading ? '업로드 중...' : '카메라 버튼을 눌러 사진을 변경하세요 (5MB 이하)'}
                 </p>
                 {profile?.avatar_url && (
-                  <Button type="button" variant="ghost" size="sm" onClick={handleAvatarRemove} className="text-fg-neutral-muted hover:text-fg-critical-contrast h-7 px-2">
+                  <ActionButton type="button" variant="ghost" size="small" onClick={handleAvatarRemove} className="text-fg-neutral-muted hover:text-fg-critical-contrast h-7 px-2">
                     <X className="w-3.5 h-3.5 mr-1" />
                     사진 삭제 (기본 이미지로)
-                  </Button>
+                  </ActionButton>
                 )}
               </div>
             </div>
@@ -187,9 +187,9 @@ export default function Profile() {
                   maxLength={20}
                   required
                 />
-                <Button type="submit" disabled={saving || nickname.trim() === profile?.nickname} className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
+                <ActionButton variant="brandSolid" type="submit" disabled={saving || nickname.trim() === profile?.nickname} className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
                   {saving ? '저장 중...' : '저장'}
-                </Button>
+                </ActionButton>
               </div>
             </form>
           </CardContent>
@@ -229,9 +229,9 @@ export default function Profile() {
             </CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-3 gap-2">
-            <Button variant="outline" size="sm" className="border-stroke-brand-weak text-fg-brand" onClick={() => setRetroSettingsOpen(true)}>시간 바꾸기</Button>
-            <Button variant="outline" size="sm" className="border-stroke-brand-weak text-fg-brand" onClick={() => navigate('/retro')}>회고 보기</Button>
-            <Button size="sm" className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" onClick={() => navigate('/trophies')}>진열장</Button>
+            <ActionButton variant="neutralOutline" size="small" className="border-stroke-brand-weak text-fg-brand" onClick={() => setRetroSettingsOpen(true)}>시간 바꾸기</ActionButton>
+            <ActionButton variant="neutralOutline" size="small" className="border-stroke-brand-weak text-fg-brand" onClick={() => navigate('/retro')}>회고 보기</ActionButton>
+            <ActionButton variant="brandSolid" size="small" className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" onClick={() => navigate('/trophies')}>진열장</ActionButton>
           </CardContent>
         </Card>
         <RetroSettingsDialog open={retroSettingsOpen} onClose={() => setRetroSettingsOpen(false)} />
@@ -256,9 +256,9 @@ export default function Profile() {
           <CardContent>
             <div className="flex gap-2">
               <Input type="time" value={workStart} onChange={(e) => setWorkStart(e.target.value)} className="flex-1" />
-              <Button onClick={handleSaveWorkStart} disabled={savingTime} className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
+              <ActionButton variant="brandSolid" onClick={handleSaveWorkStart} disabled={savingTime} className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
                 {savingTime ? '저장 중...' : '저장'}
-              </Button>
+              </ActionButton>
             </div>
           </CardContent>
         </Card>
@@ -274,10 +274,10 @@ export default function Profile() {
           <CardContent>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline" className="border-stroke-critical-weak text-fg-critical-contrast hover:bg-bg-critical-weak">
+                <ActionButton variant="neutralOutline" className="border-stroke-critical-weak text-fg-critical-contrast hover:bg-bg-critical-weak">
                   <Trash2 className="w-4 h-4 mr-1" />
                   계정 삭제하기
-                </Button>
+                </ActionButton>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>

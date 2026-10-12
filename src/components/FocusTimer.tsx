@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
 import { FocusSession, Task } from '@/lib/types';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Play, Square, Timer } from 'lucide-react';
@@ -198,10 +198,10 @@ export default function FocusTimer() {
               </p>
             )}
           </div>
-          <Button onClick={stopFocus} variant="outline" className="border-stroke-critical-weak text-fg-critical-contrast hover:bg-bg-critical-weak">
+          <ActionButton onClick={stopFocus} variant="neutralOutline" className="border-stroke-critical-weak text-fg-critical-contrast hover:bg-bg-critical-weak">
             <Square className="w-4 h-4 mr-1" />
             종료
-          </Button>
+          </ActionButton>
         </div>
       ) : (
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
@@ -216,10 +216,10 @@ export default function FocusTimer() {
               ))}
             </SelectContent>
           </Select>
-          <Button onClick={startFocus} disabled={starting} className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
+          <ActionButton variant="brandSolid" onClick={startFocus} disabled={starting} className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
             <Play className="w-4 h-4 mr-1" />
             집중 시작
-          </Button>
+          </ActionButton>
         </div>
       )}
     </Card>

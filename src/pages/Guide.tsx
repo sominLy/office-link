@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, BookOpenText, Share, PlusSquare, Smartphone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -36,9 +36,9 @@ export default function Guide() {
     <div className="min-h-screen bg-background">
       <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <ActionButton variant="ghost" layout="iconOnly" aria-label="뒤로" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-4 h-4" />
-          </Button>
+          </ActionButton>
           <h1 className="font-bold text-fg-neutral flex items-center gap-1.5">
             <BookOpenText className="w-4 h-4 text-fg-brand" /> 200% 활용 공략집
           </h1>

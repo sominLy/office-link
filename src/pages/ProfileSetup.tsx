@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -66,9 +66,9 @@ export default function ProfileSetup() {
                 onChange={(e) => setAvatarUrl(e.target.value)}
               />
             </div>
-            <Button type="submit" className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" disabled={loading}>
+            <ActionButton variant="brandSolid" type="submit" className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" disabled={loading}>
               {loading ? '저장 중...' : '시작하기'}
-            </Button>
+            </ActionButton>
           </form>
         </CardContent>
       </Card>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UtensilsCrossed, Dices } from 'lucide-react';
 
@@ -63,10 +63,10 @@ export default function MenuPickDialog({ open, onClose }: { open: boolean; onClo
             {pick || '🎲'}
           </p>
         </div>
-        <Button onClick={roll} disabled={rolling} className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
+        <ActionButton variant="brandSolid" onClick={roll} disabled={rolling} className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
           <Dices className="w-4 h-4 mr-1" />
           {pick ? '다시 뽑기' : '뽑기!'}
-        </Button>
+        </ActionButton>
       </DialogContent>
     </Dialog>
   );

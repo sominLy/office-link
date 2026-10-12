@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Play, Pause, RotateCcw, Eye, Clock } from 'lucide-react';
 import { notify } from '@/lib/notify';
@@ -140,10 +140,10 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
 
               {/* 컨트롤 */}
               <div className="flex gap-2 w-full">
-                <Button onClick={() => setRunning(r => !r)} className="flex-1 bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
+                <ActionButton variant="brandSolid" onClick={() => setRunning(r => !r)} className="flex-1 bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
                   {running ? <><Pause className="w-4 h-4 mr-1" /> 일시정지</> : <><Play className="w-4 h-4 mr-1" /> 시작</>}
-                </Button>
-                <Button onClick={reset} variant="outline" size="icon" className="border-stroke-brand-weak"><RotateCcw className="w-4 h-4" /></Button>
+                </ActionButton>
+                <ActionButton onClick={reset} variant="neutralOutline" layout="iconOnly" aria-label="타이머 처음으로" className="border-stroke-brand-weak"><RotateCcw className="w-4 h-4" /></ActionButton>
               </div>
             </div>
           </TabsContent>
@@ -177,11 +177,11 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
             </div>
             <p className="text-center text-t2 text-fg-neutral-muted">→ {humanMin(draft)}마다</p>
             <div className="flex gap-2">
-              <Button onClick={() => setWatchMode(draft)} className="flex-1 bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
+              <ActionButton variant="brandSolid" onClick={() => setWatchMode(draft)} className="flex-1 bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
                 {watch === draft && watch > 0 ? '이 간격으로 켜짐' : '이 간격으로 켜기'}
-              </Button>
+              </ActionButton>
               {watch > 0 && (
-                <Button variant="outline" className="border-stroke-brand-weak text-fg-neutral-muted" onClick={() => setWatchMode(0)}>끄기</Button>
+                <ActionButton variant="neutralOutline" className="border-stroke-brand-weak text-fg-neutral-muted" onClick={() => setWatchMode(0)}>끄기</ActionButton>
               )}
             </div>
             <p className="text-t2 text-center text-fg-neutral-muted">
@@ -203,7 +203,7 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
               <Clock className="w-4 h-4 text-fg-brand" />
               <input type="time" value={clockout} onChange={(e) => saveClockout(e.target.value)}
                 className="border border-stroke-neutral-subtle rounded-lg px-3 py-2 text-t4" />
-              {clockout && <Button variant="ghost" size="sm" className="text-fg-neutral-muted" onClick={() => saveClockout('')}>끄기</Button>}
+              {clockout && <ActionButton variant="ghost" size="small" className="text-fg-neutral-muted" onClick={() => saveClockout('')}>끄기</ActionButton>}
             </div>
             <p className="text-t2 text-center text-fg-neutral-muted">{clockout ? `🟢 ${clockout}에 알림 예정` : '⚪ 설정 안 됨'}</p>
           </TabsContent>

@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { addDays, kstToday } from '@/lib/dates';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, RefreshCw, Trash2 } from 'lucide-react';
@@ -268,7 +268,7 @@ export default function Admin() {
     return (
       <div className="min-h-screen bg-[#f9f9f7] px-4 py-6">
         <div className="max-w-lg mx-auto space-y-4">
-          <Button variant="ghost" size="sm" onClick={back}><ArrowLeft className="w-4 h-4 mr-1" />뒤로</Button>
+          <ActionButton variant="ghost" size="small" onClick={back}><ArrowLeft className="w-4 h-4 mr-1" />뒤로</ActionButton>
           <div className="rounded-xl border border-black/10 bg-bg-layer-default p-5 space-y-3 text-t4 text-[#0b0b0b]">
             {problem === 'missing' && (
               <>
@@ -308,16 +308,16 @@ export default function Admin() {
     <div className="min-h-screen bg-[#f9f9f7] pb-16">
       <header className="sticky top-0 z-10 border-b border-black/10 bg-[#f9f9f7]/95 backdrop-blur">
         <div className="max-w-5xl mx-auto px-4 py-2.5 flex items-center gap-1">
-          <Button variant="ghost" size="icon" onClick={back} aria-label="뒤로"><ArrowLeft className="w-4 h-4" /></Button>
+          <ActionButton variant="ghost" layout="iconOnly" onClick={back} aria-label="뒤로"><ArrowLeft className="w-4 h-4" /></ActionButton>
           <div className="min-w-0 flex-1">
             <h1 className="font-semibold text-[#0b0b0b] leading-tight">📊 운영 대시보드</h1>
             <p className="text-t1 text-[#898781] leading-tight">
               {data ? `${rangeLabel(data.from, data.to)} · ${new Date(data.generated_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 기준` : loadError ? '불러오지 못했어요' : '불러오는 중…'}
             </p>
           </div>
-          <Button variant="ghost" size="icon" onClick={load} disabled={loading} aria-label="새로고침">
+          <ActionButton variant="ghost" layout="iconOnly" onClick={load} disabled={loading} aria-label="새로고침">
             <RefreshCw className={cn('w-4 h-4', loading && 'animate-spin')} />
-          </Button>
+          </ActionButton>
         </div>
         {/* 필터: 기간이 먼저, 모든 차트에 같이 적용 */}
         <div className="max-w-5xl mx-auto px-4 pb-2.5 flex flex-wrap items-center gap-2">
@@ -349,7 +349,7 @@ export default function Admin() {
           <div className="rounded-xl border border-black/10 bg-bg-layer-default p-5 text-t4 space-y-3">
             <p className="font-semibold text-[#0b0b0b]">지표를 불러오지 못했어요</p>
             <p className="text-t2 text-[#52514e] break-all">{loadError}</p>
-            <Button size="sm" onClick={load} disabled={loading}>다시 시도</Button>
+            <ActionButton variant="brandSolid" size="small" onClick={load} disabled={loading}>다시 시도</ActionButton>
           </div>
         ) : !data || !k ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -584,7 +584,7 @@ export default function Admin() {
                     <Input type="date" value={markerDay} onChange={e => setMarkerDay(e.target.value)} className="w-[9.5rem] h-9 text-t2" max={kstToday()} aria-label="메모 날짜" />
                     <Input value={markerLabel} onChange={e => setMarkerLabel(e.target.value)} maxLength={60} placeholder="무슨 일이 있었나요?" className="h-9 text-t2 flex-1 min-w-[10rem]"
                       aria-label="메모 내용" onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) addMarker(); }} />
-                    <Button size="sm" className="h-9" onClick={addMarker} disabled={busy || !markerLabel.trim()}>추가</Button>
+                    <ActionButton variant="brandSolid" size="small" className="h-9" onClick={addMarker} disabled={busy || !markerLabel.trim()}>추가</ActionButton>
                   </div>
                   <ul className="divide-y divide-black/5 max-h-64 overflow-auto">
                     {[...data.markers].reverse().map(m => (
@@ -606,8 +606,8 @@ export default function Admin() {
                   <p className="text-t2 text-[#52514e]">이 날 전에 가입한 사람(친구들)은 '기존 사용자', 이후는 '새 사용자'로 나눠 볼 수 있어요. 친구들은 매일 쓰는 열성 사용자라 섞이면 숫자가 실제보다 좋아 보여요.</p>
                   <div className="flex flex-wrap gap-2">
                     <Input type="date" value={launchDay} onChange={e => setLaunchDay(e.target.value)} className="w-[9.5rem] h-9 text-t2" aria-label="공개 시작일" />
-                    <Button size="sm" className="h-9" onClick={() => launchDay && saveLaunch(launchDay)} disabled={busy || !launchDay}>저장</Button>
-                    {data.launch_day && <Button size="sm" variant="outline" className="h-9" onClick={() => saveLaunch(null)} disabled={busy}>지우기</Button>}
+                    <ActionButton variant="brandSolid" size="small" className="h-9" onClick={() => launchDay && saveLaunch(launchDay)} disabled={busy || !launchDay}>저장</ActionButton>
+                    {data.launch_day && <ActionButton size="small" variant="neutralOutline" className="h-9" onClick={() => saveLaunch(null)} disabled={busy}>지우기</ActionButton>}
                   </div>
                   {data.launch_day && <p className="text-t2 text-[#0b0b0b]">지금 설정: {longDay(data.launch_day)}</p>}
                 </section>

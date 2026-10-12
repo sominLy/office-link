@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
 import { Task } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, Circle, CircleDot, Trash2, Building2, ListTodo, Lock, Plus } from 'lucide-react';
@@ -134,11 +134,11 @@ export default function MyTasksByOffice() {
               <input type="checkbox" checked={newPrivate} onChange={(e) => setNewPrivate(e.target.checked)} className="accent-amber-600" />
               <Lock className="w-3 h-3" /> 비공개
             </label>
-            <Button size="sm" onClick={bulkAdd} disabled={adding || !newTitle.trim() || selectedOffices.size === 0}
+            <ActionButton variant="brandSolid" size="small" onClick={bulkAdd} disabled={adding || !newTitle.trim() || selectedOffices.size === 0}
               className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
               <Plus className="w-3.5 h-3.5 mr-1" />
               {selectedOffices.size > 1 ? `${selectedOffices.size}개 오피스에 추가` : '추가'}
-            </Button>
+            </ActionButton>
           </div>
         </div>
 

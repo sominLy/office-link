@@ -4,7 +4,7 @@ import { StatusPreset } from '@/lib/types';
 import MemberCard from '@/components/MemberCard';
 import FocusTimer from '@/components/FocusTimer';
 import MyTasks from '@/components/MyTasks';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -295,7 +295,7 @@ export default function Home() {
             <div className="flex items-center gap-2 w-full sm:w-auto">
               {!isWorking ? (
                 <>
-                <Button onClick={() => {
+                <ActionButton variant="brandSolid" onClick={() => {
                   const now = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
                   setClockInBase(now);
                   setOffTarget(now); // 기본값 = 출근한 지금 시각
@@ -303,17 +303,17 @@ export default function Home() {
                 }} className="bg-bg-positive-solid hover:bg-bg-positive-solid-pressed text-white flex-1 sm:flex-none">
                   <Clock className="w-4 h-4 mr-1" />
                   출근하기
-                </Button>
+                </ActionButton>
                 {onVacation ? (
-                  <Button variant="outline" onClick={() => changeStatus('퇴근')} className="border-teal-200 text-teal-700 flex-1 sm:flex-none">
+                  <ActionButton variant="neutralOutline" onClick={() => changeStatus('퇴근')} className="border-teal-200 text-teal-700 flex-1 sm:flex-none">
                     <Palmtree className="w-4 h-4 mr-1" /> 복귀하기
-                  </Button>
+                  </ActionButton>
                 ) : (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="border-teal-200 text-teal-700 flex-1 sm:flex-none">
+                      <ActionButton variant="neutralOutline" className="border-teal-200 text-teal-700 flex-1 sm:flex-none">
                         <Palmtree className="w-4 h-4 mr-1" /> 연차/휴가 <ChevronDown className="w-3.5 h-3.5 ml-1" />
-                      </Button>
+                      </ActionButton>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
                       <DropdownMenuItem onClick={() => changeStatus('연차')} className="cursor-pointer">🌴 오늘 연차예요</DropdownMenuItem>
@@ -326,9 +326,9 @@ export default function Home() {
                 <>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="flex-1 sm:flex-none border-stroke-brand-weak">
+                      <ActionButton variant="neutralOutline" className="flex-1 sm:flex-none border-stroke-brand-weak">
                         상태 변경 <ChevronDown className="w-4 h-4 ml-1" />
-                      </Button>
+                      </ActionButton>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
                       {STATUS_OPTIONS.map((s) => (
@@ -339,9 +339,9 @@ export default function Home() {
                       ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  <Button onClick={() => navigate('/clock-out')} variant="outline" className="flex-1 sm:flex-none">
+                  <ActionButton onClick={() => navigate('/clock-out')} variant="neutralOutline" className="flex-1 sm:flex-none">
                     퇴근하기
-                  </Button>
+                  </ActionButton>
                 </>
               )}
             </div>
@@ -447,7 +447,7 @@ export default function Home() {
             maxLength={60}
           />
           <p className="text-t2 text-fg-neutral-muted">비속어·차별 표현은 자동으로 걸러져요. {quoteText.length}/60</p>
-          <Button onClick={submitQuote} disabled={!quoteText.trim()} className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">등록하기</Button>
+          <ActionButton variant="brandSolid" onClick={submitQuote} disabled={!quoteText.trim()} className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">등록하기</ActionButton>
         </DialogContent>
       </Dialog>
 
@@ -485,7 +485,7 @@ export default function Home() {
               <input type="checkbox" checked={offTarget === ''} onChange={(e) => setOffTarget(e.target.checked ? '' : clockInBase)} className="accent-amber-500" />
               일단 퇴근 시간 설정하지 않음
             </label>
-            <Button
+            <ActionButton variant="brandSolid"
               className="w-full bg-bg-positive-solid hover:bg-bg-positive-solid-pressed text-white"
               onClick={() => {
                 if (offTarget) { localStorage.setItem(CLOCKOUT_KEY, offTarget); localStorage.removeItem(`clockout_fired-${kstToday()}`); }
@@ -497,7 +497,7 @@ export default function Home() {
               }}
             >
               출근하기
-            </Button>
+            </ActionButton>
           </div>
         </DialogContent>
       </Dialog>

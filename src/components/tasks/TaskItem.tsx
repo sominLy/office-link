@@ -1,6 +1,6 @@
 import { Task } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { CalendarDays, CalendarClock, CheckCircle2, Circle, CircleDot, Flag, Lock, MoreVertical, Pencil, Repeat, Trash2 } from 'lucide-react';
@@ -99,9 +99,9 @@ export default function TaskItem({ task, today, nowHM, showCategory, onToggle, o
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="w-7 h-7 -mr-1 flex-shrink-0 text-fg-neutral-muted hover:text-fg-neutral" aria-label="할 일 메뉴">
+          <ActionButton variant="ghost" layout="iconOnly" className="w-7 h-7 -mr-1 flex-shrink-0 text-fg-neutral-muted hover:text-fg-neutral" aria-label="할 일 메뉴">
             <MoreVertical className="w-4 h-4" />
-          </Button>
+          </ActionButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => onEdit(task)}>

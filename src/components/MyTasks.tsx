@@ -4,7 +4,7 @@ import { useOffice } from '@/contexts/OfficeContext';
 import { Task } from '@/lib/types';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle2, Circle, CircleDot, ArrowRight, Clock, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -98,9 +98,9 @@ export default function MyTasks({ compact = false }: { compact?: boolean }) {
           </Badge>
         </div>
         {compact && (
-          <Button variant="ghost" size="sm" onClick={() => navigate('/tasks')} className="text-fg-brand text-t2 -mr-2">
+          <ActionButton variant="ghost" size="small" onClick={() => navigate('/tasks')} className="text-fg-brand text-t2 -mr-2">
             전체 보기 <ArrowRight className="w-3 h-3 ml-1" />
-          </Button>
+          </ActionButton>
         )}
       </div>
 

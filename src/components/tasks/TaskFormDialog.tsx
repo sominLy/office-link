@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -189,9 +189,9 @@ export default function TaskFormDialog({ open, mode, initial, categories, onClos
             <Switch id="task-private" checked={draft.is_private} onCheckedChange={(v) => set('is_private', v)} />
           </label>
 
-          <Button type="submit" disabled={!draft.title.trim() || saving} className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
+          <ActionButton variant="brandSolid" type="submit" disabled={!draft.title.trim() || saving} className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
             {saving ? '저장 중…' : mode === 'create' ? '추가하기' : '저장'}
-          </Button>
+          </ActionButton>
         </form>
       </DialogContent>
     </Dialog>

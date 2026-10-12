@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
-import { Button } from '@/components/ui/button';
+import { ActionButton } from '@/seed/ui/action-button';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -77,9 +77,9 @@ export default function Trophies() {
     <div className="min-h-screen bg-background">
       <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-2.5 flex items-center gap-1">
-          <Button variant="ghost" size="icon" onClick={() => ((window.history.state?.idx ?? 0) > 0 ? navigate(-1) : navigate('/'))} aria-label="뒤로">
+          <ActionButton variant="ghost" layout="iconOnly" onClick={() => ((window.history.state?.idx ?? 0) > 0 ? navigate(-1) : navigate('/'))} aria-label="뒤로">
             <ArrowLeft className="w-4 h-4" />
-          </Button>
+          </ActionButton>
           <div className="min-w-0 flex-1">
             <h1 className="font-bold text-fg-neutral leading-tight">🏆 내 진열장</h1>
             {stats && (
@@ -88,9 +88,9 @@ export default function Trophies() {
               </p>
             )}
           </div>
-          <Button variant="ghost" size="sm" className="text-fg-brand" onClick={() => navigate('/retro')}>
+          <ActionButton variant="ghost" size="small" className="text-fg-brand" onClick={() => navigate('/retro')}>
             📬 회고
-          </Button>
+          </ActionButton>
         </div>
       </header>
 
@@ -180,9 +180,9 @@ export default function Trophies() {
               {certificates.length === 0 ? (
                 <div className="text-center py-4">
                   <p className="text-t4 text-fg-neutral-muted">아직 받은 상장이 없어요</p>
-                  <Button size="sm" variant="outline" className="mt-2 border-stroke-brand-weak text-fg-brand" onClick={() => navigate('/retro')}>
+                  <ActionButton size="small" variant="neutralOutline" className="mt-2 border-stroke-brand-weak text-fg-brand" onClick={() => navigate('/retro')}>
                     📬 회고 열어보기
-                  </Button>
+                  </ActionButton>
                 </div>
               ) : (
                 <ul className="divide-y divide-amber-100">
