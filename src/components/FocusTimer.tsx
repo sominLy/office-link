@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Play, Square, Timer } from 'lucide-react';
 import { toast } from 'sonner';
 import { kstStartOfTodayISO } from '@/lib/dates';
+import { track } from '@/lib/funnel';
 import { sortTasks, updateTaskStatus, useTasksChanged, withoutPending } from '@/lib/tasks';
 import { requestTrophyCheck } from '@/lib/awards';
 
@@ -45,10 +46,13 @@ export default function FocusTimer() {
       .single();
     // 방치된(12시간 초과) 세션은 자동 종료해 타이머가 비정상 복원되지 않게 한다
     if (data && (Date.now() - new Date(data.started_at).getTime()) / 1000 > MAX_FOCUS_SECONDS) {
-      await supabase
+      const { error } = await supabase
         .from('focus_sessions')
         .update({ ended_at: new Date().toISOString(), duration_seconds: MAX_FOCUS_SECONDS })
         .eq('id', data.id);
+      // 화면을 띄우는 중에 벌어지는 정리라 토스트는 사용자가 할 수 있는 일이 없는 소음이다.
+      // 실패해도 다음 조회에서 다시 시도되므로 흔적만 남기고 타이머는 비운다.
+      if (error) console.error('방치된 집중 세션 종료 실패', data.id, error);
       setActiveFocus(null);
       return;
     }
@@ -112,18 +116,19 @@ export default function FocusTimer() {
   const startFocus = async () => {
     if (!user || !office || starting) return;
     setStarting(true);
-    const now = new Date().toISOString();
+    // started_at은 보내지 않는다. 컬럼 기본값 now()로 DB 시계에서 받아야
+    // 016 트리거의 duration 계산이 기기 시계와 무관해진다.
     const { error } = await supabase.from('focus_sessions').insert({
       office_id: office.id,
       user_id: user.id,
       task_id: selectedTaskId === 'none' ? null : selectedTaskId,
-      started_at: now,
     });
     if (error) {
       // 23505 = DB unique 제약(one_open_focus) 위반: 다른 탭에서 이미 집중 시작함
       toast.error(error.code === '23505' ? '이미 집중 중입니다' : '집중 시작 실패');
       await fetchActiveFocus();
     } else {
+      track('focus_started');
       // 할 일을 골라 집중을 시작하면 그 할 일은 '진행 중'으로
       const task = tasks.find(t => t.id === selectedTaskId);
       if (task && task.status === 'todo') updateTaskStatus(task, 'in_progress');
@@ -155,9 +160,12 @@ export default function FocusTimer() {
     const focusedTask = tasks.find(t => t.id === activeFocus.task_id);
     setActiveFocus(null);
     await fetchTodayTotal();
+    // 저장되는 값은 12시간으로 끊긴다. 상한을 안 걸고 보여주면 탭을 13시간 열어둔 뒤
+    // "13:00:00 집중 완료"라고 띄우고 바로 아래 합계는 12:00:00으로 나와 어긋난다.
+    const shown = formatDuration(Math.min(MAX_FOCUS_SECONDS, duration));
     // 할 일과 함께 집중했다면 바로 완료 처리할 수 있게
     if (focusedTask) {
-      toast.success(`${formatDuration(duration)} 집중 완료!`, {
+      toast.success(`${shown} 집중 완료!`, {
         description: `"${focusedTask.title}" 다 끝냈나요?`,
         duration: 8000,
         action: {
@@ -168,29 +176,29 @@ export default function FocusTimer() {
         },
       });
     } else {
-      toast.success(`${formatDuration(duration)} 집중 완료!`);
+      toast.success(`${shown} 집중 완료!`);
     }
   };
 
   return (
-    <Card className="p-5 border-amber-100/50 shadow-sm">
+    <Card className="p-5 border-stroke-neutral-subtle shadow-sm">
       <div className="flex items-center gap-2 mb-3">
-        <Timer className="w-4 h-4 text-amber-600" />
-        <h3 className="font-semibold text-gray-800 text-sm">집중 타이머</h3>
-        <span className="text-xs text-gray-400 ml-auto">오늘 총 {formatDuration(todayTotal + (activeFocus ? elapsed : 0))}</span>
+        <Timer className="w-4 h-4 text-fg-brand" />
+        <h3 className="font-semibold text-fg-neutral text-t4">집중 타이머</h3>
+        <span className="text-t2 text-fg-neutral-muted ml-auto">오늘 총 {formatDuration(todayTotal + (activeFocus ? elapsed : 0))}</span>
       </div>
 
       {activeFocus ? (
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-3xl font-mono font-bold text-red-600">{formatDuration(elapsed)}</p>
+            <p className="text-t11 font-mono font-bold text-fg-critical-contrast">{formatDuration(elapsed)}</p>
             {activeFocus.task_id && (
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-t2 text-fg-neutral-muted mt-1">
                 {tasks.find(t => t.id === activeFocus.task_id)?.title || '업무'}
               </p>
             )}
           </div>
-          <Button onClick={stopFocus} variant="outline" className="border-red-200 text-red-600 hover:bg-red-50">
+          <Button onClick={stopFocus} variant="outline" className="border-stroke-critical-weak text-fg-critical-contrast hover:bg-bg-critical-weak">
             <Square className="w-4 h-4 mr-1" />
             종료
           </Button>
@@ -208,7 +216,7 @@ export default function FocusTimer() {
               ))}
             </SelectContent>
           </Select>
-          <Button onClick={startFocus} disabled={starting} className="bg-red-600 hover:bg-red-700 text-white">
+          <Button onClick={startFocus} disabled={starting} className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
             <Play className="w-4 h-4 mr-1" />
             집중 시작
           </Button>

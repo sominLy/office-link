@@ -183,16 +183,16 @@ export default function Retro() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50/50 via-orange-50/30 to-rose-50/50">
-      <header className="glass sticky top-0 z-10 border-b border-amber-100/70">
+      <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-2.5 flex items-center gap-1">
           <Button variant="ghost" size="icon" onClick={goBack} aria-label="뒤로">
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div className="min-w-0 flex-1">
-            <h1 className="font-bold text-gray-800 leading-tight">📬 주간 회고</h1>
-            <p className="text-[11px] text-gray-400 leading-tight">{describePrefs(prefs)} 도착</p>
+            <h1 className="font-bold text-fg-neutral leading-tight">📬 주간 회고</h1>
+            <p className="text-t1 text-fg-neutral-muted leading-tight">{describePrefs(prefs)} 도착</p>
           </div>
-          <Button variant="ghost" size="sm" className="text-amber-700" onClick={() => navigate('/trophies')}>
+          <Button variant="ghost" size="sm" className="text-fg-brand" onClick={() => navigate('/trophies')}>
             <Trophy className="w-4 h-4 mr-1" /> 진열장
           </Button>
           <Button variant="ghost" size="icon" onClick={() => setSettingsOpen(true)} aria-label="회고 시간 설정">
@@ -203,13 +203,13 @@ export default function Retro() {
 
       <main className="max-w-lg mx-auto px-4 py-5 pb-28 space-y-4">
         {/* 주 이동 */}
-        <div className="flex items-center justify-between bg-white rounded-xl border border-amber-100/60 px-1.5 py-1 shadow-sm">
+        <div className="flex items-center justify-between bg-bg-layer-default rounded-xl border border-stroke-neutral-subtle px-1.5 py-1 shadow-sm">
           <Button variant="ghost" size="icon" onClick={() => goWeek(addDays(week, -7))} aria-label="지난 주">
             <ChevronLeft className="w-4 h-4" />
           </Button>
           <div className="text-center">
-            <p className="text-sm font-semibold text-gray-700">{weekRangeLabel(week)}</p>
-            {!final && <p className="text-[11px] text-amber-600">진행 중인 주 · 상장은 {deliveryLabelFor(week, prefs)} 도착</p>}
+            <p className="text-t4 font-semibold text-fg-neutral-muted">{weekRangeLabel(week)}</p>
+            {!final && <p className="text-t1 text-fg-brand">진행 중인 주 · 상장은 {deliveryLabelFor(week, prefs)} 도착</p>}
           </div>
           <Button variant="ghost" size="icon" disabled={addDays(week, 7) > thisWeek} onClick={() => goWeek(addDays(week, 7))} aria-label="다음 주" className="disabled:opacity-30">
             <ChevronRight className="w-4 h-4" />
@@ -218,17 +218,19 @@ export default function Retro() {
 
         {!data || !head || !rate ? (
           <div className="space-y-3">
-            <Skeleton className="h-36 rounded-2xl bg-amber-100/60" />
-            <Skeleton className="h-96 rounded-2xl bg-amber-100/40" />
-            <Skeleton className="h-28 rounded-2xl bg-amber-100/40" />
+            <Skeleton className="h-36 rounded-2xl bg-bg-brand-weak" />
+            <Skeleton className="h-96 rounded-2xl bg-bg-brand-weak" />
+            <Skeleton className="h-28 rounded-2xl bg-bg-brand-weak" />
           </div>
         ) : (
           <>
             {/* 한 줄 칭찬 */}
-            <section className="rounded-2xl bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 text-white p-5 shadow-md rise-in">
-              <p className="text-4xl">{head.emoji}</p>
-              <h2 className="mt-2 text-xl font-bold leading-snug [word-break:keep-all]">{final ? head.title : '이번 주, 지금까지 이렇게 해냈어요'}</h2>
-              <p className="mt-1.5 text-sm text-white/90">
+            {/* 밝은 그라데이션 위에 흰 글씨를 얹으면 대비가 1.7~2.9:1로 읽히지 않는다.
+                축하 화면이라 그라데이션은 밝게 두고 글자를 진한 중립색으로 바꿨다 (6:1 이상). */}
+            <section className="rounded-2xl bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 text-fg-neutral p-5 shadow-md rise-in">
+              <p className="text-t12">{head.emoji}</p>
+              <h2 className="mt-2 text-t7 font-bold leading-snug [word-break:keep-all]">{final ? head.title : '이번 주, 지금까지 이렇게 해냈어요'}</h2>
+              <p className="mt-1.5 text-t4 font-medium">
                 {hasActivity(data)
                   ? [
                       data.workDays > 0 && `${data.workDays}일 출근`,
@@ -243,41 +245,41 @@ export default function Retro() {
             {cert ? (
               <section className="space-y-2">
                 <AwardCertificate data={cert} />
-                <p className="text-center text-xs text-gray-400">상장은 매주 다른 디자인으로 와요 · 캡처해서 자랑해 보세요 📸</p>
+                <p className="text-center text-t2 text-fg-neutral-muted">상장은 매주 다른 디자인으로 와요 · 캡처해서 자랑해 보세요 📸</p>
                 {/* 상장 기록만 올라가요 (칭찬 한마디는 나만 보기) */}
                 <Button variant="outline" onClick={shareToFeed} disabled={sharing || shared}
-                  className="w-full border-amber-200 text-amber-700 hover:bg-amber-50">
+                  className="w-full border-stroke-brand-weak text-fg-brand hover:bg-bg-brand-weak">
                   <Share2 className="w-4 h-4 mr-1" /> {shared ? '소식에 자랑했어요 ✓' : sharing ? '올리는 중…' : '이 상장 소식에 자랑하기'}
                 </Button>
               </section>
             ) : !final && hasActivity(data) ? (
-              <Card className="p-5 text-center border-dashed border-amber-200 bg-white/70">
-                <p className="text-3xl">✉️</p>
-                <p className="text-sm font-medium text-gray-700 mt-1">이번 주 상장은 아직 봉투 속에 있어요</p>
-                <p className="text-xs text-gray-400 mt-0.5">{deliveryLabelFor(week, prefs)}에 도착해요</p>
+              <Card className="p-5 text-center border-dashed border-stroke-brand-weak bg-white/70">
+                <p className="text-t11">✉️</p>
+                <p className="text-t4 font-medium text-fg-neutral-muted mt-1">이번 주 상장은 아직 봉투 속에 있어요</p>
+                <p className="text-t2 text-fg-neutral-muted mt-0.5">{deliveryLabelFor(week, prefs)}에 도착해요</p>
               </Card>
             ) : null}
 
             {/* 칭찬 스티커 */}
             {stickers.length > 0 && (
-              <Card className="p-4 border-amber-100/60">
+              <Card className="p-4 border-stroke-neutral-subtle">
                 <div className="flex items-center justify-between mb-2.5">
-                  <h3 className="text-sm font-semibold text-gray-800">{final ? '이번 주 받은 칭찬 스티커' : '지금이면 받을 스티커'}</h3>
-                  <span className="text-xs text-gray-400">{stickers.length}개</span>
+                  <h3 className="text-t4 font-semibold text-fg-neutral">{final ? '이번 주 받은 칭찬 스티커' : '지금이면 받을 스티커'}</h3>
+                  <span className="text-t2 text-fg-neutral-muted">{stickers.length}개</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   {stickers.map(s => (
-                    <div key={s.code} className={cn('flex items-center gap-2 rounded-xl border px-3 py-2', final ? 'bg-amber-50/70 border-amber-100' : 'bg-white border-dashed border-gray-200 opacity-80')}>
-                      <span className="text-2xl">{s.emoji}</span>
+                    <div key={s.code} className={cn('flex items-center gap-2 rounded-xl border px-3 py-2', final ? 'bg-bg-brand-weak border-stroke-brand-weak' : 'bg-bg-layer-default border-dashed border-stroke-neutral-subtle opacity-80')}>
+                      <span className="text-t9">{s.emoji}</span>
                       <span className="min-w-0">
-                        <span className="block text-sm font-semibold text-gray-800 truncate">{s.title}</span>
-                        <span className="block text-[11px] text-gray-500 truncate">{s.desc}</span>
+                        <span className="block text-t4 font-semibold text-fg-neutral truncate">{s.title}</span>
+                        <span className="block text-t1 text-fg-neutral-muted truncate">{s.desc}</span>
                       </span>
                     </div>
                   ))}
                 </div>
                 {final && (
-                  <button onClick={() => navigate('/trophies')} className="mt-3 w-full text-xs text-amber-700 hover:underline">
+                  <button onClick={() => navigate('/trophies')} className="mt-3 w-full text-t2 text-fg-brand hover:underline">
                     진열장에 차곡차곡 쌓였어요 → 보러 가기
                   </button>
                 )}
@@ -293,31 +295,31 @@ export default function Retro() {
             </div>
 
             {/* 계획 대비 완료율 */}
-            <Card className="p-4 border-amber-100/60">
+            <Card className="p-4 border-stroke-neutral-subtle">
               <div className="flex items-baseline justify-between">
-                <h3 className="text-sm font-semibold text-gray-800">계획한 할 일</h3>
-                {rate.total > 0 && <p className="text-2xl font-bold text-amber-700">{rate.pct}%</p>}
+                <h3 className="text-t4 font-semibold text-fg-neutral">계획한 할 일</h3>
+                {rate.total > 0 && <p className="text-t9 font-bold text-fg-brand">{rate.pct}%</p>}
               </div>
               {rate.total > 0 ? (
                 <>
-                  <div className="mt-2 h-2.5 rounded-full bg-amber-100 overflow-hidden" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={rate.pct} aria-label="계획 완료율">
+                  <div className="mt-2 h-2.5 rounded-full bg-bg-brand-weak overflow-hidden" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={rate.pct} aria-label="계획 완료율">
                     <div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500" style={{ width: `${rate.pct}%` }} />
                   </div>
-                  <p className="mt-2 text-xs text-gray-500">
-                    {rate.total}개 중 <b className="text-gray-700">{rate.done}개</b> 완료
+                  <p className="mt-2 text-t2 text-fg-neutral-muted">
+                    {rate.total}개 중 <b className="text-fg-neutral-muted">{rate.done}개</b> 완료
                     {rate.pct >= 80 ? ' · 계획을 거의 다 지켰어요!' : rate.pct >= 50 ? ' · 절반 넘게 해냈어요' : ' · 시작한 것만으로도 의미 있어요'}
                   </p>
                 </>
               ) : (
-                <p className="mt-1 text-xs text-gray-400">이 주엔 미리 계획한 할 일이 없었어요</p>
+                <p className="mt-1 text-t2 text-fg-neutral-muted">이 주엔 미리 계획한 할 일이 없었어요</p>
               )}
             </Card>
 
             {/* 어디에 힘을 썼나 — 완료한 일의 카테고리 비율 */}
             {shares.length > 0 && (
-              <Card className="p-4 border-amber-100/60">
-                <h3 className="text-sm font-semibold text-gray-800">어디에 힘을 썼나요</h3>
-                <p className="text-xs text-gray-400 mb-3">완료한 할 일 {data.completed.length}개의 카테고리 비율</p>
+              <Card className="p-4 border-stroke-neutral-subtle">
+                <h3 className="text-t4 font-semibold text-fg-neutral">어디에 힘을 썼나요</h3>
+                <p className="text-t2 text-fg-neutral-muted mb-3">완료한 할 일 {data.completed.length}개의 카테고리 비율</p>
                 <div className="flex h-3.5 w-full gap-[2px] overflow-hidden rounded-[4px]" role="img" aria-label={shares.map(s => `${s.name} ${s.pct}%`).join(', ')}>
                   {shares.map((s, i) => (
                     <div key={s.name} title={`${s.name} ${s.count}개 (${s.pct}%)`} style={{ width: `${(s.count / data.completed.length) * 100}%`, background: s.other ? OTHER : SERIES[i] }} />
@@ -325,11 +327,11 @@ export default function Retro() {
                 </div>
                 <ul className="mt-3 space-y-1.5">
                   {shares.map((s, i) => (
-                    <li key={s.name} className="flex items-center gap-2 text-sm">
+                    <li key={s.name} className="flex items-center gap-2 text-t4">
                       <span className="h-2.5 w-2.5 rounded-sm flex-shrink-0" style={{ background: s.other ? OTHER : SERIES[i] }} />
-                      <span className="flex-1 min-w-0 truncate text-gray-700">{s.name}</span>
-                      <span className="text-gray-500 tabular-nums">{s.count}개</span>
-                      <span className="w-10 text-right font-semibold text-gray-800 tabular-nums">{s.pct}%</span>
+                      <span className="flex-1 min-w-0 truncate text-fg-neutral-muted">{s.name}</span>
+                      <span className="text-fg-neutral-muted tabular-nums">{s.count}개</span>
+                      <span className="w-10 text-right font-semibold text-fg-neutral tabular-nums">{s.pct}%</span>
                     </li>
                   ))}
                 </ul>
@@ -338,23 +340,23 @@ export default function Retro() {
 
             {/* 요일별 리듬 */}
             {data.workSeconds > 0 && (
-              <Card className="p-4 border-amber-100/60">
+              <Card className="p-4 border-stroke-neutral-subtle">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-gray-800">요일별 리듬</h3>
-                  <div className="flex items-center gap-3 text-[11px] text-gray-500">
+                  <h3 className="text-t4 font-semibold text-fg-neutral">요일별 리듬</h3>
+                  <div className="flex items-center gap-3 text-t1 text-fg-neutral-muted">
                     <span className="flex items-center gap-1"><i className="h-2 w-2 rounded-sm bg-[#f6c98a]" /> 근무</span>
                     <span className="flex items-center gap-1"><i className="h-2 w-2 rounded-sm bg-[#d9480f]" /> 그중 집중</span>
                   </div>
                 </div>
-                <p className="mt-1 text-xs text-gray-500 min-h-[1rem]">
+                <p className="mt-1 text-t2 text-fg-neutral-muted min-h-[1rem]">
                   {dayIdx !== null && (
                     <>
-                      <b className="text-gray-800">{WEEKDAY_NAMES[dayIdx]}요일</b> · 근무 {formatHM(data.dailyWork[dayIdx])} · 집중 {formatHM(data.dailyFocus[dayIdx])}
-                      {dayIdx === bestDay && selectedDay === null && <span className="ml-1 text-amber-600">· 가장 열심히 한 날 🔥</span>}
+                      <b className="text-fg-neutral">{WEEKDAY_NAMES[dayIdx]}요일</b> · 근무 {formatHM(data.dailyWork[dayIdx])} · 집중 {formatHM(data.dailyFocus[dayIdx])}
+                      {dayIdx === bestDay && selectedDay === null && <span className="ml-1 text-fg-brand">· 가장 열심히 한 날 🔥</span>}
                     </>
                   )}
                 </p>
-                <div className="mt-3 grid grid-cols-7 items-end h-28 border-b border-gray-200">
+                <div className="mt-3 grid grid-cols-7 items-end h-28 border-b border-stroke-neutral-subtle">
                   {data.dailyWork.map((secs, i) => {
                     const h = (secs / maxDay) * 100;
                     const fh = secs > 0 ? (Math.min(data.dailyFocus[i], secs) / secs) * 100 : 0;
@@ -378,7 +380,7 @@ export default function Retro() {
                 </div>
                 <div className="grid grid-cols-7 mt-1.5">
                   {WEEKDAY_NAMES.map((n, i) => (
-                    <span key={n} className={cn('text-center text-[11px]', dayIdx === i ? 'font-bold text-gray-800' : 'text-gray-400')}>{n}</span>
+                    <span key={n} className={cn('text-center text-t1', dayIdx === i ? 'font-bold text-fg-neutral' : 'text-fg-neutral-muted')}>{n}</span>
                   ))}
                 </div>
               </Card>
@@ -386,14 +388,14 @@ export default function Retro() {
 
             {/* 가장 오래 붙잡은 일 */}
             {data.focusByTask.length > 0 && (
-              <Card className="p-4 border-amber-100/60">
-                <h3 className="text-sm font-semibold text-gray-800 mb-3">가장 오래 붙잡은 일</h3>
+              <Card className="p-4 border-stroke-neutral-subtle">
+                <h3 className="text-t4 font-semibold text-fg-neutral mb-3">가장 오래 붙잡은 일</h3>
                 <ul className="space-y-2.5">
                   {data.focusByTask.slice(0, 3).map((t, i) => (
                     <li key={t.id}>
-                      <div className="flex items-center justify-between text-sm gap-2">
-                        <span className="min-w-0 truncate text-gray-700">{['🥇', '🥈', '🥉'][i]} {t.title}</span>
-                        <span className="flex-shrink-0 text-gray-500 tabular-nums">{formatHM(t.seconds)}</span>
+                      <div className="flex items-center justify-between text-t4 gap-2">
+                        <span className="min-w-0 truncate text-fg-neutral-muted">{['🥇', '🥈', '🥉'][i]} {t.title}</span>
+                        <span className="flex-shrink-0 text-fg-neutral-muted tabular-nums">{formatHM(t.seconds)}</span>
                       </div>
                       <div className="mt-1 h-1.5 rounded-full bg-orange-50">
                         <div className="h-full rounded-full bg-orange-400" style={{ width: `${(t.seconds / data.focusByTask[0].seconds) * 100}%` }} />
@@ -406,55 +408,55 @@ export default function Retro() {
 
             {/* 해낸 일 */}
             {data.completed.length > 0 && (
-              <Card className="p-4 border-amber-100/60">
-                <h3 className="text-sm font-semibold text-gray-800 mb-2">해낸 일 {data.completed.length}개 👏</h3>
+              <Card className="p-4 border-stroke-neutral-subtle">
+                <h3 className="text-t4 font-semibold text-fg-neutral mb-2">해낸 일 {data.completed.length}개 👏</h3>
                 <ul className="space-y-1.5">
                   {(showAllDone ? data.completed : data.completed.slice(0, 8)).map(t => (
-                    <li key={t.id} className="flex items-center gap-2 text-sm">
-                      <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
-                      <span className="flex-1 min-w-0 truncate text-gray-700">{t.title}</span>
-                      {t.category && <span className="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-full px-1.5 max-w-[6rem] truncate">{t.category}</span>}
-                      {t.completed_at && <span className="text-[11px] text-gray-400 flex-shrink-0">{formatShortDate(new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(new Date(t.completed_at))).split(' ')[1]}</span>}
+                    <li key={t.id} className="flex items-center gap-2 text-t4">
+                      <CheckCircle2 className="w-4 h-4 text-fg-positive flex-shrink-0" />
+                      <span className="flex-1 min-w-0 truncate text-fg-neutral-muted">{t.title}</span>
+                      {t.category && <span className="text-t1 text-fg-brand bg-bg-brand-weak border border-stroke-brand-weak rounded-full px-1.5 max-w-[6rem] truncate">{t.category}</span>}
+                      {t.completed_at && <span className="text-t1 text-fg-neutral-muted flex-shrink-0">{formatShortDate(new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(new Date(t.completed_at))).split(' ')[1]}</span>}
                     </li>
                   ))}
                 </ul>
                 {data.completed.length > 8 && !showAllDone && (
-                  <button onClick={() => setShowAllDone(true)} className="mt-2 text-xs text-amber-700">+ {data.completed.length - 8}개 더 보기</button>
+                  <button onClick={() => setShowAllDone(true)} className="mt-2 text-t2 text-fg-brand">+ {data.completed.length - 8}개 더 보기</button>
                 )}
               </Card>
             )}
 
             {/* 못 끝낸 일 (지난 주만) */}
             {week < thisWeek && unfinished.length > 0 && (
-              <Card className="p-4 border-amber-100/60">
-                <h3 className="text-sm font-semibold text-gray-800">못 끝낸 일 {unfinished.length}개</h3>
-                <p className="text-xs text-gray-500 mt-0.5 mb-2">괜찮아요. 다 하는 주보다 이어서 하는 주가 더 많아요.</p>
+              <Card className="p-4 border-stroke-neutral-subtle">
+                <h3 className="text-t4 font-semibold text-fg-neutral">못 끝낸 일 {unfinished.length}개</h3>
+                <p className="text-t2 text-fg-neutral-muted mt-0.5 mb-2">괜찮아요. 다 하는 주보다 이어서 하는 주가 더 많아요.</p>
                 <ul className="space-y-1 mb-3">
                   {unfinished.slice(0, 5).map(t => (
-                    <li key={t.id} className="flex items-center gap-1.5 text-sm text-gray-600">
+                    <li key={t.id} className="flex items-center gap-1.5 text-t4 text-fg-neutral-muted">
                       <span className="flex-1 min-w-0 truncate">· {t.title}</span>
                       {t.week_start >= thisWeek
-                        ? <span className="flex-shrink-0 text-[11px] text-green-600">이번 주로 옮김</span>
-                        : t.routine_id && <span className="flex-shrink-0 text-[11px] text-gray-400">루틴 · 이번 주에 새로 생겨요</span>}
+                        ? <span className="flex-shrink-0 text-t1 text-fg-positive-contrast">이번 주로 옮김</span>
+                        : t.routine_id && <span className="flex-shrink-0 text-t1 text-fg-neutral-muted">루틴 · 이번 주에 새로 생겨요</span>}
                     </li>
                   ))}
-                  {unfinished.length > 5 && <li className="text-xs text-gray-400">외 {unfinished.length - 5}개</li>}
+                  {unfinished.length > 5 && <li className="text-t2 text-fg-neutral-muted">외 {unfinished.length - 5}개</li>}
                 </ul>
                 {carryable.length > 0 ? (
-                  <Button variant="outline" size="sm" disabled={carrying} onClick={carryOver} className="w-full border-amber-200 text-amber-700 hover:bg-amber-50">
+                  <Button variant="outline" size="sm" disabled={carrying} onClick={carryOver} className="w-full border-stroke-brand-weak text-fg-brand hover:bg-bg-brand-weak">
                     <CalendarPlus className="w-4 h-4 mr-1" /> {carryable.length}개 이번 주 할 일로 가져오기
                   </Button>
                 ) : (
-                  <p className="text-xs text-green-700 text-center">이어서 할 일은 모두 이번 주에 있어요 👍</p>
+                  <p className="text-t2 text-fg-positive-contrast text-center">이어서 할 일은 모두 이번 주에 있어요 👍</p>
                 )}
               </Card>
             )}
 
             {/* 나에게 칭찬 한마디 */}
-            <Card className="p-4 border-amber-100/60 space-y-3">
+            <Card className="p-4 border-stroke-neutral-subtle space-y-3">
               <div>
-                <h3 className="text-sm font-semibold text-gray-800">나에게 칭찬 한마디 💌</h3>
-                <p className="text-xs text-gray-400">나만 볼 수 있어요. 잘한 건 크게, 아쉬운 건 작게!</p>
+                <h3 className="text-t4 font-semibold text-fg-neutral">나에게 칭찬 한마디 💌</h3>
+                <p className="text-t2 text-fg-neutral-muted">나만 볼 수 있어요. 잘한 건 크게, 아쉬운 건 작게!</p>
               </div>
               <div className="flex gap-1.5" role="radiogroup" aria-label="이번 주 기분">
                 {MOODS.map(m => (
@@ -463,10 +465,10 @@ export default function Retro() {
                     role="radio"
                     aria-checked={reflection.mood === m.emoji}
                     onClick={() => { setReflection(r => ({ ...r, mood: r.mood === m.emoji ? null : m.emoji })); setSavedReflection(false); }}
-                    className={cn('flex-1 rounded-xl border py-1.5 text-center transition-colors', reflection.mood === m.emoji ? 'border-amber-400 bg-amber-50' : 'border-gray-100 bg-white hover:border-amber-200')}
+                    className={cn('flex-1 rounded-xl border py-1.5 text-center transition-colors', reflection.mood === m.emoji ? 'border-amber-400 bg-bg-brand-weak' : 'border-stroke-neutral-subtle bg-bg-layer-default hover:border-stroke-brand-weak')}
                   >
-                    <span className="block text-xl leading-tight">{m.emoji}</span>
-                    <span className="block text-[10px] text-gray-500">{m.label}</span>
+                    <span className="block text-t7 leading-tight">{m.emoji}</span>
+                    <span className="block text-t1 text-fg-neutral-muted">{m.label}</span>
                   </button>
                 ))}
               </div>
@@ -486,16 +488,16 @@ export default function Retro() {
                 maxLength={100}
                 aria-label="다음 주의 나에게"
               />
-              {!reflectionReady && <p className="text-xs text-amber-700">아직 서버 준비 중이라 저장이 안 될 수 있어요 (관리자: 016 마이그레이션 실행)</p>}
+              {!reflectionReady && <p className="text-t2 text-fg-brand">아직 서버 준비 중이라 저장이 안 될 수 있어요 (관리자: 016 마이그레이션 실행)</p>}
               <Button onClick={saveMine} disabled={saving || (!reflection.mood && !reflection.praise?.trim() && !reflection.next_goal?.trim())}
-                className="w-full bg-amber-600 hover:bg-amber-700 text-white">
+                className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
                 {saving ? '저장 중…' : savedReflection ? '저장됨 ✓' : '저장하기'}
               </Button>
             </Card>
 
-            <p className="text-center text-xs text-gray-400 pt-1">
-              다음 회고는 <b className="text-gray-500">{nextDeliveryLabel(prefs)}</b>에 도착해요 ·{' '}
-              <button onClick={() => setSettingsOpen(true)} className="text-amber-700 underline underline-offset-2">시간 바꾸기</button>
+            <p className="text-center text-t2 text-fg-neutral-muted pt-1">
+              다음 회고는 <b className="text-fg-neutral-muted">{nextDeliveryLabel(prefs)}</b>에 도착해요 ·{' '}
+              <button onClick={() => setSettingsOpen(true)} className="text-fg-brand underline underline-offset-2">시간 바꾸기</button>
             </p>
           </>
         )}
@@ -513,14 +515,14 @@ export default function Retro() {
           {cert && <AwardCertificate data={cert} className="max-w-[280px]" />}
           <div className="flex flex-wrap justify-center gap-1.5">
             {celebrate?.map((s, i) => (
-              <span key={s.code} className="sticker-pop inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2.5 py-1 text-sm" style={{ animationDelay: `${i * 90}ms` }}>
+              <span key={s.code} className="sticker-pop inline-flex items-center gap-1 rounded-full bg-bg-brand-weak border border-stroke-brand-weak px-2.5 py-1 text-t4" style={{ animationDelay: `${i * 90}ms` }}>
                 {s.emoji} {s.title}
               </span>
             ))}
           </div>
           <div className="grid grid-cols-2 gap-2">
             <Button variant="outline" onClick={() => setCelebrate(null)}>회고 보기</Button>
-            <Button className="bg-amber-600 hover:bg-amber-700 text-white" onClick={() => navigate('/trophies')}>
+            <Button className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" onClick={() => navigate('/trophies')}>
               <Trophy className="w-4 h-4 mr-1" /> 진열장
             </Button>
           </div>
@@ -535,10 +537,10 @@ function StatTile({ label, value, delta, unit, time }: { label: string; value: s
   const same = time ? Math.abs(delta) < 60 : delta === 0;
   const amount = time ? formatHM(Math.abs(delta)) : `${Math.abs(delta)}${unit}`;
   return (
-    <Card className="p-4 border-amber-100/60">
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className="mt-0.5 text-2xl font-bold text-gray-800">{value}</p>
-      <p className={cn('mt-0.5 text-xs', same ? 'text-gray-400' : delta > 0 ? 'text-green-600 font-medium' : 'text-gray-400')}>
+    <Card className="p-4 border-stroke-neutral-subtle">
+      <p className="text-t2 text-fg-neutral-muted">{label}</p>
+      <p className="mt-0.5 text-t9 font-bold text-fg-neutral">{value}</p>
+      <p className={cn('mt-0.5 text-t2', same ? 'text-fg-neutral-muted' : delta > 0 ? 'text-fg-positive-contrast font-medium' : 'text-fg-neutral-muted')}>
         {same ? '지난주와 같아요' : delta > 0 ? `▲ 지난주보다 ${amount}` : `▽ 지난주보다 ${amount}`}
       </p>
     </Card>

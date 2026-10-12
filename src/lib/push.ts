@@ -49,6 +49,8 @@ export async function unsubscribePush(): Promise<void> {
     const reg = await navigator.serviceWorker.getRegistration('/sw.js');
     const sub = await reg?.pushManager.getSubscription();
     if (sub) {
+      // 이 기기의 구독 정리다. 실패해도 사용자가 할 수 있는 일이 없고, 서버에 남은 행은
+      // 다음 발송 때 무효 endpoint로 걸러지므로 결과를 버린다.
       await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
       await sub.unsubscribe();
     }

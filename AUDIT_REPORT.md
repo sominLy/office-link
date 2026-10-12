@@ -3,6 +3,54 @@
 > 기준: 04_CLAUDE_CODE_REVIEW_PROMPT.md 감사 항목 / 대상: Atoms 내보내기 소스 (app/frontend)
 > 검토일: 2026-07-11 / 코드 수정 없음 (감사 전용)
 
+---
+
+## ⚠️ 2026-10-05 대조 결과 — 아래 본문을 할 일 목록으로 쓰지 말 것
+
+검토일 이후 마이그레이션 15개와 다수 기능 커밋이 들어와 **대부분 항목이 이미 해결됐다.**
+본문을 그대로 따라가면 고친 것을 다시 고치게 된다. 현재 상태:
+
+| 항목 | 상태 | 근거 |
+|---|---|---|
+| B1 Supabase 미연결 | 해결 | `.env`에 실제 project URL + anon key |
+| B2 스키마·RLS 저장소에 없음 | 해결 | `supabase/migrations/` 15개, `001`에 정책 다수 |
+| B3 중복 열린 세션 | 해결 | `001:80-84` `one_open_work`·`one_open_focus` partial unique index. `clockIn`이 `23505`를 사용자 문구로 처리, `changeStatus`는 DB 기준으로 열린 상태 세션 전부 닫음 |
+| H1 퇴근 시 집중 세션 미종료 | 해결 | `clockOut`이 열린 `focus_sessions`를 종료 |
+| H2 week_start KST 하루 밀림 | 해결 | `src/lib/dates.ts` 공용 util. `dates.test.ts`가 경계 회귀를 막는다 |
+| H3 duration을 클라이언트 시계로 계산 | 부분 | `started_at`은 DB 값을 쓰고 12시간 상한도 있음. 종료 시각의 DB 계산은 `016_focus_duration_trigger.sql` — **작성됐으나 운영 DB 적용 대기** |
+| H4 초대 코드 충돌 | 해결 | `001`에 `invite_code` unique. `createOffice`가 `crypto.getRandomValues` + `23505` 재시도 |
+| H5 쓰기 에러 무시 | 해결 | 2026-10-05에 **21곳** 처리. 리포트는 `OfficeContext`만 지목했지만 전수 조사 결과 10개 파일에 퍼져 있었다 — `OfficeContext` 6곳, `Tasks` 4곳, `MemberStatsDialog` 3곳(세 세션의 error를 모두 확인하도록 순서도 바로잡음), `OverdueTasksDialog`·`MyTasksByOffice` 각 2곳, `MyTasks`·`OfficeChat`·`Feed`·`FocusTimer` 각 1곳. 알릴 필요 없는 위생 작업 4곳(`office_feed` 2곳, `chat_reads` 읽음 표시, `push_subscriptions` 정리)은 의도를 주석으로 남겼다 |
+| M1 렌더 중 navigate | 해결 | `useEffect` + `loading` 가드 |
+| M2 fetchMembers N+1 | 해결 | `Promise.all` 배치 조회 |
+| M5 오피스 1개 가정 | 무효 | 멀티 오피스로 전환됨 (`007_multi_office_titles.sql`, `switchOffice`) |
+| LOW `config.ts` 죽은 코드 | 해결 | 삭제. `/api/config` fetch가 렌더를 막고 있었다 |
+| LOW `api.ts` 빈 파일 | 해결 | 삭제. 설계 메모는 `supabase.ts`로 |
+| LOW console.log 다수 | 해결 | `config.ts` 삭제로 11개 전부 제거 |
+| LOW 테스트 부재 | 해결 | vitest 도입, `dates`·`task-order` 22개 |
+| §95 "저장소에 src 없음" | 무효 | 저장소에 전체 소스와 기능 커밋 이력 존재. Vercel 배포 중 |
+
+**남은 것**: H3의 `016` 마이그레이션 운영 적용, 메인 청크 904KB 분할(선택),
+RLS 정책 내용이 의도대로인지 운영 데이터로 검증.
+
+### 검증 명령 주의 — `npx tsc --noEmit`은 아무것도 검사하지 않는다
+
+루트 `tsconfig.json`은 `files: []`에 project reference만 있다. 그래서
+`npx tsc --noEmit`은 **대상 파일이 0개인 채 항상 exit 0으로 끝난다.**
+타입 검사는 반드시 이렇게 돌린다:
+
+```sh
+npx tsc -p tsconfig.app.json --noEmit
+```
+
+전체 게이트: `npm run lint`, `npx tsc -p tsconfig.app.json --noEmit`, `npm test`, `npm run build`.
+
+설정 냄새 하나: `tsconfig.app.json`에 `types`가 지정되지 않아 `@types/node`가 브라우저
+소스까지 들어온다. 전역 `crypto` 타입이 흔들려 `src/lib/analytics.ts`에서 실제로 타입
+에러가 났다(해당 함수는 `globalThis.crypto`로 받도록 고쳤다). `types: ["vite/client"]`로
+좁히는 것이 정석이지만 다른 파일에 영향이 갈 수 있어 별건으로 남긴다.
+
+---
+
 ## 1. 요약 (Executive Summary)
 
 UI와 기능 구조는 MVP 범위에 충실하게 잘 짜여 있습니다. 타이머를 `started_at` 기반으로 계산하는 설계 결정도 올바릅니다. 그러나 **배포본이 Supabase에 연결되지 않았고**, **DB 스키마·RLS 정책이 저장소에 없어 보안을 검증할 수 없으며**, **중복 세션을 막는 장치가 클라이언트 상태에만 의존**하고 있어 베타 전 반드시 손봐야 합니다.

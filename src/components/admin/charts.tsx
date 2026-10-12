@@ -14,8 +14,8 @@ export function ChartCard({
     <section className={cn('min-w-0 rounded-xl border border-black/10 bg-[#fcfcfb] p-4', className)}>
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-[#0b0b0b]">{title}</h3>
-          {subtitle && <p className="text-xs text-[#52514e] mt-0.5">{subtitle}</p>}
+          <h3 className="text-t4 font-semibold text-[#0b0b0b]">{title}</h3>
+          {subtitle && <p className="text-t2 text-[#52514e] mt-0.5">{subtitle}</p>}
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           {actions}
@@ -23,7 +23,7 @@ export function ChartCard({
             <button
               type="button"
               onClick={() => setAsTable(v => !v)}
-              className="text-[11px] text-[#52514e] border border-black/10 rounded-md px-2 py-1 hover:bg-black/[0.03]"
+              className="text-t1 text-[#52514e] border border-black/10 rounded-md px-2 py-1 hover:bg-black/[0.03]"
               aria-pressed={asTable}
             >
               {asTable ? '차트로 보기' : '표로 보기'}
@@ -40,7 +40,7 @@ export function Legend({ items }: { items: { name: string; color: string }[] }) 
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-1 mb-2" aria-hidden>
       {items.map(i => (
-        <span key={i.name} className="inline-flex items-center gap-1.5 text-xs text-[#52514e]">
+        <span key={i.name} className="inline-flex items-center gap-1.5 text-t2 text-[#52514e]">
           <span className="inline-block w-3 h-0.5 rounded-full" style={{ background: i.color }} />
           {i.name}
         </span>
@@ -51,7 +51,7 @@ export function Legend({ items }: { items: { name: string; color: string }[] }) 
 
 function TooltipBox({ title, rows, notes }: { title: string; rows: { name: string; value: string; color?: string }[]; notes?: string[] }) {
   return (
-    <div className="rounded-lg border border-black/10 bg-white px-3 py-2 shadow-md text-xs min-w-[8rem]">
+    <div className="rounded-lg border border-black/10 bg-bg-layer-default px-3 py-2 shadow-md text-t2 min-w-[8rem]">
       <p className="text-[#52514e] mb-1">{title}</p>
       {rows.map(r => (
         <p key={r.name} className="flex items-center gap-2 leading-5">
@@ -157,16 +157,16 @@ export function BarList({
   rows, max, color = SERIES[0], valueLabel,
 }: { rows: { label: string; value: number; sub?: string }[]; max?: number; color?: string; valueLabel?: (v: number) => string }) {
   const top = max ?? Math.max(1, ...rows.map(r => r.value));
-  if (rows.length === 0) return <p className="text-xs text-[#898781] py-4 text-center">아직 기록이 없어요</p>;
+  if (rows.length === 0) return <p className="text-t2 text-[#898781] py-4 text-center">아직 기록이 없어요</p>;
   return (
     <ul className="space-y-2">
       {rows.map(r => (
         <li key={r.label} className="grid grid-cols-[6rem_minmax(0,1fr)_auto] sm:grid-cols-[8rem_minmax(0,1fr)_auto] items-center gap-2" title={r.sub ? `${r.label}: ${r.sub}` : r.label}>
-          <span className="text-xs text-[#52514e] leading-tight [word-break:keep-all] break-words">{r.label}</span>
+          <span className="text-t2 text-[#52514e] leading-tight [word-break:keep-all] break-words">{r.label}</span>
           <span className="h-3 block">
             <span className="h-3 block rounded-r-[4px]" style={{ width: `${r.value > 0 ? Math.max(2, (r.value / top) * 100) : 0}%`, background: color }} />
           </span>
-          <span className="text-xs text-[#0b0b0b] tabular-nums whitespace-nowrap text-right">
+          <span className="text-t2 text-[#0b0b0b] tabular-nums whitespace-nowrap text-right">
             {valueLabel ? valueLabel(r.value) : fmt(r.value)}
             {r.sub && <span className="text-[#898781]"> · {r.sub}</span>}
           </span>
@@ -179,7 +179,7 @@ export function BarList({
 /** 표 */
 export function DataTable({ head, rows }: { head: string[]; rows: (string | number | ReactNode)[][] }) {
   return (
-    <table className="w-full text-xs [word-break:keep-all]">
+    <table className="w-full text-t2 [word-break:keep-all]">
       <thead className="sticky top-0 bg-[#fcfcfb]">
         <tr className="border-b border-black/10">
           {head.map((h, i) => <th key={h} className={cn('py-1.5 px-1 font-medium text-[#52514e] whitespace-nowrap', i === 0 ? 'text-left' : 'text-right')}>{h}</th>)}

@@ -54,20 +54,20 @@ export default function RetroBanner() {
   if (!userId || !officeId || dismissed || !delivered || seen || !active) return null;
 
   return (
-    <div className="rise-in relative overflow-hidden rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-100 via-orange-50 to-rose-100 shadow-sm">
+    <div className="rise-in relative overflow-hidden rounded-2xl border border-stroke-brand-weak bg-gradient-to-r from-amber-100 via-orange-50 to-rose-100 shadow-sm">
       <button
         onClick={() => navigate(`/retro?week=${week}`)}
         className="w-full flex items-center gap-3 px-4 py-3.5 text-left"
       >
-        <span className="text-3xl flex-shrink-0 float-bob">📬</span>
+        <span className="text-t11 flex-shrink-0 float-bob">📬</span>
         <span className="flex-1 min-w-0 pr-6">
-          <span className="block text-sm font-bold text-amber-900">주간 회고와 상장이 도착했어요!</span>
-          <span className="block text-xs text-amber-800/80">{shortPeriod(week)} 한 주 · 열어서 스스로를 칭찬해 줘요 💛</span>
+          <span className="block text-t4 font-bold text-fg-brand-contrast">주간 회고와 상장이 도착했어요!</span>
+          <span className="block text-t2 text-amber-800/80">{shortPeriod(week)} 한 주 · 열어서 스스로를 칭찬해 줘요 💛</span>
         </span>
       </button>
       <button
         onClick={() => { markRetroSeen(userId, officeId, week); setDismissed(true); }}
-        className="absolute right-2 top-2 p-1 text-amber-700/60 hover:text-amber-900"
+        className="absolute right-2 top-2 p-1 text-fg-brand hover:text-fg-brand-contrast"
         aria-label="회고 알림 닫기"
       >
         <X className="w-4 h-4" />

@@ -88,7 +88,7 @@ function MintLetter({ d }: { d: CertificateData }) {
       <div className="absolute left-[7%] right-[7%] top-[22%] h-[30%] bg-[#b4dbdb]" style={{ clipPath: 'polygon(0 100%, 50% 0, 100% 100%)' }} />
       <div className="absolute left-[7%] right-[7%] top-[45%] bottom-[6%] bg-[#a6cfd0] rounded-[1.4cqw]" />
       {/* 꺼내진 카드 */}
-      <div className="absolute left-[14%] right-[14%] top-[10%] h-[56%] bg-white shadow-2xl flex flex-col items-center text-center overflow-hidden px-[4cqw] py-[2.4cqw]">
+      <div className="absolute left-[14%] right-[14%] top-[10%] h-[56%] bg-bg-layer-default shadow-2xl flex flex-col items-center text-center overflow-hidden px-[4cqw] py-[2.4cqw]">
         <p className="whitespace-nowrap text-[3.3cqw] text-[#333]" style={font(F.script)}>{ribbon}</p>
         <p className="mt-[2cqw] text-[3.6cqw] tracking-[0.14em] uppercase text-[#222]" style={font(F.serif)}>Weekly Award Ceremony</p>
         <p className="text-[2.7cqw] text-[#555] mt-[0.6cqw]" style={font(F.mono)}>{d.periodLabel} · {d.dateLabel}</p>
@@ -139,7 +139,7 @@ function RedLetter({ d }: { d: CertificateData }) {
       <div className="absolute left-[33%] right-[33%] top-[9%] h-[26%] bg-[#7d1515] rounded-t-full" />
       <div className="absolute left-[9%] right-[9%] top-[30%] bottom-[15%] bg-[#7d1515]" />
       {/* 카드 */}
-      <div className="absolute left-[15%] right-[15%] top-[14%] h-[48%] bg-white shadow-md flex flex-col items-center text-center text-[#b3261e] pt-[5cqw] px-[3cqw]">
+      <div className="absolute left-[15%] right-[15%] top-[14%] h-[48%] bg-bg-layer-default shadow-md flex flex-col items-center text-center text-[#b3261e] pt-[5cqw] px-[3cqw]">
         <p className="text-[11cqw] leading-[0.95] uppercase tracking-tight" style={font(F.serif)}>Weekly<br />Award</p>
         <p className="text-[12cqw] leading-none -mt-[2.5cqw]" style={font(F.script)}>for you</p>
         <p className="mt-[2cqw] text-[2.8cqw] tracking-[0.06em] leading-relaxed [word-break:keep-all]" style={font(F.mono)}>
@@ -220,7 +220,7 @@ function Poetry({ d }: { d: CertificateData }) {
               return (
                 <span
                   key={`${r}-${word}`}
-                  className="bg-white text-[#111] px-[2.2cqw] py-[0.9cqw] text-[5cqw] leading-tight shadow-[0_0.5cqw_0_rgba(0,0,0,0.25)]"
+                  className="bg-bg-layer-default text-[#111] px-[2.2cqw] py-[0.9cqw] text-[5cqw] leading-tight shadow-[0_0.5cqw_0_rgba(0,0,0,0.25)]"
                   style={{ ...font(F.kserif), transform: `rotate(${rot}deg)` }}
                 >
                   {word}
@@ -232,7 +232,7 @@ function Poetry({ d }: { d: CertificateData }) {
       </div>
       <p className="text-[#f7b6c2] font-extrabold text-[7.4cqw] leading-[1.05]">스스로를<br />칭찬해요</p>
       <div className="mt-[3cqw] flex items-center gap-[2cqw] text-white/90 text-[2.5cqw] text-left leading-snug">
-        <span className="grid place-items-center w-[8.5cqw] h-[8.5cqw] rounded-full bg-white text-[4.4cqw]">{d.awardEmoji}</span>
+        <span className="grid place-items-center w-[8.5cqw] h-[8.5cqw] rounded-full bg-bg-layer-default text-[4.4cqw]">{d.awardEmoji}</span>
         <span>{d.issuer} 주간 상장 · {d.awardTitle}<br />{d.serial} · {d.dateLabel}</span>
       </div>
     </div>

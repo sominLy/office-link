@@ -12,26 +12,58 @@ export type TaskStatus = Task['status'];
 export type TaskPriority = Task['priority'];
 
 export const STATUS_META: Record<TaskStatus, { label: string; chip: string; dot: string }> = {
-  todo: { label: '시작 전', chip: 'bg-gray-50 text-gray-600 border-gray-200', dot: 'bg-gray-300' },
-  in_progress: { label: '진행 중', chip: 'bg-blue-50 text-blue-600 border-blue-200', dot: 'bg-blue-500' },
-  done: { label: '완료', chip: 'bg-green-50 text-green-600 border-green-200', dot: 'bg-green-500' },
+  todo: {
+    label: '시작 전',
+    chip: 'bg-bg-neutral-muted text-fg-neutral-muted border-stroke-neutral-subtle',
+    dot: 'bg-bg-neutral-weak',
+  },
+  in_progress: {
+    label: '진행 중',
+    chip: 'bg-bg-informative-weak text-fg-informative-contrast border-stroke-informative-weak',
+    dot: 'bg-bg-informative-solid',
+  },
+  done: {
+    label: '완료',
+    chip: 'bg-bg-positive-weak text-fg-positive-contrast border-stroke-positive-weak',
+    dot: 'bg-bg-positive-solid',
+  },
 };
 
-export const PRIORITY_META: Record<TaskPriority, { label: string; chip: string; picked: string }> = {
-  high: { label: '높음', chip: 'bg-red-50 text-red-600 border-red-200', picked: 'bg-red-500 text-white border-red-500' },
-  normal: { label: '보통', chip: 'bg-amber-50 text-amber-600 border-amber-200', picked: 'bg-amber-500 text-white border-amber-500' },
-  low: { label: '낮음', chip: 'bg-gray-50 text-gray-500 border-gray-200', picked: 'bg-gray-500 text-white border-gray-500' },
+// fg는 아이콘 하나만 물들일 때 쓴다(홈의 할 일 동그라미). 예전에는 MyTasks가 같은
+// 뜻의 색 표를 따로 들고 있어서 한쪽만 고치면 화면마다 우선순위 색이 갈렸다.
+// picked는 고른 상태다. 500단계 배경 위 흰 글씨는 높음 3.77:1, 보통 2.15:1로
+// 본문 기준에 못 미쳐서 SEED의 solid 토큰(각각 4.8:1 이상)으로 바꿨다.
+export const PRIORITY_META: Record<TaskPriority, { label: string; chip: string; picked: string; fg: string }> = {
+  high: {
+    label: '높음',
+    chip: 'bg-bg-critical-weak text-fg-critical-contrast border-stroke-critical-weak',
+    picked: 'bg-bg-critical-solid text-white border-stroke-critical-solid',
+    fg: 'text-fg-critical-contrast',
+  },
+  normal: {
+    label: '보통',
+    chip: 'bg-bg-brand-weak text-fg-brand border-stroke-brand-weak',
+    picked: 'bg-bg-brand-solid text-white border-stroke-brand-solid',
+    fg: 'text-fg-brand',
+  },
+  low: {
+    label: '낮음',
+    chip: 'bg-bg-neutral-muted text-fg-neutral-muted border-stroke-neutral-subtle',
+    picked: 'bg-bg-neutral-solid text-fg-on-neutral-solid border-stroke-neutral-solid',
+    fg: 'text-fg-neutral-subtle',
+  },
 };
 
 // ───────── 마감 표시 ─────────
 
 export type DueTone = 'overdue' | 'today' | 'tomorrow' | 'later';
 
+// 네 단계를 서로 다른 SEED 계열로 둔다 — 지남=위험, 오늘=주의, 내일=브랜드, 그 뒤=정보
 const DUE_CLS: Record<DueTone, string> = {
-  overdue: 'bg-red-100 text-red-600 border-red-200',
-  today: 'bg-orange-100 text-orange-600 border-orange-200',
-  tomorrow: 'bg-amber-50 text-amber-700 border-amber-200',
-  later: 'bg-blue-50 text-blue-600 border-blue-200',
+  overdue: 'bg-bg-critical-weak text-fg-critical-contrast border-stroke-critical-weak',
+  today: 'bg-bg-warning-weak text-fg-warning-contrast border-stroke-warning-weak',
+  tomorrow: 'bg-bg-brand-weak text-fg-brand border-stroke-brand-weak',
+  later: 'bg-bg-informative-weak text-fg-informative-contrast border-stroke-informative-weak',
 };
 
 /** 마감 라벨: "2일 지남" · "오늘 오후 6:00까지" · "내일까지" · "D-3" (마감 없으면 null) */

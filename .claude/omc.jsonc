@@ -1,0 +1,21 @@
+{
+  // office-link autopilot 설정
+  // 범위: AUDIT_REPORT.md의 BLOCKER/HIGH 해소 + 미완성 WIP 마감 + QA + 배포 준비
+  "autopilot": {
+    "maxIterations": 10,
+    "maxQaCycles": 5,
+    "maxValidationRounds": 3,
+
+    // 범위가 넓고(앱 전반) 인증·RLS·개인 데이터를 건드리므로
+    // 사양과 계획은 구현 전에 승인받는다.
+    "pauseAfterExpansion": true,
+    "pauseAfterPlanning": true,
+
+    "skipQa": false,
+    "skipValidation": false,
+
+    // solo 고정: team 실행은 cursor-agent CLI가 필요하고 미설치 상태이며,
+    // codex/gemini는 설치됐지만 아직 로그인 전이다.
+    "execution": "solo"
+  }
+}

@@ -10,6 +10,7 @@ import { displayName } from '@/lib/callsign';
 import { useOffice } from '@/contexts/OfficeContext';
 import { Clock, Target, CheckCircle2, Circle, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
+import { track } from '@/lib/funnel';
 
 interface Props {
   member: MemberStatus | null;
@@ -85,13 +86,17 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
     if (!member) return;
     const now = new Date().toISOString();
     // 열린 집중/근무/상태 세션을 모두 닫는다 (방장 권한 RLS)
-    await supabase.from('focus_sessions').update({ ended_at: now })
-      .eq('user_id', member.user_id).eq('office_id', officeId).is('ended_at', null);
-    const { error } = await supabase.from('work_sessions').update({ ended_at: now })
-      .eq('user_id', member.user_id).eq('office_id', officeId).is('ended_at', null);
-    await supabase.from('status_sessions').update({ ended_at: now })
-      .eq('user_id', member.user_id).eq('office_id', officeId).is('ended_at', null);
-    if (error) {
+    const closeOpen = (table: string) =>
+      supabase.from(table).update({ ended_at: now })
+        .eq('user_id', member.user_id).eq('office_id', officeId).is('ended_at', null);
+    // 세 테이블의 error를 모두 확인한다. 예전에는 work_sessions의 error를 받아두고도
+    // status_sessions를 먼저 실행한 뒤 검사해서, 실패해도 일부가 이미 닫힌 채 빠져나갔다.
+    const results = await Promise.all([
+      closeOpen('focus_sessions'),
+      closeOpen('work_sessions'),
+      closeOpen('status_sessions'),
+    ]);
+    if (results.some(result => result.error)) {
       toast.error('퇴근 처리에 실패했어요');
       return;
     }
@@ -103,10 +108,13 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
     if (!user || !member) return;
     const mine = reactions.find(r => r.task_id === task.id && r.user_id === user.id && r.emoji === emoji);
     if (mine) {
-      await supabase.from('task_reactions').delete()
+      const { error } = await supabase.from('task_reactions').delete()
         .eq('task_id', task.id).eq('user_id', user.id).eq('emoji', emoji);
+      if (error) toast.error('반응을 취소하지 못했어요');
     } else {
       const { error } = await supabase.from('task_reactions').insert({ task_id: task.id, user_id: user.id, emoji });
+      // 전부 적재하고 to_self로 구분한다. 상호작용 지표는 to_self=false만 세야 한다
+      if (!error) track('reaction_sent', { to_self: member.user_id === user.id });
       // 내 할 일이 아닐 때만 상대에게 응원 푸시
       if (!error && member.user_id !== user.id) {
         supabase.functions.invoke('push-notify', {
@@ -188,7 +196,7 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <span className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center text-lg overflow-hidden">
+                <span className="w-9 h-9 rounded-full bg-bg-brand-weak flex items-center justify-center text-t6 overflow-hidden">
                   {member.avatar_url ? (
                     <img src={member.avatar_url} alt="" className="w-9 h-9 rounded-full object-cover" />
                   ) : (
@@ -202,12 +210,12 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
             {/* 인사 보내기 (내 기록이 아닐 때만) */}
             {user && member.user_id !== user.id && (
               <div className="flex items-center gap-2 -mt-1">
-                <span className="text-xs text-gray-400">인사 보내기</span>
+                <span className="text-t2 text-fg-neutral-muted">인사 보내기</span>
                 {WAVE_EMOJIS.map(e => (
                   <button
                     key={e}
                     onClick={() => sendWave(e)}
-                    className="text-lg hover:scale-125 transition-transform"
+                    className="text-t6 hover:scale-125 transition-transform"
                     title={`${e} 보내기`}
                   >
                     {e}
@@ -216,7 +224,7 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
                 {myRole === 'admin' && member.is_working && (
                   <button
                     onClick={forceClockOut}
-                    className="ml-auto text-xs text-red-500 border border-red-200 rounded-full px-2 py-0.5 hover:bg-red-50"
+                    className="ml-auto text-t2 text-fg-critical-contrast border border-stroke-critical-weak rounded-full px-2 py-0.5 hover:bg-bg-critical-weak"
                     title="깜빡한 멤버를 대신 퇴근시켜요"
                   >
                     퇴근시키기
@@ -226,17 +234,17 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
             )}
 
             {!stats ? (
-              <p className="text-sm text-gray-400 text-center py-6">불러오는 중...</p>
+              <p className="text-t4 text-fg-neutral-muted text-center py-6">불러오는 중...</p>
             ) : (
               <div className="space-y-4">
                 {/* 지금 집중 중 */}
                 {stats.isFocusingNow && (
-                  <div className="bg-red-50 border border-red-100 rounded-lg p-3 flex items-center gap-2">
+                  <div className="bg-bg-critical-weak border border-stroke-critical-weak rounded-lg p-3 flex items-center gap-2">
                     <span className="relative flex h-2.5 w-2.5">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
                       <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
                     </span>
-                    <p className="text-sm text-red-700">
+                    <p className="text-t4 text-fg-critical-contrast">
                       지금 <b>{stats.focusingTaskTitle || '자유 집중'}</b>에 집중하고 있어요 🔥
                     </p>
                   </div>
@@ -244,38 +252,38 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
 
                 {/* 오늘 */}
                 <div>
-                  <p className="text-xs font-medium text-gray-400 mb-2">오늘</p>
+                  <p className="text-t2 font-medium text-fg-neutral-muted mb-2">오늘</p>
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-amber-50 rounded-lg p-3">
-                      <div className="flex items-center gap-1.5 text-amber-700 text-xs mb-1">
+                    <div className="bg-bg-brand-weak rounded-lg p-3">
+                      <div className="flex items-center gap-1.5 text-fg-brand text-t2 mb-1">
                         <Clock className="w-3.5 h-3.5" /> 근무
                       </div>
-                      <p className="font-semibold text-gray-800 text-sm">{fmt(stats.todayWorkSeconds)}</p>
+                      <p className="font-semibold text-fg-neutral text-t4">{fmt(stats.todayWorkSeconds)}</p>
                     </div>
-                    <div className="bg-red-50 rounded-lg p-3">
-                      <div className="flex items-center gap-1.5 text-red-600 text-xs mb-1">
+                    <div className="bg-bg-critical-weak rounded-lg p-3">
+                      <div className="flex items-center gap-1.5 text-fg-critical-contrast text-t2 mb-1">
                         <Target className="w-3.5 h-3.5" /> 집중
                       </div>
-                      <p className="font-semibold text-gray-800 text-sm">{fmt(stats.todayFocusSeconds)}</p>
+                      <p className="font-semibold text-fg-neutral text-t4">{fmt(stats.todayFocusSeconds)}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* 이번 주 */}
                 <div>
-                  <p className="text-xs font-medium text-gray-400 mb-2">이번 주</p>
+                  <p className="text-t2 font-medium text-fg-neutral-muted mb-2">이번 주</p>
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-blue-50 rounded-lg p-3">
-                      <div className="flex items-center gap-1.5 text-blue-600 text-xs mb-1">
+                    <div className="bg-bg-informative-weak rounded-lg p-3">
+                      <div className="flex items-center gap-1.5 text-fg-informative-contrast text-t2 mb-1">
                         <CalendarDays className="w-3.5 h-3.5" /> 출근
                       </div>
-                      <p className="font-semibold text-gray-800 text-sm">{stats.weekWorkDays}일</p>
+                      <p className="font-semibold text-fg-neutral text-t4">{stats.weekWorkDays}일</p>
                     </div>
-                    <div className="bg-red-50 rounded-lg p-3">
-                      <div className="flex items-center gap-1.5 text-red-600 text-xs mb-1">
+                    <div className="bg-bg-critical-weak rounded-lg p-3">
+                      <div className="flex items-center gap-1.5 text-fg-critical-contrast text-t2 mb-1">
                         <Target className="w-3.5 h-3.5" /> 총 집중
                       </div>
-                      <p className="font-semibold text-gray-800 text-sm">{fmt(stats.weekFocusSeconds)}</p>
+                      <p className="font-semibold text-fg-neutral text-t4">{fmt(stats.weekFocusSeconds)}</p>
                     </div>
                   </div>
                 </div>
@@ -283,32 +291,32 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
                 {/* 이번 주 할 일 */}
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <p className="text-xs font-medium text-gray-400">이번 주 할 일</p>
-                    <Badge variant="secondary" className="text-xs bg-amber-50 text-amber-700">
+                    <p className="text-t2 font-medium text-fg-neutral-muted">이번 주 할 일</p>
+                    <Badge variant="secondary" className="text-t2 bg-bg-brand-weak text-fg-brand">
                       {doneCount}/{stats.weekTasks.length}
                     </Badge>
                   </div>
                   {stats.weekTasks.length === 0 ? (
-                    <p className="text-sm text-gray-400 text-center py-2">등록된 할 일이 없어요</p>
+                    <p className="text-t4 text-fg-neutral-muted text-center py-2">등록된 할 일이 없어요</p>
                   ) : (
                     <ul className="space-y-1.5 max-h-52 overflow-y-auto">
                       {stats.weekTasks.map(task => (
-                        <li key={task.id} className="flex items-center gap-2 text-sm flex-wrap">
+                        <li key={task.id} className="flex items-center gap-2 text-t4 flex-wrap">
                           {task.status === 'done' ? (
-                            <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                            <CheckCircle2 className="w-4 h-4 text-fg-positive flex-shrink-0" />
                           ) : (
-                            <Circle className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                            <Circle className="w-4 h-4 text-fg-neutral-subtle flex-shrink-0" />
                           )}
-                          <span className={`truncate ${task.status === 'done' ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                          <span className={`truncate ${task.status === 'done' ? 'line-through text-fg-neutral-muted' : 'text-fg-neutral-muted'}`}>
                             {task.title}
                           </span>
                           {task.category && (
-                            <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-600 border-amber-200 flex-shrink-0">
+                            <Badge variant="outline" className="text-t1 bg-bg-brand-weak text-fg-brand border-stroke-brand-weak flex-shrink-0">
                               {task.category}
                             </Badge>
                           )}
                           {task.status === 'in_progress' && (
-                            <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-600 border-blue-200 flex-shrink-0">진행 중</Badge>
+                            <Badge variant="outline" className="text-t1 bg-bg-informative-weak text-fg-informative-contrast border-stroke-informative-weak flex-shrink-0">진행 중</Badge>
                           )}
                           {/* 이모지 응원 버튼 */}
                           <span className="flex items-center gap-1 ml-auto">
@@ -319,15 +327,15 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
                                 <button
                                   key={emoji}
                                   onClick={() => toggleReaction(task, emoji)}
-                                  className={`text-xs rounded-full px-1.5 py-0.5 border transition-colors ${
+                                  className={`text-t2 rounded-full px-1.5 py-0.5 border transition-colors ${
                                     mine
-                                      ? 'bg-amber-100 border-amber-300'
+                                      ? 'bg-bg-brand-weak border-stroke-brand-weak'
                                       : all.length > 0
-                                        ? 'bg-amber-50 border-amber-200 hover:bg-amber-100'
-                                        : 'bg-white border-gray-150 opacity-40 hover:opacity-100 hover:border-amber-200'
+                                        ? 'bg-bg-brand-weak border-stroke-brand-weak hover:bg-bg-brand-weak-pressed'
+                                        : 'bg-bg-layer-default border-gray-150 opacity-40 hover:opacity-100 hover:border-stroke-brand-weak'
                                   }`}
                                 >
-                                  {emoji}{all.length > 0 && <span className="ml-0.5 text-[10px] text-gray-500">{all.length}</span>}
+                                  {emoji}{all.length > 0 && <span className="ml-0.5 text-t1 text-fg-neutral-muted">{all.length}</span>}
                                 </button>
                               );
                             })}

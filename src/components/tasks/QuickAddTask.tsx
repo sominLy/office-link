@@ -36,11 +36,11 @@ export default function QuickAddTask({ onAdd, onOpenDetail, defaultDue = kstToda
     <form
       onSubmit={submit}
       className={cn(
-        'flex items-center gap-1.5 rounded-xl border border-amber-100 bg-white pl-3 pr-1.5 py-1.5 shadow-sm transition-colors focus-within:border-amber-300 focus-within:ring-2 focus-within:ring-amber-100',
+        'flex items-center gap-1.5 rounded-xl border border-stroke-brand-weak bg-bg-layer-default pl-3 pr-1.5 py-1.5 shadow-sm transition-colors focus-within:border-stroke-brand-weak focus-within:ring-2 focus-within:ring-stroke-focus-ring',
         className,
       )}
     >
-      <Plus className="w-4 h-4 text-amber-500 flex-shrink-0" aria-hidden />
+      <Plus className="w-4 h-4 text-fg-brand flex-shrink-0" aria-hidden />
       <input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
@@ -48,13 +48,13 @@ export default function QuickAddTask({ onAdd, onOpenDetail, defaultDue = kstToda
         maxLength={100}
         enterKeyHint="enter"
         aria-label="새 할 일 제목"
-        className="flex-1 min-w-0 bg-transparent py-1 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none"
+        className="flex-1 min-w-0 bg-transparent py-1 text-t4 text-fg-neutral placeholder:text-fg-neutral-muted focus:outline-none"
       />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className="flex items-center gap-0.5 rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100 flex-shrink-0 whitespace-nowrap"
+            className="flex items-center gap-0.5 rounded-full border border-stroke-brand-weak bg-bg-brand-weak px-2 py-1 text-t2 font-medium text-fg-brand hover:bg-bg-brand-weak-pressed flex-shrink-0 whitespace-nowrap"
             aria-label={`마감: ${shortDueLabel(due, today)} (바꾸기)`}
           >
             <CalendarDays className="w-3 h-3" />
@@ -63,17 +63,17 @@ export default function QuickAddTask({ onAdd, onOpenDetail, defaultDue = kstToda
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-44">
-          <DropdownMenuLabel className="text-xs text-gray-400 font-normal">언제까지 할까요?</DropdownMenuLabel>
+          <DropdownMenuLabel className="text-t2 text-fg-neutral-muted font-normal">언제까지 할까요?</DropdownMenuLabel>
           {quickDueOptions(today).map(o => (
             <DropdownMenuItem key={o.key} onClick={() => setDue(o.date)} className="cursor-pointer">
               <span className="flex-1">{o.date ? o.label : '날짜 없이 (이번 주)'}</span>
-              {due === o.date && <Check className="w-4 h-4 text-amber-600" />}
+              {due === o.date && <Check className="w-4 h-4 text-fg-brand" />}
             </DropdownMenuItem>
           ))}
           {onOpenDetail && (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => { onOpenDetail(title.trim(), due); setTitle(''); }} className="cursor-pointer text-amber-700">
+              <DropdownMenuItem onClick={() => { onOpenDetail(title.trim(), due); setTitle(''); }} className="cursor-pointer text-fg-brand">
                 <SlidersHorizontal className="w-4 h-4 mr-2" /> 날짜·시간 직접 정하기
               </DropdownMenuItem>
             </>
@@ -81,7 +81,7 @@ export default function QuickAddTask({ onAdd, onOpenDetail, defaultDue = kstToda
         </DropdownMenuContent>
       </DropdownMenu>
       <Button type="submit" size="sm" disabled={!title.trim() || saving}
-        className="h-8 px-3 bg-amber-600 hover:bg-amber-700 text-white flex-shrink-0">
+        className="h-8 px-3 bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white flex-shrink-0">
         추가
       </Button>
     </form>

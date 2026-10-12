@@ -14,19 +14,30 @@ export default function BottomNav() {
   const { pathname } = useLocation();
 
   return (
-    <nav className="glass fixed bottom-0 left-0 right-0 z-20 border-t border-amber-100/70 pb-[env(safe-area-inset-bottom)]">
-      <div className="max-w-5xl mx-auto grid grid-cols-5 px-1.5 pt-1.5 pb-0.5">
+    <nav
+      aria-label="주요 메뉴"
+      // 콘텐츠 위에 떠 있는 Global 레이어라 경계는 중립 구분선으로 둔다.
+      // safe-area는 SEED 변수를 쓴다 — constant()/env() 지원 분기를 base.css가 들고 있다.
+      className="glass fixed bottom-0 left-0 right-0 z-20 border-t border-stroke-neutral-subtle pb-[var(--seed-safe-area-bottom)]"
+    >
+      <div className="max-w-5xl mx-auto grid grid-cols-5 px-x1_5 pt-x1_5 pb-x0_5">
         {TABS.map(({ path, label, icon: Icon }) => {
           const active = pathname === path;
           return (
             <button
               key={path}
               onClick={() => navigate(path)}
-              className={`relative flex flex-col items-center gap-0.5 rounded-xl py-1.5 text-[11px] transition-colors ${
-                active ? 'text-amber-700 font-semibold bg-amber-50' : 'text-gray-400 hover:text-gray-600'
+              aria-current={active ? 'page' : undefined}
+              className={`relative flex flex-col items-center gap-x0_5 rounded-r3 py-x1_5 transition-colors ${
+                active
+                  ? 't1-bold text-fg-brand bg-bg-brand-weak'
+                  : 't1-regular text-fg-neutral-muted hover:text-fg-neutral'
               }`}
             >
-              <Icon className={`w-5 h-5 transition-transform ${active ? 'stroke-[2.5] -translate-y-px scale-105' : ''}`} />
+              <Icon
+                aria-hidden="true"
+                className={`w-x5 h-x5 transition-transform ${active ? 'stroke-[2.5] -translate-y-px scale-105' : ''}`}
+              />
               {label}
             </button>
           );

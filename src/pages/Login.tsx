@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { track } from '@/lib/funnel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,9 +15,11 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // 로그인 전 방문 수와 어디서 왔는지 (하루 1번)
+  // 비로그인 상태로 첫 화면에 도달한 지점. 유입 → 가입 전환의 분모가 된다.
+  // trackAnonVisitOnce는 하루 1번 방문 집계, track은 전환 계산용 이벤트 원본이라 둘 다 보낸다.
   useEffect(() => {
     void trackAnonVisitOnce();
+    track('landing_view');
   }, []);
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -30,10 +33,13 @@ export default function Login() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await signUp(email, password);
+    track('signup_start');
+    const { error, isNewAccount } = await signUp(email, password);
     if (error) {
       toast.error('회원가입 실패: ' + error.message);
     } else {
+      // 가입 폼 통과 지점(이메일 인증 전). 같은 이메일 재제출은 세지 않는다
+      if (isNewAccount) track('signup_complete');
       toast.success('회원가입 완료! 이메일을 확인해 주세요.');
     }
     setLoading(false);
@@ -43,11 +49,11 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 p-4">
       <Card className="w-full max-w-md shadow-lg border-0">
         <CardHeader className="text-center pb-2">
-          <div className="mx-auto mb-3 w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
-            <span className="text-2xl">🏢</span>
+          <div className="mx-auto mb-3 w-12 h-12 bg-bg-brand-weak rounded-xl flex items-center justify-center">
+            <span className="text-t9">🏢</span>
           </div>
-          <CardTitle className="text-2xl font-bold text-gray-800">연결오피스</CardTitle>
-          <CardDescription className="text-gray-500">함께 일하는 가상 오피스</CardDescription>
+          <CardTitle className="text-t9 font-bold text-fg-neutral">연결오피스</CardTitle>
+          <CardDescription className="text-fg-neutral-muted">함께 일하는 가상 오피스</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
@@ -79,7 +85,7 @@ export default function Login() {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full bg-amber-600 hover:bg-amber-700 text-white" disabled={loading}>
+                <Button type="submit" className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" disabled={loading}>
                   {loading ? '처리 중...' : '로그인'}
                 </Button>
               </form>
@@ -109,7 +115,7 @@ export default function Login() {
                     minLength={6}
                   />
                 </div>
-                <Button type="submit" className="w-full bg-amber-600 hover:bg-amber-700 text-white" disabled={loading}>
+                <Button type="submit" className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" disabled={loading}>
                   {loading ? '처리 중...' : '회원가입'}
                 </Button>
               </form>

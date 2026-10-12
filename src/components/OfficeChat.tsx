@@ -5,6 +5,7 @@ import { useOffice } from '@/contexts/OfficeContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, Smile, X, Users } from 'lucide-react';
+import { toast } from 'sonner';
 import { defaultAvatar } from '@/lib/avatar';
 import { displayName } from '@/lib/callsign';
 import { isSubmitEnter } from '@/lib/utils';
@@ -77,7 +78,8 @@ export default function OfficeChat() {
     if (data) setReads(Object.fromEntries(data.map(r => [r.user_id, r.last_read_at])));
   }, [office]);
 
-  // 내 마지막 읽은 시각 갱신
+  // 내 마지막 읽은 시각 갱신.
+  // 읽음 표시는 실패해도 사용자가 할 일이 없고 다음 렌더에서 다시 시도되므로 결과를 버린다.
   const markRead = useCallback(async () => {
     if (!user || !office) return;
     await supabase.from('chat_reads').upsert(
@@ -132,7 +134,12 @@ export default function OfficeChat() {
   };
 
   const del = async (id: string) => {
-    await supabase.from('chat_messages').delete().eq('id', id);
+    // 확인 없이 목록에서 지우면, 삭제가 거부돼도 사라진 것처럼 보이다가 다시 조회할 때 되살아난다
+    const { error } = await supabase.from('chat_messages').delete().eq('id', id);
+    if (error) {
+      toast.error('메시지를 삭제하지 못했어요');
+      return;
+    }
     setMessages(prev => prev.filter(m => m.id !== id));
   };
 
@@ -148,13 +155,13 @@ export default function OfficeChat() {
       {/* 대상 선택: 단체방 + 멤버별 갠톡 */}
       <div className="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1">
         <button onClick={() => setPeer(null)}
-          className={`flex items-center gap-1 text-xs whitespace-nowrap rounded-full px-3 py-1.5 border flex-shrink-0 ${peer === null ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-gray-500 border-gray-200'}`}>
+          className={`flex items-center gap-1 text-t2 whitespace-nowrap rounded-full px-3 py-1.5 border flex-shrink-0 ${peer === null ? 'bg-bg-brand-solid text-white border-stroke-brand-solid' : 'bg-bg-layer-default text-fg-neutral-muted border-stroke-neutral-subtle'}`}>
           <Users className="w-3.5 h-3.5" /> 단체방
         </button>
         {otherMembers.map(m => (
           <button key={m.user_id} onClick={() => setPeer(m.user_id)}
-            className={`flex items-center gap-1 text-xs whitespace-nowrap rounded-full px-2.5 py-1.5 border flex-shrink-0 ${peer === m.user_id ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-gray-500 border-gray-200'}`}>
-            <span className="text-sm">{m.avatar_url ? '🙂' : defaultAvatar(m.nickname)}</span>
+            className={`flex items-center gap-1 text-t2 whitespace-nowrap rounded-full px-2.5 py-1.5 border flex-shrink-0 ${peer === m.user_id ? 'bg-bg-brand-solid text-white border-stroke-brand-solid' : 'bg-bg-layer-default text-fg-neutral-muted border-stroke-neutral-subtle'}`}>
+            <span className="text-t4">{m.avatar_url ? '🙂' : defaultAvatar(m.nickname)}</span>
             {displayName(m.nickname, office?.title_mode, m.rank_index)}
           </button>
         ))}
@@ -163,7 +170,7 @@ export default function OfficeChat() {
       {/* 메시지 */}
       <div className="flex-1 overflow-y-auto space-y-3 pr-1">
         {shown.length === 0 ? (
-          <p className="text-center text-gray-400 text-sm py-10">
+          <p className="text-center text-fg-neutral-muted text-t4 py-10">
             {peer === null ? '아직 대화가 없어요. 첫 인사를 건네보세요! 👋' : `${nameOf(peer)}님과의 첫 대화를 시작해보세요 💬`}
           </p>
         ) : (
@@ -177,26 +184,26 @@ export default function OfficeChat() {
             return (
               <div key={m.id} className={`flex gap-2 group ${mine ? 'flex-row-reverse' : ''}`}>
                 {!mine && (
-                  <span className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-base overflow-hidden flex-shrink-0 self-end">
+                  <span className="w-8 h-8 rounded-full bg-bg-brand-weak flex items-center justify-center text-t5 overflow-hidden flex-shrink-0 self-end">
                     {showHead ? (av.url ? <img src={av.url} alt="" className="w-8 h-8 rounded-full object-cover" /> : defaultAvatar(av.nickname)) : ''}
                   </span>
                 )}
                 <div className={`flex flex-col max-w-[72%] ${mine ? 'items-end' : 'items-start'}`}>
-                  {!mine && showHead && <span className="text-xs text-gray-400 mb-0.5 px-1">{nameOf(m.user_id)}</span>}
+                  {!mine && showHead && <span className="text-t2 text-fg-neutral-muted mb-0.5 px-1">{nameOf(m.user_id)}</span>}
                   <div className={`flex items-end gap-1 ${mine ? 'flex-row-reverse' : ''}`}>
                     {sticker ? (
-                      <span className="text-4xl px-1">{m.content}</span>
+                      <span className="text-t12 px-1">{m.content}</span>
                     ) : (
-                      <p className={`text-sm px-3 py-2 rounded-2xl break-keep [overflow-wrap:anywhere] ${mine ? 'bg-amber-500 text-white rounded-br-md' : 'bg-white border border-amber-100 text-gray-700 rounded-bl-md'}`}>
+                      <p className={`text-t4 px-3 py-2 rounded-2xl break-keep [overflow-wrap:anywhere] ${mine ? 'bg-bg-brand-solid text-white rounded-br-md' : 'bg-bg-layer-default border border-stroke-brand-weak text-fg-neutral-muted rounded-bl-md'}`}>
                         {m.content}
                       </p>
                     )}
                     <div className={`flex flex-col ${mine ? 'items-end' : 'items-start'} flex-shrink-0`}>
-                      {mine && rc > 0 && <span className="text-[10px] text-amber-500 leading-none mb-0.5">읽음 {rc}</span>}
-                      <span className="text-[10px] text-gray-300 leading-none">{timeLabel(m.created_at)}</span>
+                      {mine && rc > 0 && <span className="text-t1 text-fg-brand leading-none mb-0.5">읽음 {rc}</span>}
+                      <span className="text-t1 text-fg-neutral-muted leading-none">{timeLabel(m.created_at)}</span>
                     </div>
                     {canDelete(m) && (
-                      <button onClick={() => del(m.id)} className="text-gray-300 hover:text-red-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex-shrink-0" title="삭제 (10분 이내)">
+                      <button onClick={() => del(m.id)} className="text-fg-neutral-subtle hover:text-fg-critical-contrast opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex-shrink-0" title="삭제 (10분 이내)">
                         <X className="w-3.5 h-3.5" />
                       </button>
                     )}
@@ -211,9 +218,9 @@ export default function OfficeChat() {
 
       {/* 이모티콘 패널 */}
       {showStickers && (
-        <div className="grid grid-cols-8 gap-1 bg-white border border-amber-100 rounded-xl p-2 mt-2">
+        <div className="grid grid-cols-8 gap-1 bg-bg-layer-default border border-stroke-brand-weak rounded-xl p-2 mt-2">
           {STICKERS.map(s => (
-            <button key={s} onClick={() => { doSend(s); setShowStickers(false); }} className="text-2xl hover:scale-125 transition-transform py-1">
+            <button key={s} onClick={() => { doSend(s); setShowStickers(false); }} className="text-t9 hover:scale-125 transition-transform py-1">
               {s}
             </button>
           ))}
@@ -222,7 +229,7 @@ export default function OfficeChat() {
 
       {/* 입력창 */}
       <div className="flex gap-1.5 pt-2 items-center">
-        <button onClick={() => setShowStickers(v => !v)} className={`flex-shrink-0 p-2 rounded-full ${showStickers ? 'text-amber-600 bg-amber-50' : 'text-gray-400'}`} aria-label="이모티콘">
+        <button onClick={() => setShowStickers(v => !v)} className={`flex-shrink-0 p-2 rounded-full ${showStickers ? 'text-fg-brand bg-bg-brand-weak' : 'text-fg-neutral-muted'}`} aria-label="이모티콘">
           <Smile className="w-5 h-5" />
         </button>
         <Input
@@ -233,7 +240,7 @@ export default function OfficeChat() {
           onKeyDown={(e) => isSubmitEnter(e) && send()}
           maxLength={500}
         />
-        <Button onClick={send} disabled={sending || !text.trim()} size="icon" className="bg-amber-600 hover:bg-amber-700 text-white flex-shrink-0">
+        <Button onClick={send} disabled={sending || !text.trim()} size="icon" className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white flex-shrink-0">
           <Send className="w-4 h-4" />
         </Button>
       </div>

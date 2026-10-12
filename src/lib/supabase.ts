@@ -1,3 +1,4 @@
+// 데이터 접근은 전부 이 클라이언트를 직접 쓴다. 별도 HTTP API 레이어는 없다.
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';

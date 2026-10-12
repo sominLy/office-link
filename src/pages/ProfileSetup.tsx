@@ -37,10 +37,10 @@ export default function ProfileSetup() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 p-4">
       <Card className="w-full max-w-md shadow-lg border-0">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-3 w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
-            <span className="text-2xl">👤</span>
+          <div className="mx-auto mb-3 w-12 h-12 bg-bg-brand-weak rounded-xl flex items-center justify-center">
+            <span className="text-t9">👤</span>
           </div>
-          <CardTitle className="text-xl font-bold text-gray-800">프로필 설정</CardTitle>
+          <CardTitle className="text-t7 font-bold text-fg-neutral">프로필 설정</CardTitle>
           <CardDescription>오피스에서 사용할 이름을 입력해 주세요</CardDescription>
         </CardHeader>
         <CardContent>
@@ -66,7 +66,7 @@ export default function ProfileSetup() {
                 onChange={(e) => setAvatarUrl(e.target.value)}
               />
             </div>
-            <Button type="submit" className="w-full bg-amber-600 hover:bg-amber-700 text-white" disabled={loading}>
+            <Button type="submit" className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" disabled={loading}>
               {loading ? '저장 중...' : '시작하기'}
             </Button>
           </form>

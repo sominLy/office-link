@@ -13,10 +13,10 @@ export default function AuthenticatedApp() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50">
         <div className="text-center">
-          <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center mx-auto mb-3 animate-pulse">
-            <span className="text-2xl">🏢</span>
+          <div className="w-12 h-12 bg-bg-brand-weak rounded-xl flex items-center justify-center mx-auto mb-3 animate-pulse">
+            <span className="text-t9">🏢</span>
           </div>
-          <p className="text-gray-500 text-sm">로딩 중...</p>
+          <p className="text-fg-neutral-muted text-t4">로딩 중...</p>
         </div>
       </div>
     );

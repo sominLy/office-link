@@ -92,16 +92,16 @@ export default function MyTasksByOffice() {
   };
 
   return (
-    <Card className="border-amber-100/50">
+    <Card className="border-stroke-neutral-subtle">
       <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
-          <ListTodo className="w-4 h-4 text-amber-600" /> 내 할 일 (오피스별)
+        <CardTitle className="text-t5 flex items-center gap-2">
+          <ListTodo className="w-4 h-4 text-fg-brand" /> 내 할 일 (오피스별)
         </CardTitle>
         <CardDescription>이번 주 할 일을 오피스별로 한눈에 보고, 여러 오피스에 한 번에 추가할 수 있어요.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
         {/* 일괄 추가 */}
-        <div className="space-y-2 bg-amber-50/50 border border-amber-100 rounded-lg p-3">
+        <div className="space-y-2 bg-bg-brand-weak border border-stroke-brand-weak rounded-lg p-3">
           <Input
             placeholder="예: 영어 단어 외우기"
             value={newTitle}
@@ -116,10 +116,10 @@ export default function MyTasksByOffice() {
                 key={o.id}
                 onClick={() => toggleOffice(o.id)}
                 aria-pressed={selectedOffices.has(o.id)}
-                className={`text-xs rounded-full px-2.5 py-1 border transition-colors max-w-full truncate ${
+                className={`text-t2 rounded-full px-2.5 py-1 border transition-colors max-w-full truncate ${
                   selectedOffices.has(o.id)
-                    ? 'bg-amber-600 text-white border-amber-600'
-                    : 'bg-white text-gray-600 border-gray-200 hover:border-amber-300'
+                    ? 'bg-bg-brand-solid text-white border-amber-600'
+                    : 'bg-bg-layer-default text-fg-neutral-muted border-stroke-neutral-subtle hover:border-stroke-brand-weak'
                 }`}
               >
                 🏢 {o.name}
@@ -127,15 +127,15 @@ export default function MyTasksByOffice() {
             ))}
           </div>
           {selectedOffices.size === 0 && (
-            <p className="text-xs text-amber-700">어느 오피스에 추가할지 하나 이상 골라주세요</p>
+            <p className="text-t2 text-fg-brand">어느 오피스에 추가할지 하나 이상 골라주세요</p>
           )}
           <div className="flex items-center justify-between">
-            <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
+            <label className="flex items-center gap-1.5 text-t2 text-fg-neutral-muted cursor-pointer">
               <input type="checkbox" checked={newPrivate} onChange={(e) => setNewPrivate(e.target.checked)} className="accent-amber-600" />
               <Lock className="w-3 h-3" /> 비공개
             </label>
             <Button size="sm" onClick={bulkAdd} disabled={adding || !newTitle.trim() || selectedOffices.size === 0}
-              className="bg-amber-600 hover:bg-amber-700 text-white">
+              className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
               <Plus className="w-3.5 h-3.5 mr-1" />
               {selectedOffices.size > 1 ? `${selectedOffices.size}개 오피스에 추가` : '추가'}
             </Button>
@@ -149,33 +149,33 @@ export default function MyTasksByOffice() {
           return (
             <div key={o.id}>
               <div className="flex items-center gap-2 mb-2">
-                <Building2 className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                <h4 className="text-sm font-semibold text-gray-700 truncate min-w-0">{o.name}</h4>
-                <Badge variant="secondary" className="text-xs bg-amber-50 text-amber-700 flex-shrink-0">{done}/{group.length}</Badge>
+                <Building2 className="w-4 h-4 text-fg-brand flex-shrink-0" />
+                <h4 className="text-t4 font-semibold text-fg-neutral-muted truncate min-w-0">{o.name}</h4>
+                <Badge variant="secondary" className="text-t2 bg-bg-brand-weak text-fg-brand flex-shrink-0">{done}/{group.length}</Badge>
               </div>
               {group.length === 0 ? (
-                <p className="text-xs text-gray-400 pl-6 pb-1">이번 주 할 일이 없어요</p>
+                <p className="text-t2 text-fg-neutral-muted pl-6 pb-1">이번 주 할 일이 없어요</p>
               ) : (
                 <ul className="space-y-1.5">
                   {group.map(task => (
-                    <li key={task.id} className="flex items-center gap-2 text-sm bg-gray-50/70 rounded-lg px-3 py-2 group">
+                    <li key={task.id} className="flex items-center gap-2 text-t4 bg-gray-50/70 rounded-lg px-3 py-2 group">
                       <button onClick={() => toggleDone(task)} aria-label={task.status === 'done' ? '완료 취소' : '완료로 표시'} className="flex-shrink-0">
                         {task.status === 'done'
-                          ? <CheckCircle2 className="w-4 h-4 text-green-500 check-pop" />
+                          ? <CheckCircle2 className="w-4 h-4 text-fg-positive check-pop" />
                           : task.status === 'in_progress'
-                            ? <CircleDot className="w-4 h-4 text-blue-500" />
-                            : <Circle className="w-4 h-4 text-gray-300 hover:text-amber-400" />}
+                            ? <CircleDot className="w-4 h-4 text-fg-informative" />
+                            : <Circle className="w-4 h-4 text-fg-neutral-subtle hover:text-fg-brand" />}
                       </button>
-                      <span className={`flex-1 min-w-0 truncate ${task.status === 'done' ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+                      <span className={`flex-1 min-w-0 truncate ${task.status === 'done' ? 'line-through text-fg-neutral-muted' : 'text-fg-neutral-muted'}`}>
                         {task.title}
-                        {task.is_private && <Lock className="w-3 h-3 text-gray-400 inline ml-1" />}
+                        {task.is_private && <Lock className="w-3 h-3 text-fg-neutral-muted inline ml-1" />}
                       </span>
                       {task.category && (
-                        <Badge variant="outline" className="text-[10px] bg-white text-amber-600 border-amber-200 max-w-[6rem] truncate">{task.category}</Badge>
+                        <Badge variant="outline" className="text-t1 bg-bg-layer-default text-fg-brand border-stroke-brand-weak max-w-[6rem] truncate">{task.category}</Badge>
                       )}
                       {/* 모바일엔 호버가 없으니 항상 보이게, 데스크톱은 호버 시 */}
                       <button onClick={() => remove(task)} aria-label={`${task.title} 삭제`}
-                        className="flex-shrink-0 p-1 -m-1 text-gray-300 hover:text-red-500 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100">
+                        className="flex-shrink-0 p-1 -m-1 text-fg-neutral-subtle hover:text-fg-critical-contrast sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </li>

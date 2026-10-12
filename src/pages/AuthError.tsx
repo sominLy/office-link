@@ -39,29 +39,29 @@ export default function AuthErrorPage() {
           {/* Error icon */}
           <div className="flex justify-center">
             <div className="relative">
-              <div className="absolute inset-0 bg-red-500/20 blur-xl rounded-full"></div>
+              <div className="absolute inset-0 bg-bg-critical-weak blur-xl rounded-full"></div>
               <AlertCircle
-                className="relative h-12 w-12 text-red-500"
+                className="relative h-12 w-12 text-fg-critical"
                 strokeWidth={1.5}
               />
             </div>
           </div>
 
           {/* Error title */}
-          <h1 className="text-2xl font-bold text-gray-800">
+          <h1 className="text-t9 font-bold text-fg-neutral">
             Authentication Error
           </h1>
 
           {/* Error description */}
-          <p className="text-base text-muted-foreground">{errorMessage}</p>
+          <p className="text-t5 text-muted-foreground">{errorMessage}</p>
 
           {/* Countdown message */}
           <div className="pt-2">
-            <p className="text-sm text-gray-500">
+            <p className="text-t4 text-fg-neutral-muted">
               {countdown > 0 ? (
                 <>
                   Will automatically return to the home page in{' '}
-                  <span className="text-blue-600 font-semibold text-base">
+                  <span className="text-fg-informative-contrast font-semibold text-t5">
                     {countdown}
                   </span>{' '}
                   seconds
