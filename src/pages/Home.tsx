@@ -13,7 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from '@/lib/toast';
 import { supabase } from '@/lib/supabase';
 import { defaultAvatar } from '@/lib/avatar';
-import { useState, useEffect } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import { MemberStatus } from '@/lib/types';
 import MemberStatsDialog from '@/components/MemberStatsDialog';
 import MenuPickDialog from '@/components/MenuPickDialog';
@@ -30,6 +30,8 @@ import { displayName, TITLE_MODES } from '@/lib/callsign';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { isSubmitEnter } from '@/lib/utils';
 import { PRESENCE_META } from '@/lib/presence';
+import { List, ListDivider } from '@/seed/ui/list';
+import { ListHeader } from '@/seed/ui/list-header';
 
 const STATUS_OPTIONS: StatusPreset[] = ['출근', '집중 중', '업무 중', '휴식 중', '자리 비움', '스터디/회의 중', '점심 먹는 중', '저녁 먹는 중', '야식 먹는 중'];
 
@@ -362,20 +364,26 @@ export default function Home() {
         {isWorking && <MyTasks compact />}
 
         {/* Office Members */}
-        <section>
-          <h2 className="text-t4 font-medium text-fg-neutral-muted mb-3 px-1">오피스 멤버 <span className="text-fg-neutral-muted">· 카드를 누르면 기록이 보여요</span></h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {members.map((member) => (
-              <button key={member.user_id} onClick={() => setSelectedMember(member)} className="lift text-left rounded-xl">
-                <MemberCard member={member} />
-              </button>
-            ))}
-            {members.length === 0 && (
-              <p className="text-fg-neutral-muted text-t4 col-span-full text-center py-8">
-                아직 멤버가 없습니다
-              </p>
-            )}
-          </div>
+        <section aria-labelledby="office-members">
+          <ListHeader as="h2" id="office-members">오피스 멤버</ListHeader>
+          <p className="px-x4 pb-x2 t2-regular text-fg-neutral-muted">누르면 그 사람의 기록이 보여요</p>
+          {members.length > 0 ? (
+            <div className="rounded-r3 bg-bg-layer-default overflow-hidden">
+              <List itemBorderRadius="r3">
+                {members.map((member, i) => (
+                  <Fragment key={member.user_id}>
+                    {i > 0 && <ListDivider />}
+                    <MemberCard member={member} onSelect={() => setSelectedMember(member)} />
+                  </Fragment>
+                ))}
+              </List>
+            </div>
+          ) : (
+            <div className="rounded-r3 bg-bg-layer-default px-x5 py-x10 text-center">
+              <p className="t5-bold text-fg-neutral">아직 멤버가 없어요</p>
+              <p className="mt-x1 t4-regular text-fg-neutral-muted">초대 코드를 공유하면 같이 출근할 수 있어요</p>
+            </div>
+          )}
         </section>
       </main>
 
