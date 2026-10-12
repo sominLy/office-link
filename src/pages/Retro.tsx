@@ -158,7 +158,7 @@ export default function Retro() {
     supabase.functions.invoke('push-notify', {
       body: { action: 'feed', kind: 'post', office_id: office.id, actor_id: user.id, target_id: null, content },
     }).catch(() => {});
-    toast.success('소식 탭에 자랑했어요! 응원이 쏟아질 거예요 🎉');
+    toast.success('소식 탭에 자랑했어요. 응원이 쏟아질 거예요 🎉');
   };
 
   // 다시 불러오지 않고 화면만 갱신 — 쓰던 칭찬 한마디가 지워지지 않게
@@ -307,7 +307,7 @@ export default function Retro() {
                   </div>
                   <p className="mt-2 text-t2 text-fg-neutral-muted">
                     {rate.total}개 중 <b className="text-fg-neutral-muted">{rate.done}개</b> 완료
-                    {rate.pct >= 80 ? ' · 계획을 거의 다 지켰어요!' : rate.pct >= 50 ? ' · 절반 넘게 해냈어요' : ' · 시작한 것만으로도 의미 있어요'}
+                    {rate.pct >= 80 ? ' · 계획을 거의 다 지켰어요' : rate.pct >= 50 ? ' · 절반 넘게 해냈어요' : ' · 시작한 것만으로도 의미 있어요'}
                   </p>
                 </>
               ) : (

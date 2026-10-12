@@ -48,12 +48,12 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
         if (prev > 1) return prev - 1;
         // 단계 종료 → 전환
         if (phase === 'focus') {
-          notify('집중 끝! 잠깐 쉬어요 ☕', `${preset.brk}분 휴식 시작`);
+          notify('집중 끝났어요. 잠깐 쉬어요 ☕', `${preset.brk}분 휴식 시작`);
           setPhase('break');
           setRounds(r => r + 1);
           return preset.brk * 60;
         } else {
-          notify('휴식 끝! 다시 집중해요 💪', `${preset.focus}분 집중 시작`);
+          notify('휴식 끝났어요. 다시 집중해요 💪', `${preset.focus}분 집중 시작`);
           setPhase('focus');
           return preset.focus * 60;
         }
@@ -72,7 +72,7 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
 
   // ── 캐릭터 표정 ──
   const face = !running ? '🐥' : phase === 'focus' ? '🔥' : '☕';
-  const speech = !running ? '같이 시작해볼까요?' : phase === 'focus' ? '같이 집중해요! 💪' : '잠깐 쉬어가요~';
+  const speech = !running ? '같이 시작해볼까요?' : phase === 'focus' ? '같이 집중해요 💪' : '잠깐 쉬어가요~';
 
   // ── 감시 모드 ──
   const [watch, setWatch] = useState<number>(() => Number(localStorage.getItem(WATCH_KEY) || 0));
@@ -200,7 +200,7 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
             <div className="flex flex-col items-center gap-1 py-1">
               <div className="text-t14 float-bob">🏃</div>
               <p className="text-t4 font-semibold text-fg-neutral-muted">예상 퇴근 시간 알림</p>
-              <p className="text-t2 text-fg-neutral-muted text-center">예상 퇴근 시간을 정해두면, 그 시간에<br/>"아직 일하고 계신가요?" 알림이 와요.</p>
+              <p className="text-t2 text-fg-neutral-muted text-center">예상 퇴근 시간을 정해두면, 그 시간에<br/>"아직 일하고 있나요?" 알림이 와요.</p>
             </div>
             <div className="flex items-center gap-2 justify-center">
               <Clock className="w-4 h-4 text-fg-brand" />

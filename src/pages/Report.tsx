@@ -72,7 +72,7 @@ export default function Report() {
       .update({ started_at: started.toISOString(), ended_at: ended ? ended.toISOString() : null })
       .eq('id', editSession.id);
     if (error) {
-      toast.error('수정에 실패했어요');
+      toast.error('고치지 못했어요. 잠시 후 다시 시도해 주세요');
       return;
     }
     toast.success('출퇴근 기록이 수정되었어요');
@@ -270,7 +270,7 @@ export default function Report() {
 
         {stats.totalWork === 0 && stats.totalTasks === 0 && (
           <p className="text-center text-fg-neutral-muted text-t4 py-4">
-            {weeksAgo === 0 ? '이번 주 활동 기록이 없습니다. 출근해서 시작해 보세요!' : '이 주에는 활동 기록이 없어요.'}
+            {weeksAgo === 0 ? '이번 주 기록이 아직 없어요. 출근하면 쌓여요' : '이 주에는 활동 기록이 없어요.'}
           </p>
         )}
       </main>

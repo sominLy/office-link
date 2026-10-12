@@ -105,7 +105,7 @@ export default function Feed() {
       content: content.trim(),
     });
     if (error) {
-      toast.error('등록에 실패했어요');
+      toast.error('올리지 못했어요. 잠시 후 다시 시도해 주세요');
     } else {
       // 대상에게(또는 전체에게) 푸시
       supabase.functions.invoke('push-notify', {
@@ -198,7 +198,7 @@ export default function Feed() {
               </SelectContent>
             </Select>
             <TextField className="min-w-0" value={content} onValueChange={(d) => setContent(d.value)}>
-<TextFieldInput placeholder={targetId === 'all' ? '모두에게 응원 한마디!' : '칭찬이나 응원을 남겨보세요'} onKeyDown={(e) => isSubmitEnter(e) && post()} maxLength={200} />
+<TextFieldInput placeholder={targetId === 'all' ? '모두에게 응원 한마디' : '칭찬이나 응원을 남겨보세요'} onKeyDown={(e) => isSubmitEnter(e) && post()} maxLength={200} />
 </TextField>
             <ActionButton variant="brandSolid" onClick={post} disabled={posting || !content.trim()} layout="iconOnly" aria-label="소식 올리기" className="flex-shrink-0">
               <Icon svg={<Send className="w-4 h-4" />} />

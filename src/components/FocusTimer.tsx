@@ -125,7 +125,7 @@ export default function FocusTimer() {
     });
     if (error) {
       // 23505 = DB unique 제약(one_open_focus) 위반: 다른 탭에서 이미 집중 시작함
-      toast.error(error.code === '23505' ? '이미 집중 중입니다' : '집중 시작 실패');
+      toast.error(error.code === '23505' ? '다른 탭에서 이미 집중을 시작했어요' : '집중 시작 실패');
       await fetchActiveFocus();
     } else {
       track('focus_started');
@@ -134,7 +134,7 @@ export default function FocusTimer() {
       if (task && task.status === 'todo') updateTaskStatus(task, 'in_progress');
       await changeStatus('집중 중');
       await fetchActiveFocus();
-      toast.success(task ? `"${task.title}" 집중 시작!` : '집중 시작!');
+      toast.success(task ? `"${task.title}" 집중을 시작했어요` : '집중을 시작했어요');
     }
     setStarting(false);
   };
@@ -152,7 +152,7 @@ export default function FocusTimer() {
       .eq('id', activeFocus.id)
       .is('ended_at', null);
     if (error) {
-      toast.error('집중 종료에 실패했습니다');
+      toast.error('집중을 끝내지 못했어요. 잠시 후 다시 시도해 주세요');
       return;
     }
     await changeStatus('업무 중');
@@ -165,7 +165,7 @@ export default function FocusTimer() {
     const shown = formatDuration(Math.min(MAX_FOCUS_SECONDS, duration));
     // 할 일과 함께 집중했다면 바로 완료 처리할 수 있게
     if (focusedTask) {
-      toast.success(`${shown} 집중 완료!`, {
+      toast.success(`${shown} 집중했어요`, {
         description: `"${focusedTask.title}" 다 끝냈나요?`,
         duration: 8000,
         action: {
@@ -176,7 +176,7 @@ export default function FocusTimer() {
         },
       });
     } else {
-      toast.success(`${shown} 집중 완료!`);
+      toast.success(`${shown} 집중했어요`);
     }
   };
 

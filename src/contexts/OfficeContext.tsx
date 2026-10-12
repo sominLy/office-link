@@ -109,7 +109,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
     }
     setOffice({ ...office, title_mode: mode });
     setOffices(offices.map(o => o.id === office.id ? { ...o, title_mode: mode } : o));
-    toast.success('오피스 호칭이 바뀌었어요!');
+    toast.success('오피스 호칭을 바꿨어요');
   };
 
   const fetchMembers = useCallback(async () => {
@@ -198,7 +198,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       // 다른 탭이 먼저 닫았으면 기록·안내는 한 번만
       if (closed && closed.length > 0) {
         supabase.from('office_feed').insert({ office_id: office.id, user_id: user.id, type: 'clock_out', created_at: endedAt }).then(() => {});
-        toast('🌙 지난번에 퇴근을 안 눌러서 그날 자정에 자동 퇴근 처리했어요');
+        toast('🌙 지난번에 퇴근을 안 눌러서 그날 자정에 자동으로 퇴근했어요');
       }
       workData = null;
     }
@@ -252,7 +252,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
           if (row.user_id !== userIdRef.current && !row.ended_at) {
             const m = membersRef.current.find(x => x.user_id === row.user_id);
             const name = m?.nickname || '멤버';
-            notify(`${name}님이 출근했어요 👋`, '오피스에서 함께 달려봐요!');
+            notify(`${name}님이 출근했어요 👋`, '오피스에서 함께 달려봐요');
             toast(`👋 ${name}님이 출근했어요`);
           }
         }
@@ -285,7 +285,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       started_at: now,
     });
     if (error) {
-      toast.error(error.code === '23505' ? '이미 출근 상태입니다' : '출근 처리에 실패했습니다');
+      toast.error(error.code === '23505' ? '이미 출근했어요' : '출근하지 못했어요. 잠시 후 다시 시도해 주세요');
       await fetchMySession();
       return;
     }
@@ -331,7 +331,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       .eq('id', myWorkSession.id)
       .is('ended_at', null);
     if (error) {
-      toast.error('퇴근 처리에 실패했습니다');
+      toast.error('퇴근하지 못했어요. 잠시 후 다시 시도해 주세요');
       return false;
     }
     // 여기부터 퇴근은 DB에 반영됐다. 상태 표시 갱신이 실패해도 퇴근 자체는 유효하므로
@@ -358,7 +358,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
     if (closeError) {
       // 닫지 못한 채 새 상태를 넣으면 열린 세션이 쌓여 멤버 카드 상태가 어긋난다.
       // 조기 반환하더라도 화면이 DB와 어긋난 채 남지 않게 다시 읽는다.
-      toast.error('상태 변경에 실패했습니다');
+      toast.error('상태를 바꾸지 못했어요. 잠시 후 다시 시도해 주세요');
       await fetchMySession();
       await fetchMembers();
       return false;
@@ -369,27 +369,27 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       status,
       started_at: now,
     });
-    if (error) toast.error('상태 변경에 실패했습니다');
+    if (error) toast.error('상태를 바꾸지 못했어요. 잠시 후 다시 시도해 주세요');
     await fetchMySession();
     await fetchMembers();
     return !error;
   };
 
   const joinOffice = async (inviteCode: string) => {
-    if (!user) return { error: '로그인이 필요합니다' };
+    if (!user) return { error: '로그인하고 다시 시도해 주세요' };
     const { data: officeData } = await supabase
       .from('offices')
       .select('*')
       .eq('invite_code', inviteCode)
       .single();
-    if (!officeData) return { error: '유효하지 않은 초대 코드입니다' };
+    if (!officeData) return { error: '초대 코드를 다시 확인해 주세요' };
 
     const { error } = await supabase.from('office_members').insert({
       office_id: officeData.id,
       user_id: user.id,
       role: 'member',
     });
-    if (error) return { error: '이미 가입된 오피스입니다' };
+    if (error) return { error: '이미 가입한 오피스예요' };
     // 가입 자체는 성공했으므로 실패를 반환하지 않는다. 다만 저장이 안 되면
     // 다음 접속에서 다른 오피스로 열릴 수 있어 알려는 준다.
     const { error: currentError } = await supabase
@@ -403,7 +403,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
   };
 
   const createOffice = async (name: string) => {
-    if (!user) return { error: '로그인이 필요합니다' };
+    if (!user) return { error: '로그인하고 다시 시도해 주세요' };
     // invite_code unique 제약과 충돌하면 코드를 새로 뽑아 재시도
     for (let attempt = 0; attempt < 3; attempt++) {
       const bytes = crypto.getRandomValues(new Uint8Array(6));
@@ -415,7 +415,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
         .single();
       if (error) {
         if (error.code === '23505') continue; // 코드 충돌 → 재시도
-        return { error: '오피스 생성에 실패했습니다' };
+        return { error: '오피스를 만들지 못했어요. 잠시 후 다시 시도해 주세요' };
       }
       const { error: memberError } = await supabase.from('office_members').insert({
         office_id: newOffice.id,
@@ -427,7 +427,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
         // 토스트 대신 흔적만 남긴다 (초대 코드를 점유한 빈 오피스가 남는다)
         const { error: rollbackError } = await supabase.from('offices').delete().eq('id', newOffice.id);
         if (rollbackError) console.error('고아 오피스 롤백 실패', newOffice.id, rollbackError);
-        return { error: '오피스 생성에 실패했습니다' };
+        return { error: '오피스를 만들지 못했어요. 잠시 후 다시 시도해 주세요' };
       }
       const { error: currentError } = await supabase
         .from('profiles')
@@ -439,7 +439,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       await fetchOffice();
       return { error: null };
     }
-    return { error: '오피스 생성에 실패했습니다. 다시 시도해 주세요' };
+    return { error: '오피스를 만들지 못했어요. 다시 시도해 주세요' };
   };
 
   return (

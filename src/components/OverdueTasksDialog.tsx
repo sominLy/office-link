@@ -79,7 +79,7 @@ export default function OverdueTasksDialog({ open, onClose, onChanged }: { open:
   const complete = async (task: Task) => {
     if (!(await updateTaskStatus(task, 'done'))) return;
     done(task);
-    toast.success('완료 처리했어요 🎉');
+    toast.success('완료했어요 🎉');
   };
 
   const remove = (task: Task) => {
@@ -115,7 +115,7 @@ export default function OverdueTasksDialog({ open, onClose, onChanged }: { open:
           <div className="text-center py-6 space-y-1">
             <p className="text-t11">✨</p>
             <p className="text-t4 font-medium text-fg-neutral-muted">
-              {handled > 0 ? `${handled}개 정리 완료! 깔끔해졌어요` : '밀린 할 일이 없어요. 깔끔하네요'}
+              {handled > 0 ? `밀린 할 일 ${handled}개를 정리했어요` : '밀린 할 일이 없어요. 깔끔하네요'}
             </p>
             <p className="text-t2 text-fg-neutral-muted">오늘도 가볍게 시작해 봐요</p>
           </div>

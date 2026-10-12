@@ -71,10 +71,10 @@ export default function Home() {
     }
     const { error } = await supabase.from('quotes').insert({ text: quoteText.trim(), created_by: user.id });
     if (error) {
-      toast.error('등록에 실패했어요. 잠시 후 다시 시도해 주세요');
+      toast.error('한마디를 올리지 못했어요. 잠시 후 다시 시도해 주세요');
       return;
     }
-    toast.success('응원 글귀가 등록됐어요! 언젠가 모두의 홈에 떠요 💌');
+    toast.success('응원 글귀를 올렸어요. 언젠가 모두의 홈에 떠요 💌');
     setQuoteText('');
     setQuoteDialogOpen(false);
     supabase.from('quotes').select('text').eq('approved', true).then(({ data }) => {
@@ -134,8 +134,8 @@ export default function Home() {
     if (granted) {
       const pushed = user ? await subscribePush(user.id) : false;
       toast.success(pushed
-        ? '알림이 켜졌어요! 브라우저를 닫아도 출근 소식과 근무 알림이 와요 🔔'
-        : '알림이 켜졌어요! (이 브라우저는 사이트가 열려 있을 때만 알림이 와요)');
+        ? '알림을 켰어요. 브라우저를 닫아도 출근 소식과 근무 알림이 와요 🔔'
+        : '알림을 켰어요. (이 브라우저는 사이트가 열려 있을 때만 알림이 와요)');
       notify('연결오피스 알림 켜짐 🔔', '이렇게 알림이 도착해요');
     } else {
       toast.error('브라우저에서 알림이 차단되어 있어요. 주소창 왼쪽 자물쇠에서 허용해 주세요');
@@ -158,7 +158,7 @@ export default function Home() {
       const key = `nudge-${kstToday()}`;
       if (localStorage.getItem(key)) return;
       localStorage.setItem(key, '1');
-      notify('오늘 일 안 하나요? 👀', `설정한 근무 시작 시간(${profile.work_start.slice(0, 5)})이 지났어요. 출근 버튼이 기다리고 있어요!`);
+      notify('오늘 일 안 하나요? 👀', `설정한 근무 시작 시간(${profile.work_start.slice(0, 5)})이 지났어요. 출근 버튼이 기다리고 있어요`);
       toast('👀 오늘 일 안 하나요? 근무 시작 시간이 지났어요');
     };
     check();
@@ -176,7 +176,7 @@ export default function Home() {
         const last = Number(localStorage.getItem('watch_last') || 0);
         if (Date.now() - last >= interval * 60 * 1000) {
           localStorage.setItem('watch_last', String(Date.now()));
-          notify('👁 아직 집중하고 계신가요?', '스스로와의 약속, 지금도 잘하고 있어요!');
+          notify('👁 아직 집중하고 있나요?', '지금도 잘하고 있어요');
         }
       }
       // ② 예상 퇴근 시간 알림 (하루 한 번)
@@ -186,7 +186,7 @@ export default function Home() {
         const firedKey = `clockout_fired-${kstToday()}`;
         if (nowHM >= target && !localStorage.getItem(firedKey)) {
           localStorage.setItem(firedKey, '1');
-          notify('🏃 예상 퇴근 시간이에요!', '아직 일하고 계신가요? 무리하지 말고 마무리해도 좋아요 💛');
+          notify('🏃 예상 퇴근 시간이에요', '아직 일하고 있나요? 무리하지 말고 마무리해도 좋아요 💛');
           toast('🏃 예상 퇴근 시간이 됐어요');
         }
       }
@@ -232,7 +232,7 @@ export default function Home() {
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(office.invite_code);
-                  toast.success(`초대 코드 ${office.invite_code} 복사됨! 친구에게 공유하세요`);
+                  toast.success(`초대 코드를 복사했어요. 친구에게 공유해 보세요`);
                 }}
                 className="flex items-center gap-1 text-t2 bg-bg-brand-weak hover:bg-bg-brand-weak-pressed text-fg-brand border border-stroke-brand-weak rounded-full px-2.5 py-1 transition-colors flex-shrink-0"
                 title="초대 코드 복사"
@@ -473,7 +473,7 @@ export default function Home() {
             <DialogTitle>🟢 출근하기</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <p className="text-t4 text-fg-neutral-muted">예상 퇴근 시간을 정해두면, 그 시간에 <b>"아직 일하고 계신가요?"</b> 알림을 보내드려요.</p>
+            <p className="text-t4 text-fg-neutral-muted">예상 퇴근 시간을 정해두면, 그 시간에 <b>"아직 일하고 있나요?"</b> 알림을 보내드려요.</p>
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-fg-brand flex-shrink-0" />
               <input type="time" value={offTarget} onChange={(e) => setOffTarget(e.target.value)}
@@ -509,7 +509,7 @@ export default function Home() {
                 setClockInOpen(false);
                 clockIn();
                 toast.success(
-                  offTarget ? `출근! ${offTarget}에 퇴근 알림을 보낼게요 🏃` : '출근했어요! 오늘도 화이팅 💪',
+                  offTarget ? `출근했어요. ${offTarget}에 퇴근 알림을 보낼게요 🏃` : '출근했어요. 오늘도 화이팅 💪',
                 );
                 checkOverdueTasks();
               }}

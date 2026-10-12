@@ -57,14 +57,14 @@ export default function Profile() {
     const path = `${user.id}/avatar-${Date.now()}.${ext}`;
     const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
     if (uploadError) {
-      toast.error('사진 업로드에 실패했어요');
+      toast.error('사진을 올리지 못했어요. 잠시 후 다시 시도해 주세요');
       setUploading(false);
       return;
     }
     const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
     const { error } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
     if (error) {
-      toast.error('프로필 반영에 실패했어요');
+      toast.error('사진을 바꾸지 못했어요. 잠시 후 다시 시도해 주세요');
     } else {
       await refreshProfile();
       toast.success('프로필 사진이 변경되었어요');
@@ -76,7 +76,7 @@ export default function Profile() {
     if (!user) return;
     const { error } = await supabase.from('profiles').update({ avatar_url: null }).eq('id', user.id);
     if (error) {
-      toast.error('사진 삭제에 실패했어요');
+      toast.error('사진을 지우지 못했어요. 잠시 후 다시 시도해 주세요');
       return;
     }
     // 저장소에 남은 이전 사진 파일도 정리
@@ -94,7 +94,7 @@ export default function Profile() {
     setSaving(true);
     const { error } = await supabase.from('profiles').update({ nickname: nickname.trim() }).eq('id', user.id);
     if (error) {
-      toast.error('저장에 실패했어요');
+      toast.error('저장하지 못했어요. 잠시 후 다시 시도해 주세요');
     } else {
       await refreshProfile();
       toast.success('닉네임이 변경되었어요');
@@ -110,7 +110,7 @@ export default function Profile() {
       .update({ work_start: workStart || null })
       .eq('id', user.id);
     if (error) {
-      toast.error('저장에 실패했어요');
+      toast.error('저장하지 못했어요. 잠시 후 다시 시도해 주세요');
     } else {
       await refreshProfile();
       toast.success(workStart ? `${workStart}까지 출근 안 하면 알려드릴게요` : '근무 시간 알림을 껐어요');
@@ -127,7 +127,7 @@ export default function Profile() {
       return;
     }
     await signOut();
-    toast.success('계정이 삭제되었습니다. 그동안 함께해 주셔서 감사했어요');
+    toast.success('계정을 지웠어요. 그동안 함께해 줘서 고마웠어요');
     navigate('/');
   };
 

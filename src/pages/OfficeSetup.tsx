@@ -20,7 +20,7 @@ export default function OfficeSetup() {
     setLoading(true);
     const { error } = await joinOffice(inviteCode);
     if (error) toast.error(error);
-    else { toast.success('오피스에 가입했습니다!'); navigate('/'); }
+    else { toast.success('오피스에 들어왔어요'); navigate('/'); }
     setLoading(false);
   };
 
@@ -29,7 +29,7 @@ export default function OfficeSetup() {
     setLoading(true);
     const { error } = await createOffice(officeName);
     if (error) toast.error(error);
-    else { toast.success('오피스가 생성되었습니다!'); navigate('/'); }
+    else { toast.success('오피스를 만들었어요'); navigate('/'); }
     setLoading(false);
   };
 

@@ -73,13 +73,13 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
       emoji,
     });
     if (error) {
-      toast.error('인사 전송에 실패했어요');
+      toast.error('인사를 보내지 못했어요. 잠시 후 다시 시도해 주세요');
       return;
     }
     supabase.functions.invoke('push-notify', {
       body: { action: 'feed', kind: 'wave', office_id: officeId, actor_id: user.id, target_id: member.user_id, emoji },
     }).catch(() => {});
-    toast.success(`${member.nickname}님에게 ${emoji} 인사를 보냈어요!`);
+    toast.success(`${member.nickname}님에게 ${emoji} 인사를 보냈어요`);
   };
 
   const forceClockOut = async () => {
@@ -97,10 +97,10 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
       closeOpen('status_sessions'),
     ]);
     if (results.some(result => result.error)) {
-      toast.error('퇴근 처리에 실패했어요');
+      toast.error('퇴근시키지 못했어요. 잠시 후 다시 시도해 주세요');
       return;
     }
-    toast.success(`${member.nickname}님을 퇴근 처리했어요`);
+    toast.success(`${member.nickname}님을 퇴근시켰어요`);
     onClose();
   };
 

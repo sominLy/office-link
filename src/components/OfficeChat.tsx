@@ -172,7 +172,7 @@ export default function OfficeChat() {
       <div className="flex-1 overflow-y-auto space-y-3 pr-1">
         {shown.length === 0 ? (
           <p className="text-center text-fg-neutral-muted text-t4 py-10">
-            {peer === null ? '아직 대화가 없어요. 첫 인사를 건네보세요! 👋' : `${nameOf(peer)}님과의 첫 대화를 시작해보세요 💬`}
+            {peer === null ? '아직 대화가 없어요. 첫 인사를 건네보세요 👋' : `${nameOf(peer)}님과의 첫 대화를 시작해보세요 💬`}
           </p>
         ) : (
           shown.map((m, i) => {

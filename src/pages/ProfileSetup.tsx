@@ -27,7 +27,7 @@ export default function ProfileSetup() {
     if (error) {
       toast.error('프로필 저장 실패');
     } else {
-      toast.success('프로필이 저장되었습니다');
+      toast.success('프로필을 저장했어요');
       await refreshProfile();
     }
     setLoading(false);

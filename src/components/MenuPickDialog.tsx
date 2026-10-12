@@ -65,7 +65,7 @@ export default function MenuPickDialog({ open, onClose }: { open: boolean; onClo
         </div>
         <ActionButton variant="brandSolid" onClick={roll} disabled={rolling} className="w-full">
           <Dices className="w-4 h-4 mr-1" />
-          {pick ? '다시 뽑기' : '뽑기!'}
+          {pick ? '다시 뽑기' : '뽑기'}
         </ActionButton>
       </DialogContent>
     </Dialog>
