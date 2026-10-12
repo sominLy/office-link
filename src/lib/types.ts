@@ -27,6 +27,7 @@ export interface Office {
   name: string;
   invite_code: string;
   title_mode: 'nim' | 'pro' | 'rank' | 'english';
+  is_public?: boolean; // 초대 코드 없이 들어오는 오피스 (022 마이그레이션 전엔 없음)
   created_at: string;
 }
 

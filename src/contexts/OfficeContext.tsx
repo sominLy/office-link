@@ -29,6 +29,7 @@ interface OfficeContextType {
   /** 새 상태가 DB에 반영됐으면 true. 실패 안내는 changeStatus가 직접 띄운다. */
   changeStatus: (status: StatusPreset) => Promise<boolean>;
   joinOffice: (inviteCode: string) => Promise<{ error: string | null }>;
+  joinPublicOffice: (officeId: string) => Promise<{ error: string | null }>;
   createOffice: (name: string) => Promise<{ error: string | null }>;
 }
 
@@ -375,11 +376,35 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
     return !error;
   };
 
+  // 가입 뒤 공통 처리. 가입 자체는 성공했으므로 실패를 반환하지 않는다. 다만 저장이 안 되면
+  // 다음 접속에서 다른 오피스로 열릴 수 있어 알려는 준다.
+  const enterJoinedOffice = async (officeId: string, method: 'invite' | 'public') => {
+    if (!user) return;
+    const { error: currentError } = await supabase
+      .from('profiles')
+      .update({ current_office_id: officeId })
+      .eq('id', user.id);
+    if (currentError) toast.error('가입은 됐지만 기본 오피스로 저장하지 못했어요');
+    track('office_joined', { method });
+    await fetchOffice();
+  };
+
   const joinOffice = async (inviteCode: string) => {
     if (!user) return { error: '로그인하고 다시 시도해 주세요' };
+    const { data: joinedId, error: rpcError } = await supabase.rpc('join_office_by_code', { p_code: inviteCode });
+    if (!rpcError) {
+      await enterJoinedOffice(joinedId as string, 'invite');
+      return { error: null };
+    }
+    if (rpcError.code === 'P0002') return { error: '초대 코드를 다시 확인해 주세요' };
+    if (rpcError.code === '23505') return { error: '이미 가입한 오피스예요' };
+    if (rpcError.code !== 'PGRST202') return { error: '오피스에 들어가지 못했어요. 잠시 후 다시 시도해 주세요' };
+
+    // 함수가 아직 없는 DB(022 적용 전)에서는 오피스를 직접 조회해 들어간다.
+    // 022를 적용하면 이 경로는 정책에 막히므로, 적용을 확인한 뒤 지운다.
     const { data: officeData } = await supabase
       .from('offices')
-      .select('*')
+      .select('id')
       .eq('invite_code', inviteCode)
       .single();
     if (!officeData) return { error: '초대 코드를 다시 확인해 주세요' };
@@ -390,15 +415,22 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       role: 'member',
     });
     if (error) return { error: '이미 가입한 오피스예요' };
-    // 가입 자체는 성공했으므로 실패를 반환하지 않는다. 다만 저장이 안 되면
-    // 다음 접속에서 다른 오피스로 열릴 수 있어 알려는 준다.
-    const { error: currentError } = await supabase
-      .from('profiles')
-      .update({ current_office_id: officeData.id })
-      .eq('id', user.id);
-    if (currentError) toast.error('가입은 됐지만 기본 오피스로 저장하지 못했어요');
-    track('office_joined', { method: 'invite' });
-    await fetchOffice();
+    await enterJoinedOffice(officeData.id, 'invite');
+    return { error: null };
+  };
+
+  // 초대 코드 없이 공개 오피스에 들어간다. members_insert 정책이 공개 오피스의 멤버 가입만 통과시킨다.
+  const joinPublicOffice = async (officeId: string) => {
+    if (!user) return { error: '로그인하고 다시 시도해 주세요' };
+    const { error } = await supabase.from('office_members').insert({
+      office_id: officeId,
+      user_id: user.id,
+      role: 'member',
+    });
+    if (error) {
+      return { error: error.code === '23505' ? '이미 가입한 오피스예요' : '오피스에 들어가지 못했어요. 잠시 후 다시 시도해 주세요' };
+    }
+    await enterJoinedOffice(officeId, 'public');
     return { error: null };
   };
 
@@ -446,7 +478,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
     <OfficeContext.Provider value={{
       office, offices, myRole, switchOffice, updateTitleMode,
       members, myWorkSession, myStatusSession, loading,
-      clockIn, clockOut, changeStatus, joinOffice, createOffice,
+      clockIn, clockOut, changeStatus, joinOffice, joinPublicOffice, createOffice,
     }}>
       {children}
     </OfficeContext.Provider>

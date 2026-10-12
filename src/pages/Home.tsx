@@ -228,7 +228,8 @@ export default function Home() {
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
-            {office && (
+            {/* 공개 오피스는 코드 없이 들어오므로 초대 코드를 보여주지 않는다 */}
+            {office && !office.is_public && (
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(office.invite_code);

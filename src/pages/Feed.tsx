@@ -17,6 +17,7 @@ import BottomNav from '@/components/BottomNav';
 import OfficeChat from '@/components/OfficeChat';
 import AnnouncementBoard from '@/components/AnnouncementBoard';
 import { isSubmitEnter } from '@/lib/utils';
+import { checkPublicPost } from '@/lib/profanity';
 
 import { Icon } from '@seed-design/react';
 function timeAgo(iso: string): string {
@@ -95,6 +96,14 @@ export default function Feed() {
 
   const post = async () => {
     if (!user || !office || !content.trim() || posting) return;
+    // 공개 오피스의 글은 모르는 사람이 읽는다. 올리기 전에 금지 표현과 링크·연락처를 거른다.
+    if (office.is_public) {
+      const check = checkPublicPost(content);
+      if (!check.ok) {
+        toast.error(check.reason ?? '올릴 수 없는 내용이에요');
+        return;
+      }
+    }
     setPosting(true);
     const target = targetId === 'all' ? null : targetId;
     const { error } = await supabase.from('office_feed').insert({
@@ -168,14 +177,19 @@ export default function Feed() {
 
       <main className="max-w-lg mx-auto px-4 py-6 pb-24">
        <Tabs defaultValue="board" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-4">
-          <TabsTrigger value="board">📌 게시판</TabsTrigger>
-          <TabsTrigger value="chat">💬 채팅</TabsTrigger>
-        </TabsList>
+        {/* 공개 오피스는 채팅을 열지 않는다. 모르는 사람끼리의 대화는 운영자가 살필 수 없다. */}
+        {!office?.is_public && (
+          <>
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="board">📌 게시판</TabsTrigger>
+              <TabsTrigger value="chat">💬 채팅</TabsTrigger>
+            </TabsList>
 
-        <TabsContent value="chat">
-          <OfficeChat />
-        </TabsContent>
+            <TabsContent value="chat">
+              <OfficeChat />
+            </TabsContent>
+          </>
+        )}
 
         <TabsContent value="board" className="space-y-4">
         {/* 업데이트 공지 — 소식에 밀려 사라지지 않게 맨 위 고정 */}

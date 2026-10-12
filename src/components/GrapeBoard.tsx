@@ -8,12 +8,11 @@ import { Award, ChevronLeft, ChevronRight } from 'lucide-react';
 import AwardCertificate from '@/components/awards/AwardCertificate';
 import { certDate, templateAt } from '@/lib/awards';
 import { kstToday } from '@/lib/dates';
+import GrapeCluster from '@/components/illustrations/GrapeCluster';
 
 import { Icon } from '@seed-design/react';
 // 포도 스티커판: 출근한 날 1알 + 할 일 3개 완료마다 1알. 30알 = 한 판 완성 → 상장!
 const BOARD_SIZE = 30;
-// 포도송이 모양 줄 배치 (합 30)
-const ROWS = [4, 5, 6, 6, 5, 3, 1];
 
 export default function GrapeBoard() {
   const { user, profile } = useAuth();
@@ -47,53 +46,31 @@ export default function GrapeBoard() {
   const completedBoards = Math.floor(total / BOARD_SIZE);
   const current = total % BOARD_SIZE;
 
-  let grapeIndex = 0;
-
   return (
     <Card className="border-stroke-neutral-subtle bg-bg-neutral-muted">
       <CardHeader>
-        <CardTitle className="text-t5 flex items-center gap-2">🍇 포도 스티커판</CardTitle>
+        <CardTitle className="text-t5">포도 스티커판</CardTitle>
         <CardDescription>
-          출근한 날 1알, 할 일 3개 완료마다 1알! 30알을 다 모으면 상장이 나와요.
+          출근한 날 1알, 할 일 3개를 끝내면 1알. 30알을 모으면 상장이 나와요.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        {/* 포도송이 */}
-        <div className="flex flex-col items-center gap-1 py-1">
-          <span className="text-t9 -mb-1">🌿</span>
-          {ROWS.map((cols, r) => (
-            <div key={r} className="flex gap-1">
-              {Array.from({ length: cols }).map((_, c) => {
-                const idx = grapeIndex++;
-                const filled = idx < current;
-                return (
-                  <span
-                    key={c}
-                    className={`w-7 h-7 rounded-full flex items-center justify-center text-t4 transition-all ${
-                      filled
-                        ? 'bg-gradient-to-br from-purple-400 to-purple-600 shadow-sm scale-100'
-                        : 'bg-bg-layer-default border-2 border-dashed border-purple-200 scale-90'
-                    }`}
-                  >
-                    {filled ? '🍇' : ''}
-                  </span>
-                );
-              })}
-            </div>
-          ))}
+        {/* 포도송이 — 이모지 대신 직접 그린 SVG */}
+        <div className="flex justify-center py-x2 text-fg-neutral-subtle">
+          <GrapeCluster filled={current} className="w-[12.5rem] h-auto" />
         </div>
 
         <div className="text-center space-y-1">
           <p className="text-t4 text-fg-neutral-muted">
             {loaded ? (
               <>
-                <b className="text-purple-700">{current}</b> / {BOARD_SIZE}알
+                <b className="text-fg-brand">{current}</b> / {BOARD_SIZE}알
                 <span className="text-fg-neutral-muted text-t2 ml-2">(출근 {workDays}일 · 할 일 완료 {doneTasks}개)</span>
               </>
             ) : '세는 중...'}
           </p>
           {current >= BOARD_SIZE - 5 && current < BOARD_SIZE && (
-            <p className="text-t2 text-purple-600">거의 다 왔어요! {BOARD_SIZE - current}알만 더! 🔥</p>
+            <p className="text-t2 text-fg-brand">{BOARD_SIZE - current}알만 더 모으면 한 판이에요</p>
           )}
         </div>
 
@@ -101,7 +78,7 @@ export default function GrapeBoard() {
         {completedBoards > 0 && (
           <div className="flex items-center justify-between bg-white/80 border border-stroke-brand-weak rounded-lg px-3 py-2">
             <p className="text-t4 text-fg-neutral-muted">
-              🏆 완성한 포도판 <b className="text-fg-brand">{completedBoards}개</b>
+              완성한 포도판 <b className="text-fg-brand">{completedBoards}개</b>
             </p>
             <ActionButton size="small" variant="neutralOutline" onClick={() => { setCertNo(completedBoards); setCertOpen(true); }}>
               <Award className="w-3.5 h-3.5 mr-1" /> 상장 보기

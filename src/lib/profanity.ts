@@ -26,6 +26,15 @@ export function checkQuote(raw: string): { ok: boolean; reason?: string } {
   if (text.length < 4) return { ok: false, reason: '너무 짧아요 (4자 이상)' };
   if (text.length > 60) return { ok: false, reason: '너무 길어요 (60자 이하)' };
 
+  return checkContent(text);
+}
+
+/** 공개 오피스 소식 글 검사. 글귀와 달리 길이는 입력칸의 maxLength가 정한다. */
+export function checkPublicPost(raw: string): { ok: boolean; reason?: string } {
+  return checkContent(raw.trim());
+}
+
+function checkContent(text: string): { ok: boolean; reason?: string } {
   // URL·연락처 등 스팸성 차단
   if (/https?:\/\/|www\.|\d{2,3}-\d{3,4}-\d{4}|@[\w.]+\.\w/i.test(text)) {
     return { ok: false, reason: '링크나 연락처는 넣을 수 없어요' };

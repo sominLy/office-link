@@ -102,9 +102,12 @@ export const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps
         showCloseButton={showCloseButton}
         // 제목이 없는 모달은 스크린리더에서 이름이 없다. 최소한의 이름을 준다.
         aria-label={titlePick.found ? undefined : '대화상자'}
+        // 호출부가 넘기는 max-w-* 는 패널 폭 제한이다. 본문에 붙이면 패널은 그대로 넓고
+        // 안쪽만 좁아져서 모달이 화면을 덮는다.
+        className={className}
         {...props}
       >
-        <ResponsiveDialogBody className={className}>{rest}</ResponsiveDialogBody>
+        <ResponsiveDialogBody>{rest}</ResponsiveDialogBody>
         {footer}
       </ResponsiveDialogContent>
     );
