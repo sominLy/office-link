@@ -476,7 +476,9 @@ export default function Tasks() {
                           </button>
                         </div>
                       )}
-                      {group.map((task) => <TaskItem key={task.id} task={task} {...itemProps} />)}
+                      <ul className="rounded-r3 border border-stroke-neutral-subtle bg-bg-layer-default overflow-hidden divide-y divide-stroke-neutral-subtle">
+                        {group.map((task) => <TaskItem key={task.id} task={task} row {...itemProps} />)}
+                      </ul>
                     </section>
                   );
                 })}
@@ -492,7 +494,11 @@ export default function Tasks() {
                       <ChevronRight className={cn('w-4 h-4 transition-transform', showDone && 'rotate-90')} />
                       완료한 할 일 {doneTasks.length}개
                     </button>
-                    {showDone && doneTasks.map((task) => <TaskItem key={task.id} task={task} showCategory {...itemProps} />)}
+                    {showDone && (
+                      <ul className="rounded-r3 border border-stroke-neutral-subtle bg-bg-layer-default overflow-hidden divide-y divide-stroke-neutral-subtle">
+                        {doneTasks.map((task) => <TaskItem key={task.id} task={task} showCategory row {...itemProps} />)}
+                      </ul>
+                    )}
                   </section>
                 )}
               </>

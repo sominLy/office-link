@@ -13,6 +13,11 @@ interface TaskItemProps {
   today: string;
   nowHM: string;
   showCategory?: boolean;
+  /**
+   * 리스트 보기에서 쓰는 행 모양. 테두리와 모서리를 떼고 위아래로 붙여 세로로 훑게 한다.
+   * 칸반·캘린더에서는 카드가 맞으므로 기본값은 카드다.
+   */
+  row?: boolean;
   onToggle: (task: Task) => void;
   onStatus: (task: Task, status: TaskStatus) => void;
   onEdit: (task: Task) => void;
@@ -21,17 +26,22 @@ interface TaskItemProps {
 }
 
 /** 할 일 카드 — 동그라미로 완료, 제목을 누르면 수정, ⋯ 메뉴로 미루기·삭제 */
-export default function TaskItem({ task, today, nowHM, showCategory, onToggle, onStatus, onEdit, onPostpone, onDelete }: TaskItemProps) {
+export default function TaskItem({ task, today, nowHM, showCategory, row, onToggle, onStatus, onEdit, onPostpone, onDelete }: TaskItemProps) {
   const done = task.status === 'done';
   const due = done ? null : dueInfo(task, today, nowHM);
   const overdue = due?.tone === 'overdue';
 
+  const Wrapper = row ? 'li' : 'div';
+
   return (
-    <div
+    <Wrapper
       className={cn(
-        'group flex items-start gap-2.5 rounded-xl border bg-bg-layer-default p-3 transition-colors hover:border-stroke-brand-weak',
-        overdue ? 'border-stroke-critical-weak bg-bg-critical-weak' : 'border-stroke-neutral-subtle',
-        done && 'bg-white/70',
+        'group flex items-start gap-2.5 bg-bg-layer-default transition-colors',
+        row
+          ? 'px-x4 py-x3 hover:bg-bg-layer-default-pressed'
+          : 'rounded-r3 border p-x3 hover:border-stroke-brand-weak',
+        !row && (overdue ? 'border-stroke-critical-weak' : 'border-stroke-neutral-subtle'),
+        overdue && 'bg-bg-critical-weak',
       )}
     >
       <button
@@ -119,6 +129,6 @@ export default function TaskItem({ task, today, nowHM, showCategory, onToggle, o
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-    </div>
+    </Wrapper>
   );
 }
