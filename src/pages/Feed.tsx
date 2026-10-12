@@ -146,11 +146,11 @@ export default function Feed() {
     const name = nameOf(item.user_id, item.author?.nickname);
     switch (item.type) {
       case 'clock_in':
-        return <span><b>{name}</b>이(가) 출근했습니다 <Sun className="w-3.5 h-3.5 inline text-fg-brand" /></span>;
+        return <span><b>{name}</b>이 출근했어요 <Sun className="w-3.5 h-3.5 inline text-fg-brand" /></span>;
       case 'clock_out':
-        return <span><b>{name}</b>이(가) 퇴근했습니다 <Moon className="w-3.5 h-3.5 inline text-indigo-400" /></span>;
+        return <span><b>{name}</b>이 퇴근했어요 <Moon className="w-3.5 h-3.5 inline text-indigo-400" /></span>;
       case 'wave':
-        return <span><b>{name}</b>이(가) <b>{item.target_user_id ? nameOf(item.target_user_id, item.target?.nickname) : '멤버'}</b>에게 반갑다고 인사했어요 {item.emoji || '👋'}</span>;
+        return <span><b>{name}</b>이 <b>{item.target_user_id ? nameOf(item.target_user_id, item.target?.nickname) : '멤버'}</b>에게 반갑다고 인사했어요 {item.emoji || '👋'}</span>;
       case 'post':
         return (
           <span>
