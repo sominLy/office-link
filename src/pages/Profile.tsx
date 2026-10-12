@@ -10,7 +10,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { ArrowLeft, Camera, Trash2, X, BellRing } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from '@/lib/toast';
 import { defaultAvatar } from '@/lib/avatar';
 import BottomNav from '@/components/BottomNav';
@@ -20,6 +20,15 @@ import RetroSettingsDialog from '@/components/retro/RetroSettingsDialog';
 import { describePrefs, nextDeliveryLabel, readRetroPrefs } from '@/lib/retro';
 
 import { Icon } from '@seed-design/react';
+/** 내 사진 폴더를 비운다. 다 지웠으면 true */
+async function removeAvatarFiles(userId: string): Promise<boolean> {
+  const { data: files, error } = await supabase.storage.from('avatars').list(userId);
+  if (error) return false;
+  if (!files?.length) return true;
+  const { error: removeError } = await supabase.storage.from('avatars').remove(files.map(f => `${userId}/${f.name}`));
+  return !removeError;
+}
+
 export default function Profile() {
   const [retroSettingsOpen, setRetroSettingsOpen] = useState(false);
   const { user, profile, refreshProfile, signOut } = useAuth();
@@ -80,10 +89,7 @@ export default function Profile() {
       return;
     }
     // 저장소에 남은 이전 사진 파일도 정리
-    const { data: files } = await supabase.storage.from('avatars').list(user.id);
-    if (files?.length) {
-      await supabase.storage.from('avatars').remove(files.map(f => `${user.id}/${f.name}`));
-    }
+    await removeAvatarFiles(user.id);
     await refreshProfile();
     toast.success('기본 이미지로 변경되었어요');
   };
@@ -120,6 +126,13 @@ export default function Profile() {
 
   const handleDeleteAccount = async () => {
     setDeleting(true);
+    // 계정을 지워도 저장소의 사진 파일은 따라 지워지지 않고, 사진 주소는 로그인 없이 열린다.
+    // 계정이 사라지면 내 폴더를 지울 권한도 없어지므로 먼저 지운다.
+    if (user && !(await removeAvatarFiles(user.id))) {
+      toast.error('사진을 지우지 못해서 계정 삭제를 멈췄어요. 잠시 후 다시 시도해 주세요');
+      setDeleting(false);
+      return;
+    }
     const { error } = await supabase.rpc('delete_my_account');
     if (error) {
       toast.error('계정 삭제에 실패했어요. 잠시 후 다시 시도해 주세요');
@@ -300,6 +313,11 @@ export default function Profile() {
             </AlertDialog>
           </CardContent>
         </Card>
+        <p className="text-center text-t2 text-fg-neutral-muted">
+          <Link to="/terms" className="underline underline-offset-2">이용약관</Link>
+          <span aria-hidden="true"> · </span>
+          <Link to="/privacy" className="underline underline-offset-2">개인정보 처리방침</Link>
+        </p>
       </main>
       <BottomNav />
     </div>

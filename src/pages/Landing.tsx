@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { track } from '@/lib/funnel';
 import { trackAnonVisitOnce } from '@/lib/analytics';
 import { ActionButton } from '@/seed/ui/action-button';
@@ -82,8 +82,14 @@ export default function Landing() {
           </ActionButton>
         </div>
 
-        <p className="mt-x8 text-center text-t2 leading-relaxed text-fg-neutral-muted">
-          이메일과 비밀번호로 가입해요. 오피스 안에서 보이는 것은 닉네임과 상태뿐이에요.
+        <p className="mt-x8 text-center text-t2 leading-relaxed text-fg-neutral-muted [word-break:keep-all]">
+          이메일과 비밀번호로 가입해요. 같은 오피스 사람들에게는 닉네임, 프로필 사진, 상태, 출근과 집중 시간, 할 일, 소식 글이 보여요.
+          할 일은 하나씩 비공개로 바꿀 수 있어요.
+        </p>
+        <p className="mt-x3 text-center text-t2 text-fg-neutral-muted">
+          <Link to="/terms" className="underline underline-offset-2">이용약관</Link>
+          <span aria-hidden="true"> · </span>
+          <Link to="/privacy" className="underline underline-offset-2">개인정보 처리방침</Link>
         </p>
       </main>
     </div>
