@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { MemberStatus, Task } from '@/lib/types';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/AppDialog';
 import { Badge } from '@/components/ui/badge';
 import { kstStartOfTodayISO, kstStartOfWeekISO, getWeekStart } from '@/lib/dates';
 import { defaultAvatar } from '@/lib/avatar';

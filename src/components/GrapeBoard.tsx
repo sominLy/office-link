@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/AppDialog';
 import { ActionButton } from '@/seed/ui/action-button';
 import { Award, ChevronLeft, ChevronRight } from 'lucide-react';
 import AwardCertificate from '@/components/awards/AwardCertificate';

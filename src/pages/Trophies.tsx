@@ -5,7 +5,7 @@ import { useOffice } from '@/contexts/OfficeContext';
 import { ActionButton } from '@/seed/ui/action-button';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/AppDialog';
 import { ArrowLeft, ChevronRight, Lock } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
 import AwardCertificate from '@/components/awards/AwardCertificate';

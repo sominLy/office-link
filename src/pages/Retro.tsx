@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/card';
 import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { TextFieldTextarea } from '@/seed/ui/text-field';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/AppDialog';
 import { ArrowLeft, ChevronLeft, ChevronRight, Settings2, Trophy, CheckCircle2, Share2, CalendarPlus } from 'lucide-react';
 import { toast } from '@/lib/toast';
 import BottomNav from '@/components/BottomNav';

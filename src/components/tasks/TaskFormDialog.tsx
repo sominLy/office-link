@@ -3,7 +3,7 @@ import { ActionButton } from '@/seed/ui/action-button';
 import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/AppDialog';
 import { Lock, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { addDays, formatDateLabel, formatTimeLabel, kstToday } from '@/lib/dates';

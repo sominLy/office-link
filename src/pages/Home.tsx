@@ -27,7 +27,7 @@ import { kstToday } from '@/lib/dates';
 import { todayQuoteFrom, randomQuoteFrom } from '@/lib/quotes';
 import { checkQuote } from '@/lib/profanity';
 import { displayName, TITLE_MODES } from '@/lib/callsign';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/AppDialog';
 import { isSubmitEnter } from '@/lib/utils';
 import { PRESENCE_META } from '@/lib/presence';
 import { List, ListDivider } from '@/seed/ui/list';

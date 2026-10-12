@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/AppDialog';
 import { ActionButton } from '@/seed/ui/action-button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UtensilsCrossed, Dices } from 'lucide-react';

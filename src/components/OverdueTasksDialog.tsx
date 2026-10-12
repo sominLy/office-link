@@ -5,7 +5,7 @@ import { Task } from '@/lib/types';
 import { ActionButton } from '@/seed/ui/action-button';
 import { Badge } from '@/components/ui/badge';
 import { TextField, TextFieldInput } from '@/seed/ui/text-field';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/AppDialog';
 import { CalendarDays, CheckCheck, Clock, Trash2 } from 'lucide-react';
 import { toast } from '@/lib/toast';
 import { addDays, daysBetween, formatDateLabel, formatShortDate, formatTimeLabel, kstToday } from '@/lib/dates';

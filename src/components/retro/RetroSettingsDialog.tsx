@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ActionButton } from '@/seed/ui/action-button';
 import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/AppDialog';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 import { formatTimeLabel } from '@/lib/dates';
