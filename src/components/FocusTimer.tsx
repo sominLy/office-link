@@ -198,7 +198,7 @@ export default function FocusTimer() {
               </p>
             )}
           </div>
-          <ActionButton onClick={stopFocus} variant="neutralOutline" className="border-stroke-critical-weak text-fg-critical-contrast hover:bg-bg-critical-weak">
+          <ActionButton onClick={stopFocus} variant="neutralOutline" className="text-fg-critical-contrast">
             <Square className="w-4 h-4 mr-1" />
             종료
           </ActionButton>
@@ -216,7 +216,7 @@ export default function FocusTimer() {
               ))}
             </SelectContent>
           </Select>
-          <ActionButton variant="brandSolid" onClick={startFocus} disabled={starting} className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
+          <ActionButton variant="brandSolid" onClick={startFocus} disabled={starting} >
             <Play className="w-4 h-4 mr-1" />
             집중 시작
           </ActionButton>

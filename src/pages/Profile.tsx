@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { ActionButton } from '@/seed/ui/action-button';
-import { Input } from '@/components/ui/input';
+import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -19,11 +19,18 @@ import GrapeBoard from '@/components/GrapeBoard';
 import RetroSettingsDialog from '@/components/retro/RetroSettingsDialog';
 import { describePrefs, nextDeliveryLabel, readRetroPrefs } from '@/lib/retro';
 
+import { Icon } from '@seed-design/react';
 export default function Profile() {
   const [retroSettingsOpen, setRetroSettingsOpen] = useState(false);
   const { user, profile, refreshProfile, signOut } = useAuth();
   const navigate = useNavigate();
   const [nickname, setNickname] = useState(profile?.nickname || '');
+
+  // 프로필은 마운트 뒤에 비동기로 도착한다. useState 초기값만 쓰면 주소로 바로 들어왔을 때
+  // 입력칸이 빈 채로 남는다. 사용자가 고쳐 둔 값은 덮지 않도록 프로필이 바뀔 때만 맞춘다.
+  useEffect(() => {
+    if (profile?.nickname) setNickname(profile.nickname);
+  }, [profile?.nickname]);
   const [workStart, setWorkStart] = useState(profile?.work_start?.slice(0, 5) || '');
   const [savingTime, setSavingTime] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -129,8 +136,8 @@ export default function Profile() {
       <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-2">
           <ActionButton variant="ghost" layout="iconOnly" aria-label="홈으로" onClick={() => navigate('/')}>
-            <ArrowLeft className="w-4 h-4" />
-          </ActionButton>
+              <Icon svg={<ArrowLeft className="w-4 h-4" />} />
+            </ActionButton>
           <h1 className="font-bold text-fg-neutral">내 계정</h1>
         </div>
       </header>
@@ -178,16 +185,11 @@ export default function Profile() {
 
             {/* 닉네임 */}
             <form onSubmit={handleSave} className="space-y-2">
-              <Label htmlFor="nickname">닉네임</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="nickname"
-                  value={nickname}
-                  onChange={(e) => setNickname(e.target.value)}
-                  maxLength={20}
-                  required
-                />
-                <ActionButton variant="brandSolid" type="submit" disabled={saving || nickname.trim() === profile?.nickname} className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
+              <div className="flex gap-2 items-end">
+                <TextField label="닉네임" className="flex-1" value={nickname} onValueChange={(d) => setNickname(d.value)} required>
+<TextFieldInput id="nickname" maxLength={20} />
+</TextField>
+                <ActionButton variant="brandSolid" type="submit" disabled={saving || nickname.trim() === profile?.nickname} >
                   {saving ? '저장 중...' : '저장'}
                 </ActionButton>
               </div>
@@ -229,9 +231,9 @@ export default function Profile() {
             </CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-3 gap-2">
-            <ActionButton variant="neutralOutline" size="small" className="border-stroke-brand-weak text-fg-brand" onClick={() => setRetroSettingsOpen(true)}>시간 바꾸기</ActionButton>
-            <ActionButton variant="neutralOutline" size="small" className="border-stroke-brand-weak text-fg-brand" onClick={() => navigate('/retro')}>회고 보기</ActionButton>
-            <ActionButton variant="brandSolid" size="small" className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" onClick={() => navigate('/trophies')}>진열장</ActionButton>
+            <ActionButton variant="neutralOutline" size="small" onClick={() => setRetroSettingsOpen(true)}>시간 바꾸기</ActionButton>
+            <ActionButton variant="neutralOutline" size="small" onClick={() => navigate('/retro')}>회고 보기</ActionButton>
+            <ActionButton variant="brandSolid" size="small" onClick={() => navigate('/trophies')}>진열장</ActionButton>
           </CardContent>
         </Card>
         <RetroSettingsDialog open={retroSettingsOpen} onClose={() => setRetroSettingsOpen(false)} />
@@ -255,8 +257,10 @@ export default function Profile() {
           </CardHeader>
           <CardContent>
             <div className="flex gap-2">
-              <Input type="time" value={workStart} onChange={(e) => setWorkStart(e.target.value)} className="flex-1" />
-              <ActionButton variant="brandSolid" onClick={handleSaveWorkStart} disabled={savingTime} className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
+              <TextField value={workStart} onValueChange={(d) => setWorkStart(d.value)} className="flex-1">
+<TextFieldInput type="time" />
+</TextField>
+              <ActionButton variant="brandSolid" onClick={handleSaveWorkStart} disabled={savingTime} >
                 {savingTime ? '저장 중...' : '저장'}
               </ActionButton>
             </div>
@@ -274,7 +278,7 @@ export default function Profile() {
           <CardContent>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <ActionButton variant="neutralOutline" className="border-stroke-critical-weak text-fg-critical-contrast hover:bg-bg-critical-weak">
+                <ActionButton variant="neutralOutline" className="text-fg-critical-contrast">
                   <Trash2 className="w-4 h-4 mr-1" />
                   계정 삭제하기
                 </ActionButton>

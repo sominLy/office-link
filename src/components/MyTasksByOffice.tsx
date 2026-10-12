@@ -5,7 +5,7 @@ import { useOffice } from '@/contexts/OfficeContext';
 import { Task } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ActionButton } from '@/seed/ui/action-button';
-import { Input } from '@/components/ui/input';
+import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, Circle, CircleDot, Trash2, Building2, ListTodo, Lock, Plus } from 'lucide-react';
 import { toast } from '@/lib/toast';
@@ -102,14 +102,9 @@ export default function MyTasksByOffice() {
       <CardContent className="space-y-5">
         {/* 일괄 추가 */}
         <div className="space-y-2 bg-bg-brand-weak border border-stroke-brand-weak rounded-lg p-3">
-          <Input
-            placeholder="예: 영어 단어 외우기"
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            onKeyDown={(e) => isSubmitEnter(e) && bulkAdd()}
-            aria-label="추가할 할 일"
-            maxLength={100}
-          />
+          <TextField value={newTitle} onValueChange={(d) => setNewTitle(d.value)}>
+<TextFieldInput placeholder="예: 영어 단어 외우기" onKeyDown={(e) => isSubmitEnter(e) && bulkAdd()} aria-label="추가할 할 일" maxLength={100} />
+</TextField>
           <div className="flex flex-wrap gap-1.5">
             {offices.map(o => (
               <button
@@ -134,8 +129,7 @@ export default function MyTasksByOffice() {
               <input type="checkbox" checked={newPrivate} onChange={(e) => setNewPrivate(e.target.checked)} className="accent-amber-600" />
               <Lock className="w-3 h-3" /> 비공개
             </label>
-            <ActionButton variant="brandSolid" size="small" onClick={bulkAdd} disabled={adding || !newTitle.trim() || selectedOffices.size === 0}
-              className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
+            <ActionButton variant="brandSolid" size="small" onClick={bulkAdd} disabled={adding || !newTitle.trim() || selectedOffices.size === 0} >
               <Plus className="w-3.5 h-3.5 mr-1" />
               {selectedOffices.size > 1 ? `${selectedOffices.size}개 오피스에 추가` : '추가'}
             </ActionButton>

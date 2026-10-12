@@ -98,7 +98,7 @@ export default function MyTasks({ compact = false }: { compact?: boolean }) {
           </Badge>
         </div>
         {compact && (
-          <ActionButton variant="ghost" size="small" onClick={() => navigate('/tasks')} className="text-fg-brand text-t2 -mr-2">
+          <ActionButton variant="ghost" size="small" onClick={() => navigate('/tasks')} className="text-t2 -mr-2">
             전체 보기 <ArrowRight className="w-3 h-3 ml-1" />
           </ActionButton>
         )}

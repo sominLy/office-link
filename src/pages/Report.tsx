@@ -6,13 +6,14 @@ import { ActionButton } from '@/seed/ui/action-button';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, Calendar, Target, CheckCircle2, Clock, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/lib/toast';
 import { useNavigate } from 'react-router-dom';
 import { addDays, getWeekStart, kstStartOfWeekISO } from '@/lib/dates';
 import BottomNav from '@/components/BottomNav';
 
+import { Icon } from '@seed-design/react';
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
@@ -151,8 +152,8 @@ export default function Report() {
       <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-2">
           <ActionButton variant="ghost" layout="iconOnly" aria-label="홈으로" onClick={() => navigate('/')}>
-            <ArrowLeft className="w-4 h-4" />
-          </ActionButton>
+              <Icon svg={<ArrowLeft className="w-4 h-4" />} />
+            </ActionButton>
           <h1 className="font-bold text-fg-neutral">리포트</h1>
         </div>
       </header>
@@ -161,12 +162,12 @@ export default function Report() {
         {/* 주간 이동 — 지난 주로 넘겨서 과거 기록 확인 */}
         <div className="flex items-center justify-between bg-bg-layer-default rounded-xl border border-stroke-neutral-subtle px-2 py-1.5 shadow-sm">
           <ActionButton variant="ghost" layout="iconOnly" onClick={() => setWeeksAgo(w => w + 1)} aria-label="지난 주">
-            <ChevronLeft className="w-4 h-4" />
-          </ActionButton>
+              <Icon svg={<ChevronLeft className="w-4 h-4" />} />
+            </ActionButton>
           <span className="text-t4 font-semibold text-fg-neutral-muted">{stats.rangeLabel}</span>
           <ActionButton variant="ghost" layout="iconOnly" disabled={weeksAgo === 0} onClick={() => setWeeksAgo(w => Math.max(0, w - 1))} aria-label="다음 주" className="disabled:opacity-30">
-            <ChevronRight className="w-4 h-4" />
-          </ActionButton>
+              <Icon svg={<ChevronRight className="w-4 h-4" />} />
+            </ActionButton>
         </div>
 
         {/* 이 주의 회고·상장으로 */}
@@ -280,14 +281,16 @@ export default function Report() {
           </DialogHeader>
           <div className="space-y-3 pt-1">
             <div className="space-y-1.5">
-              <Label>출근 시간</Label>
-              <Input type="datetime-local" value={editStart} onChange={(e) => setEditStart(e.target.value)} />
+              <TextField label="출근 시간" value={editStart} onValueChange={(d) => setEditStart(d.value)}>
+<TextFieldInput type="datetime-local" />
+</TextField>
             </div>
             <div className="space-y-1.5">
-              <Label>퇴근 시간 (비우면 "근무 중"으로)</Label>
-              <Input type="datetime-local" value={editEnd} onChange={(e) => setEditEnd(e.target.value)} />
+              <TextField label={'퇴근 시간 (비우면 "근무 중"으로)'} value={editEnd} onValueChange={(d) => setEditEnd(d.value)}>
+<TextFieldInput type="datetime-local" />
+</TextField>
             </div>
-            <ActionButton variant="brandSolid" onClick={saveSession} className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">저장</ActionButton>
+            <ActionButton variant="brandSolid" onClick={saveSession} className="w-full">저장</ActionButton>
           </div>
         </DialogContent>
       </Dialog>

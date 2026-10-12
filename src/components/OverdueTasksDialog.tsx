@@ -4,7 +4,7 @@ import { useOffice } from '@/contexts/OfficeContext';
 import { Task } from '@/lib/types';
 import { ActionButton } from '@/seed/ui/action-button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CalendarDays, CheckCheck, Clock, Trash2 } from 'lucide-react';
 import { toast } from '@/lib/toast';
@@ -122,8 +122,7 @@ export default function OverdueTasksDialog({ open, onClose, onChanged }: { open:
         ) : (
           <>
             {tasks.length > 1 && (
-              <ActionButton variant="neutralOutline" size="small" disabled={busy} onClick={moveAllToday}
-                className="w-full border-stroke-brand-weak text-fg-brand hover:bg-bg-brand-weak">
+              <ActionButton variant="neutralOutline" size="small" disabled={busy} onClick={moveAllToday} className="w-full">
                 <CalendarDays className="w-4 h-4 mr-1" /> {tasks.length}개 모두 오늘 할 일로 옮기기
               </ActionButton>
             )}
@@ -170,10 +169,10 @@ export default function OverdueTasksDialog({ open, onClose, onChanged }: { open:
                     {pickerFor === task.id ? (
                       // 날짜를 고른 뒤 '옮기기'로 확정 — 입력 중 중간값으로 바로 옮겨지지 않게
                       <div className="flex gap-1.5">
-                        <Input type="date" value={pickedDate} min={today} onChange={(e) => setPickedDate(e.target.value)}
-                          className="h-9 flex-1 min-w-0 text-t4" aria-label="새 마감일" autoFocus />
-                        <ActionButton variant="brandSolid" size="small" className="h-9 bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" disabled={!pickedDate}
-                          onClick={() => pickedDate && move(task, pickedDate)}>
+                        <TextField value={pickedDate} onValueChange={(d) => setPickedDate(d.value)} className="h-9 flex-1 min-w-0 text-t4">
+<TextFieldInput type="date" min={today} aria-label="새 마감일" autoFocus />
+</TextField>
+                        <ActionButton variant="brandSolid" size="small" className="h-9" disabled={!pickedDate} onClick={() => pickedDate && move(task, pickedDate)}>
                           옮기기
                         </ActionButton>
                         <ActionButton size="small" variant="ghost" className="h-9 px-2 text-fg-neutral-muted" onClick={() => setPickerFor(null)}>

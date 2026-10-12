@@ -80,8 +80,7 @@ export default function QuickAddTask({ onAdd, onOpenDetail, defaultDue = kstToda
           )}
         </DropdownMenuContent>
       </DropdownMenu>
-      <ActionButton variant="brandSolid" type="submit" size="small" disabled={!title.trim() || saving}
-        className="h-8 px-3 bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white flex-shrink-0">
+      <ActionButton variant="brandSolid" type="submit" size="small" disabled={!title.trim() || saving} className="h-8 px-3 flex-shrink-0">
         추가
       </ActionButton>
     </form>

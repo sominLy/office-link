@@ -16,6 +16,7 @@ import {
 } from '@/lib/awards';
 import { fetchRetro, readRetroPrefs, weeklyCertificate } from '@/lib/retro';
 
+import { Icon } from '@seed-design/react';
 /** 내 진열장 — 회고 스티커가 쌓이고, 누적 기록으로 트로피가 열리고, 매주 받은 상장이 모인다 */
 export default function Trophies() {
   const { user, profile } = useAuth();
@@ -78,8 +79,8 @@ export default function Trophies() {
       <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-2.5 flex items-center gap-1">
           <ActionButton variant="ghost" layout="iconOnly" onClick={() => ((window.history.state?.idx ?? 0) > 0 ? navigate(-1) : navigate('/'))} aria-label="뒤로">
-            <ArrowLeft className="w-4 h-4" />
-          </ActionButton>
+              <Icon svg={<ArrowLeft className="w-4 h-4" />} />
+            </ActionButton>
           <div className="min-w-0 flex-1">
             <h1 className="font-bold text-fg-neutral leading-tight">🏆 내 진열장</h1>
             {stats && (
@@ -88,7 +89,7 @@ export default function Trophies() {
               </p>
             )}
           </div>
-          <ActionButton variant="ghost" size="small" className="text-fg-brand" onClick={() => navigate('/retro')}>
+          <ActionButton variant="ghost" size="small" onClick={() => navigate('/retro')}>
             📬 회고
           </ActionButton>
         </div>
@@ -180,7 +181,7 @@ export default function Trophies() {
               {certificates.length === 0 ? (
                 <div className="text-center py-4">
                   <p className="text-t4 text-fg-neutral-muted">아직 받은 상장이 없어요</p>
-                  <ActionButton size="small" variant="neutralOutline" className="mt-2 border-stroke-brand-weak text-fg-brand" onClick={() => navigate('/retro')}>
+                  <ActionButton size="small" variant="neutralOutline" className="mt-2" onClick={() => navigate('/retro')}>
                     📬 회고 열어보기
                   </ActionButton>
                 </div>

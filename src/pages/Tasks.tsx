@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
 import { Task, Routine } from '@/lib/types';
 import { ActionButton } from '@/seed/ui/action-button';
-import { Input } from '@/components/ui/input';
+import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -30,6 +30,7 @@ import TaskFormDialog, { TaskDraft, emptyDraft } from '@/components/tasks/TaskFo
 import QuickAddTask from '@/components/tasks/QuickAddTask';
 import OverdueTasksDialog from '@/components/OverdueTasksDialog';
 
+import { Icon } from '@seed-design/react';
 // 마지막으로 보던 보기·완료 접기 상태는 이 기기에만 기억 (없어도 기본값으로 잘 동작)
 const VIEW_KEY = 'tasks_view';
 const SHOW_DONE_KEY = 'tasks_show_done';
@@ -355,7 +356,7 @@ export default function Tasks() {
         <div className="max-w-5xl mx-auto px-4 py-2.5 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1 min-w-0">
             <ActionButton variant="ghost" layout="iconOnly" onClick={() => navigate('/')} aria-label="홈으로">
-              <ArrowLeft className="w-4 h-4" />
+              <Icon svg={<ArrowLeft className="w-4 h-4" />} />
             </ActionButton>
             <div className="min-w-0">
               <h1 className="font-bold text-fg-neutral leading-tight">이번 주 할 일</h1>
@@ -363,10 +364,10 @@ export default function Tasks() {
             </div>
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0">
-            <ActionButton size="small" variant="neutralOutline" className="border-stroke-brand-weak text-fg-brand" onClick={() => setRoutineDialogOpen(true)}>
+            <ActionButton size="small" variant="neutralOutline" onClick={() => setRoutineDialogOpen(true)}>
               <Repeat className="w-4 h-4 mr-1" /> 루틴{routines.length > 0 && <span className="ml-0.5 text-fg-brand">{routines.length}</span>}
             </ActionButton>
-            <ActionButton variant="brandSolid" size="small" className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" onClick={() => openCreate()}>
+            <ActionButton variant="brandSolid" size="small" onClick={() => openCreate()}>
               <Plus className="w-4 h-4 mr-1" /> 추가
             </ActionButton>
           </div>
@@ -438,7 +439,7 @@ export default function Tasks() {
                 <p className="text-t11 mb-2">📝</p>
                 <p className="text-t4 font-medium text-fg-neutral-muted">이번 주 할 일이 아직 없어요</p>
                 <p className="text-t2 text-fg-neutral-muted mt-1">위 입력칸에 적고 Enter만 누르면 바로 담겨요</p>
-                <ActionButton size="small" variant="neutralOutline" className="mt-4 border-stroke-brand-weak text-fg-brand" onClick={() => setRoutineDialogOpen(true)}>
+                <ActionButton size="small" variant="neutralOutline" className="mt-4" onClick={() => setRoutineDialogOpen(true)}>
                   <Repeat className="w-3.5 h-3.5 mr-1" /> 매주 하는 일은 루틴으로 등록
                 </ActionButton>
               </Card>
@@ -562,16 +563,14 @@ export default function Tasks() {
                 {dayTasks.length === 0 ? (
                   <Card className="p-6 text-center border-dashed bg-white/70">
                     <p className="text-fg-neutral-muted text-t4">이 날짜엔 할 일이 없어요</p>
-                    <ActionButton size="small" variant="neutralOutline" className="mt-3 border-stroke-brand-weak text-fg-brand"
-                      onClick={() => openCreate({ due_date: calDayStr })}>
+                    <ActionButton size="small" variant="neutralOutline" className="mt-3" onClick={() => openCreate({ due_date: calDayStr })}>
                       <Plus className="w-3.5 h-3.5 mr-1" /> 이 날짜에 추가
                     </ActionButton>
                   </Card>
                 ) : (
                   <>
                     {dayTasks.map((task) => <TaskItem key={task.id} task={task} showCategory {...itemProps} />)}
-                    <ActionButton size="small" variant="ghost" className="text-fg-brand"
-                      onClick={() => openCreate({ due_date: calDayStr })}>
+                    <ActionButton size="small" variant="ghost" onClick={() => openCreate({ due_date: calDayStr })}>
                       <Plus className="w-3.5 h-3.5 mr-1" /> 이 날짜에 추가
                     </ActionButton>
                   </>
@@ -616,25 +615,21 @@ export default function Tasks() {
                     <span className="flex-1 min-w-0 truncate text-fg-neutral-muted">{r.title}</span>
                     {r.category && <Badge variant="outline" className="text-t1 bg-bg-layer-default text-fg-brand border-stroke-brand-weak max-w-[6rem] truncate">{r.category}</Badge>}
                     <ActionButton variant="ghost" layout="iconOnly" className="w-8 h-8 text-fg-neutral-muted hover:text-fg-critical" onClick={() => deleteRoutine(r)} aria-label={`루틴 ${r.title} 삭제`}>
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </ActionButton>
+              <Icon svg={<Trash2 className="w-3.5 h-3.5" />} />
+            </ActionButton>
                   </li>
                 ))}
               </ul>
             )}
             <div className="space-y-2 border-t pt-3">
-              <Input
-                placeholder="예: 영어 단어 50개 외우기"
-                value={routineTitle}
-                onChange={(e) => setRoutineTitle(e.target.value)}
-                onKeyDown={(e) => isSubmitEnter(e) && addRoutine()}
-                maxLength={100}
-                aria-label="루틴 이름"
-              />
+              <TextField value={routineTitle} onValueChange={(d) => setRoutineTitle(d.value)}>
+<TextFieldInput placeholder="예: 영어 단어 50개 외우기" onKeyDown={(e) => isSubmitEnter(e) && addRoutine()} maxLength={100} aria-label="루틴 이름" />
+</TextField>
               <div className="flex gap-2">
-                <Input placeholder="카테고리 (선택)" value={routineCategory} onChange={(e) => setRoutineCategory(e.target.value)}
-                  onKeyDown={(e) => isSubmitEnter(e) && addRoutine()} maxLength={20} className="flex-1" aria-label="루틴 카테고리" />
-                <ActionButton variant="brandSolid" onClick={addRoutine} disabled={!routineTitle.trim() || routineSaving} className="bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">추가</ActionButton>
+                <TextField value={routineCategory} onValueChange={(d) => setRoutineCategory(d.value)} className="flex-1">
+<TextFieldInput placeholder="카테고리 (선택)" onKeyDown={(e) => isSubmitEnter(e) && addRoutine()} maxLength={20} aria-label="루틴 카테고리" />
+</TextField>
+                <ActionButton variant="brandSolid" onClick={addRoutine} disabled={!routineTitle.trim() || routineSaving} >추가</ActionButton>
               </div>
               {suggestCategories.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">

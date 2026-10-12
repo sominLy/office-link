@@ -5,13 +5,14 @@ import { supabase } from '@/lib/supabase';
 import { addDays, kstToday } from '@/lib/dates';
 import { cn } from '@/lib/utils';
 import { ActionButton } from '@/seed/ui/action-button';
-import { Input } from '@/components/ui/input';
+import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, RefreshCw, Trash2 } from 'lucide-react';
 import { toast } from '@/lib/toast';
 import { BarList, ChartCard, ColumnChart, DataTable, TrendChart } from '@/components/admin/charts';
 import { BLUE_RAMP, fmt, longDay, Marker, shortDay } from '@/components/admin/format';
 
+import { Icon } from '@seed-design/react';
 // ===== 서버(admin_dashboard)가 돌려주는 모양 =====
 type Daily = {
   day: string; dau: number; visitors: number; anon_visitors: number; signups: number;
@@ -308,7 +309,9 @@ export default function Admin() {
     <div className="min-h-screen bg-[#f9f9f7] pb-16">
       <header className="sticky top-0 z-10 border-b border-black/10 bg-[#f9f9f7]/95 backdrop-blur">
         <div className="max-w-5xl mx-auto px-4 py-2.5 flex items-center gap-1">
-          <ActionButton variant="ghost" layout="iconOnly" onClick={back} aria-label="뒤로"><ArrowLeft className="w-4 h-4" /></ActionButton>
+          <ActionButton variant="ghost" layout="iconOnly" onClick={back} aria-label="뒤로">
+              <Icon svg={<ArrowLeft className="w-4 h-4" />} />
+            </ActionButton>
           <div className="min-w-0 flex-1">
             <h1 className="font-semibold text-[#0b0b0b] leading-tight">📊 운영 대시보드</h1>
             <p className="text-t1 text-[#898781] leading-tight">
@@ -316,8 +319,8 @@ export default function Admin() {
             </p>
           </div>
           <ActionButton variant="ghost" layout="iconOnly" onClick={load} disabled={loading} aria-label="새로고침">
-            <RefreshCw className={cn('w-4 h-4', loading && 'animate-spin')} />
-          </ActionButton>
+              <Icon svg={<RefreshCw className={cn('w-4 h-4', loading && 'animate-spin')} />} />
+            </ActionButton>
         </div>
         {/* 필터: 기간이 먼저, 모든 차트에 같이 적용 */}
         <div className="max-w-5xl mx-auto px-4 pb-2.5 flex flex-wrap items-center gap-2">
@@ -581,9 +584,12 @@ export default function Admin() {
                   <h3 className="text-t4 font-semibold text-[#0b0b0b]">📌 메모 추가</h3>
                   <p className="text-t2 text-[#52514e]">'인스타 첫 게시물', '에타 홍보', '시험 기간' 같은 일을 적어 두면 차트에 표시되고 전후 비교에 나와요. 업데이트 공지(🚀)는 자동으로 들어가요.</p>
                   <div className="flex flex-wrap gap-2">
-                    <Input type="date" value={markerDay} onChange={e => setMarkerDay(e.target.value)} className="w-[9.5rem] h-9 text-t2" max={kstToday()} aria-label="메모 날짜" />
-                    <Input value={markerLabel} onChange={e => setMarkerLabel(e.target.value)} maxLength={60} placeholder="무슨 일이 있었나요?" className="h-9 text-t2 flex-1 min-w-[10rem]"
-                      aria-label="메모 내용" onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) addMarker(); }} />
+                    <TextField value={markerDay} className="w-[9.5rem] h-9 text-t2">
+<TextFieldInput type="date" onChange={e => setMarkerDay(e.target.value)} max={kstToday()} aria-label="메모 날짜" />
+</TextField>
+                    <TextField value={markerLabel} className="h-9 text-t2 flex-1 min-w-[10rem]">
+<TextFieldInput onChange={e => setMarkerLabel(e.target.value)} maxLength={60} placeholder="무슨 일이 있었나요?" aria-label="메모 내용" onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) addMarker(); }} />
+</TextField>
                     <ActionButton variant="brandSolid" size="small" className="h-9" onClick={addMarker} disabled={busy || !markerLabel.trim()}>추가</ActionButton>
                   </div>
                   <ul className="divide-y divide-black/5 max-h-64 overflow-auto">
@@ -605,7 +611,9 @@ export default function Admin() {
                   <h3 className="text-t4 font-semibold text-[#0b0b0b]">🚪 공개 시작일</h3>
                   <p className="text-t2 text-[#52514e]">이 날 전에 가입한 사람(친구들)은 '기존 사용자', 이후는 '새 사용자'로 나눠 볼 수 있어요. 친구들은 매일 쓰는 열성 사용자라 섞이면 숫자가 실제보다 좋아 보여요.</p>
                   <div className="flex flex-wrap gap-2">
-                    <Input type="date" value={launchDay} onChange={e => setLaunchDay(e.target.value)} className="w-[9.5rem] h-9 text-t2" aria-label="공개 시작일" />
+                    <TextField value={launchDay} className="w-[9.5rem] h-9 text-t2">
+<TextFieldInput type="date" onChange={e => setLaunchDay(e.target.value)} aria-label="공개 시작일" />
+</TextField>
                     <ActionButton variant="brandSolid" size="small" className="h-9" onClick={() => launchDay && saveLaunch(launchDay)} disabled={busy || !launchDay}>저장</ActionButton>
                     {data.launch_day && <ActionButton size="small" variant="neutralOutline" className="h-9" onClick={() => saveLaunch(null)} disabled={busy}>지우기</ActionButton>}
                   </div>

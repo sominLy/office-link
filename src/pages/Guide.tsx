@@ -4,6 +4,7 @@ import { ArrowLeft, BookOpenText, Share, PlusSquare, Smartphone } from 'lucide-r
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '@/components/BottomNav';
 
+import { Icon } from '@seed-design/react';
 // 연결오피스 200% 활용 공략집 + 아이폰/안드로이드 앱 설치 가이드
 const TIPS: { emoji: string; title: string; body: string }[] = [
   { emoji: '🌅', title: '하루의 시작은 출근 버튼', body: '출근하면 멤버들에게 알림이 가고 소식 탭에 기록돼요. "나 시작했다!"는 선언이 최고의 동기부여예요.' },
@@ -37,8 +38,8 @@ export default function Guide() {
       <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-2">
           <ActionButton variant="ghost" layout="iconOnly" aria-label="뒤로" onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-4 h-4" />
-          </ActionButton>
+              <Icon svg={<ArrowLeft className="w-4 h-4" />} />
+            </ActionButton>
           <h1 className="font-bold text-fg-neutral flex items-center gap-1.5">
             <BookOpenText className="w-4 h-4 text-fg-brand" /> 200% 활용 공략집
           </h1>

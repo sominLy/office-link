@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
 import { ActionButton } from '@/seed/ui/action-button';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { ArrowLeft, Clock, Target, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/lib/toast';
@@ -12,6 +12,7 @@ import { kstStartOfTodayISO } from '@/lib/dates';
 import { useTasksChanged } from '@/lib/tasks';
 import LeftoverTasks from '@/components/tasks/LeftoverTasks';
 
+import { Icon } from '@seed-design/react';
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
 }
@@ -106,8 +107,8 @@ export default function ClockOut() {
       <header className="glass sticky top-0 z-10 border-b border-stroke-neutral-subtle">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-2">
           <ActionButton variant="ghost" layout="iconOnly" aria-label="홈으로" onClick={() => navigate('/')}>
-            <ArrowLeft className="w-4 h-4" />
-          </ActionButton>
+              <Icon svg={<ArrowLeft className="w-4 h-4" />} />
+            </ActionButton>
           <h1 className="font-bold text-fg-neutral">퇴근 보고</h1>
         </div>
       </header>
@@ -162,15 +163,12 @@ export default function ClockOut() {
 
         <Card className="p-5 border-stroke-neutral-subtle">
           <label className="text-t4 font-medium text-fg-neutral-muted block mb-2">한 줄 회고 (선택)</label>
-          <Input
-            placeholder="오늘 하루를 한 줄로 정리해 보세요"
-            value={memo}
-            onChange={(e) => setMemo(e.target.value)}
-            maxLength={100}
-          />
+          <TextField value={memo} onValueChange={(d) => setMemo(d.value)}>
+<TextFieldInput placeholder="오늘 하루를 한 줄로 정리해 보세요" maxLength={100} aria-label="오늘 하루를 한 줄로 정리해 보세요" />
+</TextField>
         </Card>
 
-        <ActionButton variant="brandSolid" onClick={handleClockOut} className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white h-12 text-t5">
+        <ActionButton variant="brandSolid" onClick={handleClockOut} className="w-full h-12 text-t5">
           퇴근하기
         </ActionButton>
       </main>

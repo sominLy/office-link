@@ -6,7 +6,7 @@ import FocusTimer from '@/components/FocusTimer';
 import MyTasks from '@/components/MyTasks';
 import { ActionButton } from '@/seed/ui/action-button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { LogOut, ChevronDown, Clock, Copy, Bell, Building2, Plus, Tag, Check, UtensilsCrossed, Palmtree, BellOff, BookOpenText, NotebookPen, Sparkles, MessageSquarePlus, RotateCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -295,12 +295,19 @@ export default function Home() {
             <div className="flex items-center gap-2 w-full sm:w-auto">
               {!isWorking ? (
                 <>
-                <ActionButton variant="brandSolid" onClick={() => {
-                  const now = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
-                  setClockInBase(now);
-                  setOffTarget(now); // 기본값 = 출근한 지금 시각
-                  setClockInOpen(true);
-                }} className="bg-bg-positive-solid hover:bg-bg-positive-solid-pressed text-white flex-1 sm:flex-none">
+                <ActionButton
+                  variant="brandSolid"
+                  onClick={() => {
+                    const now = new Intl.DateTimeFormat('en-GB', {
+                      timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false,
+                    }).format(new Date());
+                    // 기본값 = 출근한 지금 시각
+                    setClockInBase(now);
+                    setOffTarget(now);
+                    setClockInOpen(true);
+                  }}
+                  className="flex-1 sm:flex-none"
+                >
                   <Clock className="w-4 h-4 mr-1" />
                   출근하기
                 </ActionButton>
@@ -326,7 +333,7 @@ export default function Home() {
                 <>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <ActionButton variant="neutralOutline" className="flex-1 sm:flex-none border-stroke-brand-weak">
+                      <ActionButton variant="neutralOutline" className="flex-1 sm:flex-none">
                         상태 변경 <ChevronDown className="w-4 h-4 ml-1" />
                       </ActionButton>
                     </DropdownMenuTrigger>
@@ -439,15 +446,11 @@ export default function Home() {
             <DialogTitle className="flex items-center gap-2"><MessageSquarePlus className="w-4 h-4 text-fg-brand" /> 응원 글귀 제보</DialogTitle>
           </DialogHeader>
           <p className="text-t4 text-fg-neutral-muted -mt-1">모두의 홈에 뜨는 "오늘의 한마디"를 함께 채워요. 따뜻한 응원 한마디를 남겨주세요 💛</p>
-          <Input
-            value={quoteText}
-            onChange={(e) => setQuoteText(e.target.value)}
-            onKeyDown={(e) => isSubmitEnter(e) && submitQuote()}
-            placeholder="예: 오늘도 조용히 애쓰는 당신을 응원해요 🌱"
-            maxLength={60}
-          />
+          <TextField value={quoteText} onValueChange={(d) => setQuoteText(d.value)}>
+<TextFieldInput onKeyDown={(e) => isSubmitEnter(e) && submitQuote()} placeholder="예: 오늘도 조용히 애쓰는 당신을 응원해요 🌱" maxLength={60} aria-label="예: 오늘도 조용히 애쓰는 당신을 응원해요 🌱" />
+</TextField>
           <p className="text-t2 text-fg-neutral-muted">비속어·차별 표현은 자동으로 걸러져요. {quoteText.length}/60</p>
-          <ActionButton variant="brandSolid" onClick={submitQuote} disabled={!quoteText.trim()} className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">등록하기</ActionButton>
+          <ActionButton variant="brandSolid" onClick={submitQuote} disabled={!quoteText.trim()} className="w-full">등록하기</ActionButton>
         </DialogContent>
       </Dialog>
 
@@ -485,14 +488,21 @@ export default function Home() {
               <input type="checkbox" checked={offTarget === ''} onChange={(e) => setOffTarget(e.target.checked ? '' : clockInBase)} className="accent-amber-500" />
               일단 퇴근 시간 설정하지 않음
             </label>
-            <ActionButton variant="brandSolid"
-              className="w-full bg-bg-positive-solid hover:bg-bg-positive-solid-pressed text-white"
+            <ActionButton
+              variant="brandSolid"
+              className="w-full"
               onClick={() => {
-                if (offTarget) { localStorage.setItem(CLOCKOUT_KEY, offTarget); localStorage.removeItem(`clockout_fired-${kstToday()}`); }
-                else { localStorage.removeItem(CLOCKOUT_KEY); }
+                if (offTarget) {
+                  localStorage.setItem(CLOCKOUT_KEY, offTarget);
+                  localStorage.removeItem(`clockout_fired-${kstToday()}`);
+                } else {
+                  localStorage.removeItem(CLOCKOUT_KEY);
+                }
                 setClockInOpen(false);
                 clockIn();
-                toast.success(offTarget ? `출근! ${offTarget}에 퇴근 알림을 보낼게요 🏃` : '출근했어요! 오늘도 화이팅 💪');
+                toast.success(
+                  offTarget ? `출근! ${offTarget}에 퇴근 알림을 보낼게요 🏃` : '출근했어요! 오늘도 화이팅 💪',
+                );
                 checkOverdueTasks();
               }}
             >

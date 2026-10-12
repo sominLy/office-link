@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useOffice } from '@/contexts/OfficeContext';
 import { ActionButton } from '@/seed/ui/action-button';
-import { Input } from '@/components/ui/input';
+import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -52,17 +52,11 @@ export default function OfficeSetup() {
             <TabsContent value="join">
               <form onSubmit={handleJoin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="invite-code">초대 코드</Label>
-                  <Input
-                    id="invite-code"
-                    placeholder="ABC123"
-                    value={inviteCode}
-                    onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                    required
-                    maxLength={6}
-                  />
+                  <TextField label="초대 코드" value={inviteCode} onValueChange={(d) => setInviteCode(d.value.toUpperCase())} required>
+<TextFieldInput id="invite-code" placeholder="ABC123" maxLength={6} />
+</TextField>
                 </div>
-                <ActionButton variant="brandSolid" type="submit" className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" disabled={loading}>
+                <ActionButton variant="brandSolid" type="submit" className="w-full" disabled={loading}>
                   {loading ? '처리 중...' : '가입하기'}
                 </ActionButton>
               </form>
@@ -70,17 +64,11 @@ export default function OfficeSetup() {
             <TabsContent value="create">
               <form onSubmit={handleCreate} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="office-name">오피스 이름</Label>
-                  <Input
-                    id="office-name"
-                    placeholder="우리 팀 오피스"
-                    value={officeName}
-                    onChange={(e) => setOfficeName(e.target.value)}
-                    required
-                    maxLength={30}
-                  />
+                  <TextField label="오피스 이름" value={officeName} onValueChange={(d) => setOfficeName(d.value)} required>
+<TextFieldInput id="office-name" placeholder="우리 팀 오피스" maxLength={30} />
+</TextField>
                 </div>
-                <ActionButton variant="brandSolid" type="submit" className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" disabled={loading}>
+                <ActionButton variant="brandSolid" type="submit" className="w-full" disabled={loading}>
                   {loading ? '처리 중...' : '만들기'}
                 </ActionButton>
               </form>

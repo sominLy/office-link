@@ -27,6 +27,7 @@ const Admin = lazy(() => import('./pages/Admin'));
 
 const queryClient = new QueryClient();
 
+
 // 앱 진입 1회(app_open)와 화면 이동(page_view)을 적재한다.
 // 체류 시간은 같은 visitor_id의 첫·마지막 이벤트 간격으로 분석 때 계산한다.
 function RouteTracker() {

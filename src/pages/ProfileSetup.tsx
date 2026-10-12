@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { ActionButton } from '@/seed/ui/action-button';
-import { Input } from '@/components/ui/input';
+import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/lib/toast';
@@ -46,27 +46,16 @@ export default function ProfileSetup() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="nickname">닉네임</Label>
-              <Input
-                id="nickname"
-                placeholder="오피스에서 사용할 이름"
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
-                required
-                maxLength={20}
-              />
+              <TextField label="닉네임" value={nickname} onValueChange={(d) => setNickname(d.value)} required>
+<TextFieldInput id="nickname" placeholder="오피스에서 사용할 이름" maxLength={20} />
+</TextField>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="avatar">프로필 이미지 URL (선택)</Label>
-              <Input
-                id="avatar"
-                type="url"
-                placeholder="https://..."
-                value={avatarUrl}
-                onChange={(e) => setAvatarUrl(e.target.value)}
-              />
+              <TextField label="프로필 이미지 URL (선택)" value={avatarUrl} onValueChange={(d) => setAvatarUrl(d.value)}>
+<TextFieldInput id="avatar" type="url" placeholder="https://..." />
+</TextField>
             </div>
-            <ActionButton variant="brandSolid" type="submit" className="w-full bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white" disabled={loading}>
+            <ActionButton variant="brandSolid" type="submit" className="w-full" disabled={loading}>
               {loading ? '저장 중...' : '시작하기'}
             </ActionButton>
           </form>

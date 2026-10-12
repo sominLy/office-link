@@ -7,6 +7,7 @@ import { CalendarDays, CalendarClock, CheckCircle2, Circle, CircleDot, Flag, Loc
 import { cn } from '@/lib/utils';
 import { PRIORITY_META, STATUS_META, TaskStatus, dueInfo, postponeLabel } from '@/lib/tasks';
 
+import { Icon } from '@seed-design/react';
 interface TaskItemProps {
   task: Task;
   today: string;
@@ -100,8 +101,8 @@ export default function TaskItem({ task, today, nowHM, showCategory, onToggle, o
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <ActionButton variant="ghost" layout="iconOnly" className="w-7 h-7 -mr-1 flex-shrink-0 text-fg-neutral-muted hover:text-fg-neutral" aria-label="할 일 메뉴">
-            <MoreVertical className="w-4 h-4" />
-          </ActionButton>
+              <Icon svg={<MoreVertical className="w-4 h-4" />} />
+            </ActionButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => onEdit(task)}>

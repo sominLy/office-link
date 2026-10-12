@@ -6,6 +6,7 @@ import { Play, Pause, RotateCcw, Eye, Clock } from 'lucide-react';
 import { notify } from '@/lib/notify';
 import { toast } from '@/lib/toast';
 
+import { Icon } from '@seed-design/react';
 // 감시 모드/퇴근 알림 설정은 localStorage에 저장 → Home의 백그라운드 타이머가 읽어 실행
 export const WATCH_KEY = 'watch_interval_min';   // 0=off
 export const CLOCKOUT_KEY = 'clockout_target';    // "HH:MM" (오늘 기준)
@@ -140,10 +141,12 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
 
               {/* 컨트롤 */}
               <div className="flex gap-2 w-full">
-                <ActionButton variant="brandSolid" onClick={() => setRunning(r => !r)} className="flex-1 bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
+                <ActionButton variant="brandSolid" onClick={() => setRunning(r => !r)} className="flex-1">
                   {running ? <><Pause className="w-4 h-4 mr-1" /> 일시정지</> : <><Play className="w-4 h-4 mr-1" /> 시작</>}
                 </ActionButton>
-                <ActionButton onClick={reset} variant="neutralOutline" layout="iconOnly" aria-label="타이머 처음으로" className="border-stroke-brand-weak"><RotateCcw className="w-4 h-4" /></ActionButton>
+                <ActionButton onClick={reset} variant="neutralOutline" layout="iconOnly" aria-label="타이머 처음으로" >
+              <Icon svg={<RotateCcw className="w-4 h-4" />} />
+            </ActionButton>
               </div>
             </div>
           </TabsContent>
@@ -177,11 +180,11 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
             </div>
             <p className="text-center text-t2 text-fg-neutral-muted">→ {humanMin(draft)}마다</p>
             <div className="flex gap-2">
-              <ActionButton variant="brandSolid" onClick={() => setWatchMode(draft)} className="flex-1 bg-bg-brand-solid hover:bg-bg-brand-solid-pressed text-white">
+              <ActionButton variant="brandSolid" onClick={() => setWatchMode(draft)} className="flex-1">
                 {watch === draft && watch > 0 ? '이 간격으로 켜짐' : '이 간격으로 켜기'}
               </ActionButton>
               {watch > 0 && (
-                <ActionButton variant="neutralOutline" className="border-stroke-brand-weak text-fg-neutral-muted" onClick={() => setWatchMode(0)}>끄기</ActionButton>
+                <ActionButton variant="neutralOutline" className="text-fg-neutral-muted" onClick={() => setWatchMode(0)}>끄기</ActionButton>
               )}
             </div>
             <p className="text-t2 text-center text-fg-neutral-muted">
