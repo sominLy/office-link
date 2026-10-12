@@ -1,4 +1,6 @@
 -- 프로필 사진 업로드(Storage) + 계정 삭제 기능
+-- ⚠️ 022_public_office.sql을 적용한 뒤에는 이 파일을 다시 실행하지 않는다. 여기의 정책이 022에서 잠근 내용을
+--    예전 것으로 되돌린다. 다시 실행했다면 022도 다시 실행하고 supabase/queries/launch_check.sql로 확인한다.
 
 -- ========== 아바타 저장소 ==========
 insert into storage.buckets (id, name, public)

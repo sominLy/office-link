@@ -1,4 +1,6 @@
 -- 연결오피스 스키마 + RLS 정책 + 무결성 제약
+-- ⚠️ 022_public_office.sql을 적용한 뒤에는 이 파일을 다시 실행하지 않는다. 여기의 정책이 022에서 잠근 내용을
+--    예전 것으로 되돌린다. 다시 실행했다면 022도 다시 실행하고 supabase/queries/launch_check.sql로 확인한다.
 -- 실행 방법: Supabase 대시보드 → SQL Editor에 전체 붙여넣기 → Run
 -- 이미 테이블이 있다면 그대로 실행해도 안전하도록 if not exists / drop policy if exists 사용
 

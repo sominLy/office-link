@@ -1,4 +1,6 @@
 -- 멀티 오피스 + 호칭 모드
+-- ⚠️ 022_public_office.sql을 적용한 뒤에는 이 파일을 다시 실행하지 않는다. 여기의 정책이 022에서 잠근 내용을
+--    예전 것으로 되돌린다. 다시 실행했다면 022도 다시 실행하고 supabase/queries/launch_check.sql로 확인한다.
 
 -- 오피스별 호칭 방식: nim(~님) / pro(~프로) / rank(직급) / english(영어 이름)
 alter table public.offices add column if not exists title_mode text not null default 'nim'
