@@ -171,9 +171,16 @@ end $$;
 
 -- ========== ⑥ 퍼널 이벤트 ==========
 -- 021의 허용 목록에 스터디룸 이벤트를 더한다 (src/lib/funnel.ts의 EventName과 같아야 한다).
+-- 뒤 번호(025)가 더 긴 목록으로 제약을 바꾼 뒤에는 그 이름의 행이 이미 있어서 이 짧은 목록으로 되돌릴 수 없다.
+-- 스터디룸 이름이 이미 들어 있으면 건너뛴다 (재실행 안전).
 do $$
 begin
-  if to_regclass('public.events') is not null then
+  if to_regclass('public.events') is not null
+     and not exists (
+       select 1 from pg_constraint
+       where conrelid = 'public.events'::regclass and conname = 'events_name_allowed'
+         and pg_get_constraintdef(oid) like '%study_room_joined%'
+     ) then
     alter table public.events drop constraint if exists events_name_allowed;
     alter table public.events add constraint events_name_allowed check (name in (
       'app_open',

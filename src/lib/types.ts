@@ -131,7 +131,7 @@ export interface StudyRoom {
   office_id: string;
   host_id: string;
   title: string;
-  subject: string | null; // 인적성 영역 (언어·수리·추리·시각·상식·인성·기타), 없으면 null
+  subject: string | null; // 주제 (언어·수리·추리·시각·상식·인성·기타), 없으면 null
   meeting_url: string;
   note: string | null;
   starts_at: string;

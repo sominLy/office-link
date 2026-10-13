@@ -39,7 +39,7 @@ function nextHalfHour(): string | null {
 }
 
 /**
- * 스터디룸 열기 — 제목·인적성 영역·회의 링크·시작 시간을 받아 방을 만든다.
+ * 스터디룸 열기 — 제목·주제·회의 링크·시작 시간을 받아 방을 만든다.
  * 링크는 checkMeetingUrl이 화상 회의 서비스 주소만 통과시키고, DB의 CHECK가 같은 규칙을 한 번 더 본다.
  */
 export default function StudyRoomDialog({ open, onClose, onCreated }: Props) {
@@ -174,11 +174,11 @@ export default function StudyRoomDialog({ open, onClose, onCreated }: Props) {
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           <TextField label="무슨 공부를 할까요?" value={title} onValueChange={(d) => setTitle(d.value)} maxGraphemeCount={TITLE_MAX}>
-            <TextFieldInput autoFocus placeholder="예: GSAT 수리 모의고사 같이 풀기" enterKeyHint="next" maxLength={TITLE_MAX} />
+            <TextFieldInput autoFocus placeholder="예: 모의고사 같이 풀기" enterKeyHint="next" maxLength={TITLE_MAX} />
           </TextField>
 
           <div className="space-y-1.5">
-            <Label>인적성 영역 <span className="font-normal text-fg-neutral-muted">(선택)</span></Label>
+            <Label>주제 <span className="font-normal text-fg-neutral-muted">(선택)</span></Label>
             <div className="flex flex-wrap gap-1.5">
               {STUDY_SUBJECTS.map((s) => (
                 <button key={s} type="button" onClick={() => setSubject(subject === s ? '' : s)}
