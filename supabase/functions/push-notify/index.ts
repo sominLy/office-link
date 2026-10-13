@@ -3,7 +3,7 @@
 // - action "nudge": (pg_cron이 10분마다 호출) 근무 시작 시간이 지났는데 미출근인 사용자에게 하루 1회 푸시
 //                   + 각자 정한 주간 회고 시간이 지나면 "회고 도착" 푸시 (주 1회)
 // - action "announce" / "announce_poll": [공지] 커밋을 업데이트 공지로 게시 + 전원 푸시
-// - action "study": 스터디룸(024)을 연 사람을 제외한 오피스 멤버 전원에게 푸시
+// - action "study": 모임(024 study_rooms)을 연 사람을 제외한 오피스 멤버 전원에게 푸시
 // - action "feedback" / "feedback_reply": 의견·문의(025)가 오면 운영자에게, 답변하면 보낸 사람에게 푸시
 // 사용자 액션은 전부 '방금 생긴 근거 행'(근무 세션·소식 글·응원·방·문의)이 있어야 보낸다. 글을 올리지 않고
 // 함수만 되풀이해 부르거나, 같은 행으로 되풀이해 부르는 것을 막는다. 크론 액션은 CRON_SECRET이 있으면 헤더로 확인한다.
@@ -281,7 +281,7 @@ Deno.serve(async (req) => {
   }
 
   if (payload.action === 'study') {
-    // 스터디룸 열림 푸시. 제목·시작 시각은 앱이 보낸 값이 아니라 DB의 방 행에서 읽는다.
+    // 모임 열림 푸시. 제목·시작 시각은 앱이 보낸 값이 아니라 DB의 방 행에서 읽는다.
     // 방이 없거나(024 미적용 포함) 다른 오피스·다른 사람의 방이면 보내지 않는다.
     const { office_id, actor_id, room_id } = payload;
     if (!office_id || !actor_id || !room_id) return new Response('bad request', { status: 400, headers: cors });
@@ -307,7 +307,7 @@ Deno.serve(async (req) => {
       .eq('office_id', office_id).neq('user_id', actor_id);
     await sendTo(
       (members || []).map((m) => m.user_id),
-      `${name}님이 스터디룸을 열었어요 📚`,
+      `${name}님이 얼굴 보며 같이 하자고 해요 📹`,
       body,
       `study-${office_id}`,
     );

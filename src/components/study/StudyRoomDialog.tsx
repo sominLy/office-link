@@ -39,7 +39,7 @@ function nextHalfHour(): string | null {
 }
 
 /**
- * 스터디룸 열기 — 제목·주제·회의 링크·시작 시간을 받아 방을 만든다.
+ * 얼굴 보며 같이 일하기(모임 열기) — 제목·종류·회의 링크·시작 시간을 받아 모임을 만든다.
  * 링크는 checkMeetingUrl이 화상 회의 서비스 주소만 통과시키고, DB의 CHECK가 같은 규칙을 한 번 더 본다.
  */
 export default function StudyRoomDialog({ open, onClose, onCreated }: Props) {
@@ -66,7 +66,7 @@ export default function StudyRoomDialog({ open, onClose, onCreated }: Props) {
     const cleanTitle = title.trim();
     const cleanNote = note.trim();
     if (!cleanTitle) {
-      toast.error('어떤 공부를 할지 제목을 적어 주세요');
+      toast.error('뭘 같이 할지 제목을 적어 주세요');
       return;
     }
     // DB는 코드포인트(char_length)로 센다. 화면의 자소 수 카운터와 다를 수 있어 여기서 한 번 더 본다.
@@ -122,11 +122,11 @@ export default function StudyRoomDialog({ open, onClose, onCreated }: Props) {
       if (error?.code === '42P01' || error?.code === 'PGRST205') {
         // 테이블이 없는 DB. 다시 시도해도 되지 않으므로 그렇게 말하지 않는다.
         console.warn('024_study_rooms.sql 미적용 — study_rooms 없음');
-        toast.error('스터디룸은 아직 켜지지 않았어요');
+        toast.error('같이 하기는 아직 켜지지 않았어요');
       } else if (error?.code === '23514') {
         toast.error('제목·안내 길이나 링크가 규칙에 맞지 않아요. 다시 확인해 주세요');
       } else {
-        toast.error('스터디룸을 열지 못했어요. 잠시 후 다시 시도해 주세요');
+        toast.error('모임을 열지 못했어요. 잠시 후 다시 시도해 주세요');
       }
       return;
     }
@@ -143,8 +143,8 @@ export default function StudyRoomDialog({ open, onClose, onCreated }: Props) {
 
     // 소식 기록과 멤버 푸시. 실패해도 방은 열렸으므로 결과를 버린다.
     const feedText = startsAt
-      ? `📚 ${formatStartTime(startsAt)}에 스터디룸 "${cleanTitle}"을 열어요. 홈에서 들어올 수 있어요`
-      : `📚 스터디룸 "${cleanTitle}"을 열었어요. 홈에서 바로 들어올 수 있어요`;
+      ? `📹 ${formatStartTime(startsAt)}에 "${cleanTitle}" 모임을 열어요. 홈에서 들어올 수 있어요`
+      : `📹 "${cleanTitle}" 모임을 열었어요. 홈에서 바로 들어올 수 있어요`;
     supabase.from('office_feed').insert({ office_id: office.id, user_id: user.id, type: 'post', content: feedText }).then(() => {});
     supabase.functions.invoke('push-notify', {
       body: { action: 'study', office_id: office.id, actor_id: user.id, room_id: room.id },
@@ -156,29 +156,29 @@ export default function StudyRoomDialog({ open, onClose, onCreated }: Props) {
     onClose();
 
     if (startsAt) {
-      toast.success(`${formatStartTime(startsAt)}에 시작하는 스터디룸을 열었어요. 멤버들에게 알렸어요 📚`);
+      toast.success(`${formatStartTime(startsAt)}에 시작하는 모임을 열었어요. 멤버들에게 알렸어요 📹`);
       return;
     }
     // 저장이 끝난 뒤의 새 탭 열기는 사파리가 막는다. 막히면 스낵바의 버튼으로 연다 (버튼 클릭은 사용자 동작이라 열린다).
     const openMeeting = () => { window.open(check.url, '_blank', 'noopener,noreferrer'); };
     openMeeting();
-    toast.success('스터디룸을 열었어요. 멤버들에게 알렸어요 📚', { action: { label: '회의 열기', onClick: openMeeting } });
+    toast.success('모임을 열었어요. 멤버들에게 알렸어요 📹', { action: { label: '회의 열기', onClick: openMeeting } });
   };
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>📚 스터디룸 열기</DialogTitle>
-          <DialogDescription>줌·구글밋 링크를 붙여 두면 멤버들에게 알림이 가고, 홈에서 바로 들어올 수 있어요</DialogDescription>
+          <DialogTitle>📹 얼굴 보며 같이 일해요</DialogTitle>
+          <DialogDescription>줌·구글밋 링크를 붙여 두면 멤버들에게 알림이 가고, 홈에서 바로 들어와 각자 할 일을 같이 해요</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
-          <TextField label="무슨 공부를 할까요?" value={title} onValueChange={(d) => setTitle(d.value)} maxGraphemeCount={TITLE_MAX}>
-            <TextFieldInput autoFocus placeholder="예: 모의고사 같이 풀기" enterKeyHint="next" maxLength={TITLE_MAX} />
+          <TextField label="뭘 같이 할까요?" value={title} onValueChange={(d) => setTitle(d.value)} maxGraphemeCount={TITLE_MAX}>
+            <TextFieldInput autoFocus placeholder="예: 오전 할 일 같이 끝내기" enterKeyHint="next" maxLength={TITLE_MAX} />
           </TextField>
 
           <div className="space-y-1.5">
-            <Label>주제 <span className="font-normal text-fg-neutral-muted">(선택)</span></Label>
+            <Label>종류 <span className="font-normal text-fg-neutral-muted">(선택)</span></Label>
             <div className="flex flex-wrap gap-1.5">
               {STUDY_SUBJECTS.map((s) => (
                 <button key={s} type="button" onClick={() => setSubject(subject === s ? '' : s)}
@@ -240,12 +240,12 @@ export default function StudyRoomDialog({ open, onClose, onCreated }: Props) {
           </div>
 
           <TextField label="한 줄 안내" indicator="선택" value={note} onValueChange={(d) => setNote(d.value)} maxGraphemeCount={NOTE_MAX}>
-            <TextFieldInput placeholder="예: 수리 10번부터 20번까지, 25분 타이머로 풀어요" maxLength={NOTE_MAX} />
+            <TextFieldInput placeholder="예: 카메라만 켜고 각자 해요. 50분 하고 10분 쉬어요" maxLength={NOTE_MAX} />
           </TextField>
 
           <ActionButton type="submit" variant="brandSolid" className="w-full" loading={saving}
             disabled={saving || !title.trim() || !link.trim()}>
-            <Video className="w-4 h-4 mr-1" /> 스터디룸 열기
+            <Video className="w-4 h-4 mr-1" /> 모임 열기
           </ActionButton>
         </form>
       </DialogContent>

@@ -125,13 +125,13 @@ export interface MemberStatus {
   rank_index: number; // 오피스 가입 순서 (0 = 가장 먼저 = 사장)
 }
 
-// 스터디룸 (024) — 줌·구글밋 링크로 모여 같이 공부하는 방
+// 모임 (024 study_rooms) — 줌·구글밋 링크로 모여 각자 할 일을 같이 하는 방
 export interface StudyRoom {
   id: string;
   office_id: string;
   host_id: string;
   title: string;
-  subject: string | null; // 주제 (언어·수리·추리·시각·상식·인성·기타), 없으면 null
+  subject: string | null; // 종류 (할 일·자소서·면접 준비·자료 조사·회의·기타), 없으면 null
   meeting_url: string;
   note: string | null;
   starts_at: string;
