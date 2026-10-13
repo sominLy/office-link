@@ -66,19 +66,20 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
 
   const sendWave = async (emoji: string) => {
     if (!user || !member || member.user_id === user.id) return;
-    const { error } = await supabase.from('office_feed').insert({
+    const { data: wave, error } = await supabase.from('office_feed').insert({
       office_id: officeId,
       user_id: user.id,
       type: 'wave',
       target_user_id: member.user_id,
       emoji,
-    });
+    }).select('id').single();
     if (error) {
       toast.error('인사를 보내지 못했어요. 잠시 후 다시 시도해 주세요');
       return;
     }
     supabase.functions.invoke('push-notify', {
-      body: { action: 'feed', kind: 'wave', office_id: officeId, actor_id: user.id, target_id: member.user_id, emoji },
+      // 함수는 종류·대상·이모지를 앱이 보낸 값이 아니라 방금 올린 소식 행에서 읽는다 (026)
+      body: { action: 'feed', office_id: officeId, actor_id: user.id, feed_id: wave?.id },
     }).catch(() => {});
     toast.success(`${member.nickname}님에게 ${emoji} 인사를 보냈어요`);
   };
@@ -119,7 +120,8 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
       // 내 할 일이 아닐 때만 상대에게 응원 푸시
       if (!error && member.user_id !== user.id) {
         supabase.functions.invoke('push-notify', {
-          body: { action: 'cheer', office_id: officeId, target_id: member.user_id, actor_id: user.id, emoji, task_title: task.title },
+          // 제목은 함수가 DB의 할 일에서 읽는다 — 앱이 보낸 글이 상대 기기에 그대로 뜨지 않게 (026)
+          body: { action: 'cheer', office_id: officeId, target_id: member.user_id, actor_id: user.id, emoji, task_id: task.id },
         }).catch(() => {});
       }
     }

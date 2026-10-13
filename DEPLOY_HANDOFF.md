@@ -5,8 +5,8 @@
 
 - 브랜치: `claude/vibrant-turing-q29e2m` · PR: https://github.com/sominLy/office-link/pull/4
 - Supabase 프로젝트: `ykyocsatvnqbuwvybirw`
-- 들어 있는 것: 스터디룸(024), 의견·문의(025), 자동 답변·업데이트 완료, 모달 스크롤, GitHub Actions 배포 워크플로
-- 아직 운영 DB에 적용 안 된 것: `024_study_rooms.sql`, `025_feedback.sql`, `push-notify` 함수 재배포
+- 들어 있는 것: 스터디룸(024), 의견·문의(025), 공개 운영 보안 보강(026), 자동 답변·업데이트 완료, 모달 스크롤, GitHub Actions 배포 워크플로
+- 아직 운영 DB에 적용 안 된 것: `024_study_rooms.sql`, `025_feedback.sql`, `026_hardening.sql`, `push-notify` 함수 재배포
 
 ## Claude Code에 붙여 넣을 프롬프트
 
@@ -19,8 +19,9 @@ sominLy/office-link 저장소의 브랜치 claude/vibrant-turing-q29e2m (PR #4)�
 3. Supabase 마이그레이션 적용. 토큰은 환경 변수 SUPABASE_ACCESS_TOKEN으로만 다루고 채팅에 절대 출력하지 마.
    PROJECT_REF=ykyocsatvnqbuwvybirw python3 supabase/scripts/mgmt_sql.py apply supabase/migrations/024_study_rooms.sql
    PROJECT_REF=ykyocsatvnqbuwvybirw python3 supabase/scripts/mgmt_sql.py apply supabase/migrations/025_feedback.sql
+   PROJECT_REF=ykyocsatvnqbuwvybirw python3 supabase/scripts/mgmt_sql.py apply supabase/migrations/026_hardening.sql
    PROJECT_REF=ykyocsatvnqbuwvybirw python3 supabase/scripts/mgmt_sql.py check supabase/queries/launch_check.sql
-   → 표의 모든 줄이 ✅여야 해. 특히 '스터디룸 …' 3줄과 '의견·문의 …' 2줄. ❌가 있으면 그 줄의 '고칠 일'대로 하고 다시 check.
+   → 표의 모든 줄이 ✅여야 해. 특히 '스터디룸 …' 3줄, '의견·문의 …' 3줄, '프로필 열 범위'부터 '글귀 제보자 숨김'까지 026의 열한 줄. ❌가 있으면 그 줄의 '고칠 일'대로 하고 다시 check.
    (토큰이 없으면 supabase.com → Account → Access Tokens에서 만들라고 안내하고, 대안으로 Supabase 대시보드 SQL Editor에 024 → 025 순서로 붙여 넣어 Run 하는 방법을 알려 줘.)
 4. 함수 재배포: supabase functions deploy push-notify --project-ref ykyocsatvnqbuwvybirw --no-verify-jwt --use-api
    (Docker가 있으면 --use-api 없이도 돼. 배포 뒤 Verify JWT가 꺼져 있어야 해 — 크론이 토큰 없이 부르니까.)
@@ -35,7 +36,7 @@ sominLy/office-link 저장소의 브랜치 claude/vibrant-turing-q29e2m (PR #4)�
 1. **브랜치 받기** — `git fetch origin && git checkout claude/vibrant-turing-q29e2m && git pull`
 2. **확인** — `npm ci && npm run lint && npx tsc -p tsconfig.app.json --noEmit && npx vitest run && npm run build`
 3. **마이그레이션** — 둘 중 하나
-   - 대시보드: SQL Editor에 `supabase/migrations/024_study_rooms.sql` 붙여 넣고 Run → `025_feedback.sql` Run → `supabase/queries/launch_check.sql` Run (모든 줄 ✅)
+   - 대시보드: SQL Editor에 `supabase/migrations/024_study_rooms.sql` 붙여 넣고 Run → `025_feedback.sql` Run → `026_hardening.sql` Run → `supabase/queries/launch_check.sql` Run (모든 줄 ✅)
    - 터미널: 위 프롬프트의 3번 명령 (토큰: supabase.com → Account → Access Tokens)
 4. **함수** — `supabase functions deploy push-notify --project-ref ykyocsatvnqbuwvybirw --no-verify-jwt --use-api`
 5. **앱 확인** — 홈 '같이 공부하기', ✨ 더보기 → 의견·문의 보내기, 운영 대시보드 → 문의 탭
@@ -44,7 +45,8 @@ sominLy/office-link 저장소의 브랜치 claude/vibrant-turing-q29e2m (PR #4)�
 
 ## 알아둘 것
 
-- 마이그레이션은 여러 번 실행해도 안전해요. 순서는 024 → 025.
+- 마이그레이션은 여러 번 실행해도 안전해요. 순서는 024 → 025 → 026.
+- 026은 보안 보강이에요(SUPABASE_SETUP.md I절). 적용하면 공개 오피스에서 프로필 사진·본명이 낯선 사람에게 보이지 않게 돼요. 크론 비밀값(CRON_SECRET)은 선택이고, 설정 순서를 지켜야 해요.
 - 024·025를 적용하기 전에는 홈에 스터디룸 섹션이 보이지 않고, 의견 보내기는 "아직 켜지지 않았어요"로 안내해요. 그래서 공지(머지)는 마이그레이션 뒤에 해요.
 - 함수를 재배포하기 전에는 푸시만 안 가고 나머지는 다 돼요.
 - `GitHub Actions → Deploy to Supabase`로도 같은 일을 할 수 있어요 (SUPABASE_SETUP.md H절). 저장소 비밀값에 `SUPABASE_ACCESS_TOKEN`만 넣으면 돼요.

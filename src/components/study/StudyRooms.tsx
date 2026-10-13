@@ -103,8 +103,13 @@ export default function StudyRooms() {
         }
         fetchRooms();
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'study_room_members', filter: `office_id=eq.${office.id}` }, () => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'study_room_members', filter: `office_id=eq.${office.id}` }, () => {
         fetchRooms();
+      })
+      // 삭제 이벤트에는 기본키(room_id·user_id)만 실려 와서 office_id 필터에 걸리지 않는다. 아는 방일 때만 다시 읽는다.
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'study_room_members' }, (payload) => {
+        const old = payload.old as { room_id?: string };
+        if (old?.room_id && roomsRef.current.some(r => r.id === old.room_id)) fetchRooms();
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };

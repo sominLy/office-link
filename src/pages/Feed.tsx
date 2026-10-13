@@ -107,19 +107,22 @@ export default function Feed() {
     }
     setPosting(true);
     const target = targetId === 'all' ? null : targetId;
-    const { error } = await supabase.from('office_feed').insert({
+    const { data: posted, error } = await supabase.from('office_feed').insert({
       office_id: office.id,
       user_id: user.id,
       type: 'post',
       target_user_id: target,
       content: content.trim(),
-    });
+    }).select('id').single();
     if (error) {
-      toast.error('올리지 못했어요. 잠시 후 다시 시도해 주세요');
+      // 23514 = 공개 오피스에서 링크·연락처가 걸렸다 (DB도 화면과 같은 규칙으로 거른다), P0003 = 10분에 30개 넘김
+      toast.error(error.code === '23514' ? '링크나 연락처는 넣을 수 없어요'
+        : error.code === 'P0003' ? '잠시 쉬었다 올려 주세요 (10분에 30개까지)'
+        : '올리지 못했어요. 잠시 후 다시 시도해 주세요');
     } else {
-      // 대상에게(또는 전체에게) 푸시
+      // 대상에게(또는 전체에게) 푸시. 종류·대상·본문은 함수가 방금 올린 행에서 읽는다 (026)
       supabase.functions.invoke('push-notify', {
-        body: { action: 'feed', kind: 'post', office_id: office.id, actor_id: user.id, target_id: target, content: content.trim() },
+        body: { action: 'feed', office_id: office.id, actor_id: user.id, feed_id: posted?.id },
       }).catch(() => {});
       setContent('');
       setTargetId('all');

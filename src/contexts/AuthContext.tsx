@@ -3,6 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { setFunnelUser } from '@/lib/funnel';
 import { Profile } from '@/lib/types';
+import { fetchMyProfile } from '@/lib/profile';
 
 interface AuthContextType {
   user: User | null;
@@ -25,13 +26,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // 026부터 프로필 표는 낯선 사람에게 닉네임·사진만 열려 있어서 내 것은 함수로 읽는다
   const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    setProfile(data);
+    setProfile(await fetchMyProfile(userId));
   };
 
   const refreshProfile = async () => {

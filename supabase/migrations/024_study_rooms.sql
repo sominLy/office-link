@@ -57,8 +57,9 @@ create table if not exists public.study_room_members (
 
 create index if not exists idx_study_room_members_office on public.study_room_members (office_id, user_id);
 
--- 나간 사람은 행을 지운다. realtime DELETE 이벤트가 office_id 필터에 걸리려면 옛 행 전체가 실려야 한다.
-alter table public.study_room_members replica identity full;
+-- 나간 사람은 행을 지운다. 삭제 이벤트에는 정책이 안 걸려서 옛 행 전체를 싣지 않는다(기본키만).
+-- 앱은 삭제 이벤트를 필터 없이 받아 아는 방의 것일 때만 다시 읽는다.
+alter table public.study_room_members replica identity default;
 
 create or replace function public.set_study_room_member_office()
 returns trigger
