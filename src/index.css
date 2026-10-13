@@ -38,6 +38,32 @@
   --seed-color-palette-carrot-1000: #15103f;
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   모달을 화면 맨 위로
+
+   SEED 바텀시트와 다이얼로그는 z-index 2로 깔린다. 이 앱의 바텀바는 z-20,
+   플로팅 버튼은 z-30이라 둘 다 시트 위에 덮였다. 시트 아래쪽에 있는 확인 버튼이
+   바텀바에 가려서 눌리지 않았다 — 출근하기 시트에서 실제로 막혔다.
+
+   변수가 positioner·content 요소에 직접 선언돼 있어서 :root에 적는 것만으로는
+   덮이지 않는다. 같은 요소를 한 단계 높은 특이도로 다시 잡는다.
+   backdrop은 변수를 물려받으므로 :root 쪽도 함께 둔다.
+   ───────────────────────────────────────────────────────────────────────────── */
+:root {
+  --sheet-z-index: 60;
+  --dialog-z-index: 60;
+}
+:root .seed-bottom-sheet__positioner,
+:root .seed-bottom-sheet__content,
+:root .seed-bottom-sheet__backdrop {
+  --sheet-z-index: 60;
+}
+:root .seed-dialog__positioner,
+:root .seed-dialog__content,
+:root .seed-dialog__backdrop {
+  --dialog-z-index: 60;
+}
+
 @layer base {
   /* shadcn/ui 프리미티브 50개가 이 변수들로 색을 받는다. 앱 코드만 SEED 토큰으로
      바꾸면 Button·Input·Dialog 같은 조각은 그대로 예전 색으로 남는다.
