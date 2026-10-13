@@ -355,6 +355,8 @@ export default function Admin() {
       </header>
 
       <main className={cn('max-w-5xl mx-auto px-4 pt-4 space-y-4 transition-opacity', loading && data && 'opacity-60')}>
+        {/* 문의 받은편지함은 지표(admin_dashboard)와 무관하다. 지표가 아직 안 왔거나 실패해도 푸시로 열어 온 사람은 바로 본다. */}
+        {tab === 'feedback' && (!data || !k) && <FeedbackInbox />}
         {!data && loadError ? (
           <div className="rounded-xl border border-black/10 bg-bg-layer-default p-5 text-t4 space-y-3">
             <p className="font-semibold text-[#0b0b0b]">지표를 불러오지 못했어요</p>

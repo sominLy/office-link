@@ -24,12 +24,13 @@ import MyFeedback from '@/components/feedback/MyFeedback';
 import { describePrefs, nextDeliveryLabel, readRetroPrefs } from '@/lib/retro';
 
 import { Icon } from '@seed-design/react';
-/** 내 사진 폴더를 비운다. 다 지웠으면 true */
-async function removeAvatarFiles(userId: string): Promise<boolean> {
+/** 내 사진 폴더를 비운다(keep으로 준 파일은 남긴다). 다 지웠으면 true */
+async function removeAvatarFiles(userId: string, keep?: string): Promise<boolean> {
   const { data: files, error } = await supabase.storage.from('avatars').list(userId);
   if (error) return false;
-  if (!files?.length) return true;
-  const { error: removeError } = await supabase.storage.from('avatars').remove(files.map(f => `${userId}/${f.name}`));
+  const targets = (files || []).map(f => `${userId}/${f.name}`).filter(p => p !== keep);
+  if (!targets.length) return true;
+  const { error: removeError } = await supabase.storage.from('avatars').remove(targets);
   return !removeError;
 }
 
@@ -73,8 +74,8 @@ export default function Profile() {
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('5MB 이하 이미지만 올릴 수 있어요');
+    if (file.size > 5 * 1024 * 1024 || !/^image\/(jpeg|png|webp|gif)$/.test(file.type)) {
+      toast.error('5MB 이하의 JPG·PNG·WebP·GIF만 올릴 수 있어요');
       return;
     }
     setUploading(true);
@@ -91,6 +92,8 @@ export default function Profile() {
     if (error) {
       toast.error('사진을 바꾸지 못했어요. 잠시 후 다시 시도해 주세요');
     } else {
+      // 이전 사진 파일은 치운다. 올릴 때마다 새 이름으로 저장돼서 폴더에 쌓이기만 했다.
+      await removeAvatarFiles(user.id, path);
       await refreshProfile();
       toast.success('프로필 사진이 변경되었어요');
     }
@@ -279,7 +282,7 @@ export default function Profile() {
           <span className="text-t9">📖</span>
           <span className="text-left flex-1">
             <p className="text-t4 font-semibold text-fg-neutral">200% 활용 공략집</p>
-            <p className="text-t2 text-fg-neutral-muted">고인물 팁 14가지 + 아이폰 앱으로 설치하는 법</p>
+            <p className="text-t2 text-fg-neutral-muted">고인물 팁 모음 + 아이폰 앱으로 설치하는 법</p>
           </span>
         </button>
 

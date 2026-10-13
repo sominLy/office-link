@@ -15,7 +15,9 @@ import { ListHeader } from '@/seed/ui/list-header';
 import { ExternalLink, Video } from 'lucide-react';
 import StudyRoomDialog from './StudyRoomDialog';
 
-const ROOM_SELECT = '*, host:profiles(nickname, avatar_url), study_room_members(room_id, user_id, office_id, joined_at)';
+// host는 FK 이름으로 못박는다. study_room_members의 FK 두 개가 기본키 안에 있어서 PostgREST가 그 표를
+// study_rooms↔profiles 접속 표로도 보고, 힌트 없는 profiles 조인을 모호하다(PGRST201)고 거절한다.
+const ROOM_SELECT = '*, host:profiles!study_rooms_host_id_fkey(nickname, avatar_url), study_room_members(room_id, user_id, office_id, joined_at)';
 const AVATARS_SHOWN = 5;
 
 /**
@@ -52,10 +54,16 @@ export default function StudyRooms() {
     if (error) {
       // 테이블이 없는 DB(024 미적용). 읽기는 42P01, 스키마 캐시에 없으면 PGRST205로 온다.
       if (error.code === '42P01' || error.code === 'PGRST205') setUnavailable(true);
+      // 그 밖의 실패는 조용히 "방이 없어요"로 보이면 안 된다 — 조인 모호성(PGRST201) 같은 건 여기서만 보인다
+      else console.error('스터디룸 조회 실패', error.code, error.message);
       return;
     }
     setRooms((data as unknown as StudyRoom[]) || []);
   }, [office]);
+  const roomsRef = useRef<StudyRoom[]>([]);
+  useEffect(() => { roomsRef.current = rooms; }, [rooms]);
+  const statusRef = useRef<string | null>(null);
+  useEffect(() => { statusRef.current = myStatusSession?.status ?? null; }, [myStatusSession]);
 
   useEffect(() => { fetchRooms(); }, [fetchRooms]);
 
@@ -79,14 +87,33 @@ export default function StudyRooms() {
             toast(`📚 ${name}님이 스터디룸을 열었어요: ${row.title}`);
           }
         }
+        // 연 사람이나 방장이 닫았거나 크론이 닫았다. 들어가 있던 사람은 '나가기'를 누를 기회가 없으니
+        // 여기서 상태를 되돌린다 (다른 열린 방에도 없고 상태가 스터디일 때만).
+        if (payload.eventType === 'UPDATE') {
+          const row = payload.new as StudyRoom;
+          const me = userIdRef.current;
+          if (row.ended_at && me && row.host_id !== me) {
+            const wasIn = roomsRef.current.some(r => r.id === row.id && (r.study_room_members ?? []).some(p => p.user_id === me));
+            const elsewhere = roomsRef.current.some(r => r.id !== row.id && !r.ended_at && (r.study_room_members ?? []).some(p => p.user_id === me));
+            if (wasIn && !elsewhere && statusRef.current === '스터디/회의 중') {
+              void changeStatus('출근');
+              toast(`"${row.title}" 스터디룸이 닫혔어요. 수고했어요 👏`);
+            }
+          }
+        }
         fetchRooms();
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'study_room_members', filter: `office_id=eq.${office.id}` }, () => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'study_room_members', filter: `office_id=eq.${office.id}` }, () => {
         fetchRooms();
+      })
+      // 삭제 이벤트에는 기본키(room_id·user_id)만 실려 와서 office_id 필터에 걸리지 않는다. 아는 방일 때만 다시 읽는다.
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'study_room_members' }, (payload) => {
+        const old = payload.old as { room_id?: string };
+        if (old?.room_id && roomsRef.current.some(r => r.id === old.room_id)) fetchRooms();
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [office, fetchRooms]);
+  }, [office, fetchRooms, changeStatus]);
 
   if (unavailable) return null;
 

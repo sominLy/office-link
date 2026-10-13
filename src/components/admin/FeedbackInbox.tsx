@@ -4,12 +4,14 @@ import { supabase } from '@/lib/supabase';
 import { toast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
 import type { AdminFeedback } from '@/lib/types';
-import { FEEDBACK_KINDS, formatSentAt, kindMeta } from '@/lib/feedback';
+import { FEEDBACK_KINDS, formatSentAt, kindMeta, statusLabel } from '@/lib/feedback';
 import { ActionButton } from '@/seed/ui/action-button';
 import { TextField, TextFieldTextarea } from '@/seed/ui/text-field';
 import { RefreshCw } from 'lucide-react';
 
-type Filter = 'open' | 'done' | 'all';
+type Filter = 'open' | 'closed' | 'all';
+// 운영자가 누르는 버튼. 답변 보내기와 업데이트 완료만 푸시가 간다.
+type Mode = 'reply' | 'applied' | 'close' | 'reopen';
 
 const missingFn = (e: { code?: string; message?: string } | null) =>
   !!e && (e.code === 'PGRST202' || e.code === '42883' || /function .* does not exist|Could not find the function/i.test(e.message || ''));
@@ -17,7 +19,8 @@ const missingFn = (e: { code?: string; message?: string } | null) =>
 /**
  * 운영 대시보드의 받은편지함 — 사용자가 보낸 의견·문의·버그 제보를 읽고 답변한다.
  * 목록은 admin_feedback_list(닉네임·이메일 포함), 답변·완료는 admin_reply_feedback으로만 한다.
- * 대시보드의 다른 탭과 같은 흑백 팔레트를 쓴다.
+ * '업데이트 완료'는 바란 것이 실제로 앱에 들어갔다는 뜻이다. 알림을 원한 사람에게
+ * "바로 확인해 보시겠어요?" 푸시가 간다. 대시보드의 다른 탭과 같은 흑백 팔레트를 쓴다.
  */
 export default function FeedbackInbox() {
   const { user } = useAuth();
@@ -49,27 +52,40 @@ export default function FeedbackInbox() {
 
   useEffect(() => { load(); }, [load]);
 
-  const save = async (f: AdminFeedback, status: 'open' | 'done', withPush: boolean) => {
+  const save = async (f: AdminFeedback, mode: Mode) => {
     if (!user || busyId) return;
-    const reply = (drafts[f.id] ?? '').trim();
+    const draft = (drafts[f.id] ?? '').trim();
+    // 답변 없이 닫거나 다시 열 때는 쓰다 만 글을 보내지 않고 저장된 답변을 그대로 둔다
+    const reply = mode === 'reply' || mode === 'applied' ? draft || null : f.reply;
+    // 이미 '업데이트 완료'인 글의 답변을 고쳐도 상태는 그대로 둔다 (답변 완료로 내려가면 🎉 표시가 사라진다)
+    const status = mode === 'reply' ? (f.status === 'applied' ? 'applied' : 'done')
+      : mode === 'close' ? 'done' : mode === 'applied' ? 'applied' : 'open';
+    // 바뀐 게 없으면 저장만 하고 푸시는 보내지 않는다 (두 번 누르면 같은 푸시가 두 번 갔다)
+    const unchanged = reply === (f.reply ?? null) && status === f.status;
     setBusyId(f.id);
-    const { error } = await supabase.rpc('admin_reply_feedback', { p_id: f.id, p_reply: reply || null, p_status: status });
+    const { error } = await supabase.rpc('admin_reply_feedback', { p_id: f.id, p_reply: reply, p_status: status });
     setBusyId(null);
     if (error) {
       toast.error('저장하지 못했어요: ' + error.message);
       return;
     }
-    // 보낸 사람에게 푸시. 본문은 함수가 DB에서 읽는다. 실패해도 답변은 저장됐으므로 결과를 버린다.
+    // 보낸 사람에게 푸시. 본문·알림 여부는 함수가 DB에서 읽는다. 실패해도 답변은 저장됐으므로 결과를 버린다.
+    const withPush = !unchanged && ((mode === 'reply' && !!reply) || (mode === 'applied' && f.notify_on_done));
     if (withPush && f.user_id !== user.id) {
       supabase.functions.invoke('push-notify', {
         body: { action: 'feedback_reply', actor_id: user.id, feedback_id: f.id },
       }).catch(() => {});
     }
-    toast.success(status === 'done' ? (reply ? '답변을 보내고 완료로 표시했어요' : '완료로 표시했어요') : '다시 열었어요');
+    toast.success(
+      unchanged ? '저장했어요 (바뀐 게 없어 알림은 다시 보내지 않았어요)'
+        : mode === 'reply' ? (f.status === 'applied' ? '답변을 보냈어요' : '답변을 보내고 완료로 표시했어요')
+        : mode === 'applied' ? (f.notify_on_done ? '업데이트 완료로 표시하고 알렸어요 🎉' : '업데이트 완료로 표시했어요 (알림은 원하지 않은 분이에요)')
+        : mode === 'close' ? '완료로 표시했어요' : '다시 열었어요',
+    );
     load();
   };
 
-  const shown = items.filter(i => filter === 'all' || i.status === filter);
+  const shown = items.filter(i => filter === 'all' || (filter === 'open' ? i.status === 'open' : i.status !== 'open'));
   const openCount = items.filter(i => i.status === 'open').length;
 
   if (missing) {
@@ -86,7 +102,7 @@ export default function FeedbackInbox() {
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="text-t4 font-semibold text-[#0b0b0b]">📮 의견·문의 {openCount > 0 && <span className="text-[#d03b3b]">· 답변 기다리는 글 {openCount}개</span>}</h3>
-          <p className="text-t2 text-[#52514e] mt-0.5">답변을 저장하면 보낸 사람에게 푸시가 가고, 내 계정 → 의견·문의에 답변이 보여요. 이메일은 앱 밖에서 답할 때만 쓰세요.</p>
+          <p className="text-t2 text-[#52514e] mt-0.5">답변을 보내면 그 사람에게 푸시가 가고, 내 계정 → 의견·문의에 답변이 보여요. 바란 것이 앱에 들어갔으면 <b>업데이트 완료</b>를 누르세요 — 알림을 원한 사람에게 "바로 확인해 보시겠어요?"가 가요. 이메일은 앱 밖에서 답할 때만 쓰세요.</p>
         </div>
         <ActionButton variant="ghost" size="small" onClick={load} disabled={loading} aria-label="새로고침">
           <RefreshCw className={cn('w-4 h-4', loading && 'animate-spin')} />
@@ -94,7 +110,7 @@ export default function FeedbackInbox() {
       </div>
 
       <div className="inline-flex rounded-lg border border-black/10 bg-bg-layer-default p-0.5" role="radiogroup" aria-label="상태">
-        {([['open', '답변 대기'], ['done', '완료'], ['all', '전체']] as [Filter, string][]).map(([key, label]) => (
+        {([['open', '답변 대기'], ['closed', '완료'], ['all', '전체']] as [Filter, string][]).map(([key, label]) => (
           <button key={key} type="button" role="radio" aria-checked={filter === key} onClick={() => setFilter(key)}
             className={cn('px-2.5 py-1 text-t2 rounded-md', filter === key ? 'bg-[#0b0b0b] text-white font-medium' : 'text-[#52514e] hover:bg-black/[0.04]')}>
             {label}
@@ -118,8 +134,9 @@ export default function FeedbackInbox() {
                   {f.email && <a href={`mailto:${f.email}`} className="text-[#52514e] underline underline-offset-2 break-all">{f.email}</a>}
                   <span className="text-[#898781]">{formatSentAt(f.created_at)}</span>
                   {f.page && <span className="text-[#898781]">· {f.page}</span>}
+                  {f.notify_on_done && <span className="text-[#898781]" title="업데이트되면 알려 달라고 했어요">· 🔔 업데이트 알림</span>}
                   <span className={cn('ml-auto rounded-full px-2 py-px text-t1 font-medium', f.status === 'open' ? 'bg-[#fff1e6] text-[#b4501c]' : 'bg-[#e6f6ee] text-[#006300]')}>
-                    {f.status === 'open' ? '답변 대기' : '완료'}
+                    {f.status === 'open' ? '답변 대기' : statusLabel(f)}
                   </span>
                 </div>
                 <p className="text-t4 text-[#0b0b0b] whitespace-pre-wrap break-keep [overflow-wrap:anywhere]">{f.message}</p>
@@ -130,13 +147,18 @@ export default function FeedbackInbox() {
                   <TextFieldTextarea maxLength={1000} placeholder="답변을 적으면 보낸 사람에게 푸시가 가요 (비워 두고 완료만 해도 돼요)" aria-label="답변" />
                 </TextField>
                 <div className="flex flex-wrap gap-2">
-                  <ActionButton variant="brandSolid" size="small" onClick={() => save(f, 'done', true)} disabled={busy || !draft.trim()}>
-                    답변 보내고 완료
+                  <ActionButton variant="brandSolid" size="small" onClick={() => save(f, 'reply')} disabled={busy || !draft.trim()}>
+                    {f.status === 'applied' ? '답변 보내기' : '답변 보내고 완료'}
                   </ActionButton>
+                  {f.status !== 'applied' && (
+                    <ActionButton variant="neutralOutline" size="small" onClick={() => save(f, 'applied')} disabled={busy} title="바란 것이 앱에 들어갔을 때">
+                      🎉 업데이트 완료
+                    </ActionButton>
+                  )}
                   {f.status === 'open' ? (
-                    <ActionButton variant="neutralOutline" size="small" onClick={() => save(f, 'done', false)} disabled={busy}>답변 없이 완료</ActionButton>
+                    <ActionButton variant="ghost" size="small" onClick={() => save(f, 'close')} disabled={busy}>답변 없이 완료</ActionButton>
                   ) : (
-                    <ActionButton variant="neutralOutline" size="small" onClick={() => save(f, 'open', false)} disabled={busy}>다시 열기</ActionButton>
+                    <ActionButton variant="ghost" size="small" onClick={() => save(f, 'reopen')} disabled={busy}>다시 열기</ActionButton>
                   )}
                 </div>
               </li>

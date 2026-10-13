@@ -64,6 +64,40 @@
   --dialog-z-index: 60;
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   모달 본문 스크롤을 보이게
+
+   SEED 다이얼로그는 높이를 화면의 80%로 제한하고 본문(__body)만 스크롤한다. 그런데
+   맥·아이패드처럼 스크롤바를 숨기는 환경에서는 본문이 잘린 것처럼만 보여서, 멤버 기록
+   모달의 할 일 목록이 "더 있는지" 알 수 없었다. 스크롤바를 얇게 늘 보이게 하고, 터치
+   기기에서 세로 끌기가 본문 스크롤로 가게 못박는다.
+   ───────────────────────────────────────────────────────────────────────────── */
+.seed-dialog__body,
+.seed-bottom-sheet__body {
+  overflow-y: auto;
+  min-height: 0;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  scrollbar-width: thin;
+  scrollbar-color: hsl(220 10% 11% / 0.28) transparent;
+}
+.seed-dialog__body::-webkit-scrollbar,
+.seed-bottom-sheet__body::-webkit-scrollbar {
+  width: 8px;
+}
+.seed-dialog__body::-webkit-scrollbar-thumb,
+.seed-bottom-sheet__body::-webkit-scrollbar-thumb {
+  background: hsl(220 10% 11% / 0.28);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.seed-dialog__body::-webkit-scrollbar-track,
+.seed-bottom-sheet__body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 @layer base {
   /* shadcn/ui 프리미티브 50개가 이 변수들로 색을 받는다. 앱 코드만 SEED 토큰으로
      바꾸면 Button·Input·Dialog 같은 조각은 그대로 예전 색으로 남는다.

@@ -30,10 +30,11 @@ const chipBase = 'rounded-full border px-2.5 py-1 text-t2 font-medium transition
 const chipIdle = 'bg-bg-layer-default text-fg-neutral-muted border-stroke-neutral-subtle hover:border-stroke-brand-weak';
 const chipPicked = 'bg-bg-brand-solid text-white border-stroke-brand-solid';
 
-// "시간 정하기"를 누르면 다음 30분 단위부터 고르게 한다
-function nextHalfHour(): string {
+// "시간 정하기"를 누르면 다음 30분 단위부터 고르게 한다. 자정을 넘기면(23:30 뒤) 오늘 고를 시각이 없다 → null
+function nextHalfHour(): string | null {
   const [h, m] = kstNowHM().split(':').map(Number);
-  const rounded = (Math.ceil((h * 60 + m + 1) / 30) * 30) % (24 * 60);
+  const rounded = Math.ceil((h * 60 + m + 1) / 30) * 30;
+  if (rounded >= 24 * 60) return null;
   return `${String(Math.floor(rounded / 60)).padStart(2, '0')}:${String(rounded % 60).padStart(2, '0')}`;
 }
 
@@ -66,6 +67,15 @@ export default function StudyRoomDialog({ open, onClose, onCreated }: Props) {
     const cleanNote = note.trim();
     if (!cleanTitle) {
       toast.error('어떤 공부를 할지 제목을 적어 주세요');
+      return;
+    }
+    // DB는 코드포인트(char_length)로 센다. 화면의 자소 수 카운터와 다를 수 있어 여기서 한 번 더 본다.
+    if ([...cleanTitle].length > TITLE_MAX) {
+      toast.error(`제목이 너무 길어요 (${TITLE_MAX}자 이하)`);
+      return;
+    }
+    if ([...cleanNote].length > NOTE_MAX) {
+      toast.error(`한 줄 안내가 너무 길어요 (${NOTE_MAX}자 이하)`);
       return;
     }
     const check = checkMeetingUrl(link);
@@ -114,7 +124,7 @@ export default function StudyRoomDialog({ open, onClose, onCreated }: Props) {
         console.warn('024_study_rooms.sql 미적용 — study_rooms 없음');
         toast.error('스터디룸은 아직 켜지지 않았어요');
       } else if (error?.code === '23514') {
-        toast.error('제목이나 링크가 규칙에 맞지 않아요. 다시 확인해 주세요');
+        toast.error('제목·안내 길이나 링크가 규칙에 맞지 않아요. 다시 확인해 주세요');
       } else {
         toast.error('스터디룸을 열지 못했어요. 잠시 후 다시 시도해 주세요');
       }
@@ -164,7 +174,7 @@ export default function StudyRoomDialog({ open, onClose, onCreated }: Props) {
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           <TextField label="무슨 공부를 할까요?" value={title} onValueChange={(d) => setTitle(d.value)} maxGraphemeCount={TITLE_MAX}>
-            <TextFieldInput autoFocus placeholder="예: GSAT 수리 모의고사 같이 풀기" enterKeyHint="next" />
+            <TextFieldInput autoFocus placeholder="예: GSAT 수리 모의고사 같이 풀기" enterKeyHint="next" maxLength={TITLE_MAX} />
           </TextField>
 
           <div className="space-y-1.5">
@@ -211,10 +221,13 @@ export default function StudyRoomDialog({ open, onClose, onCreated }: Props) {
                 className={cn(chipBase, when === 'now' ? chipPicked : chipIdle)}>
                 지금 바로
               </button>
-              <button type="button" onClick={() => { setWhen('later'); if (!time) setTime(nextHalfHour()); }} aria-pressed={when === 'later'}
-                className={cn(chipBase, when === 'later' ? chipPicked : chipIdle)}>
+              <button type="button" disabled={nextHalfHour() === null}
+                onClick={() => { setWhen('later'); if (!time) setTime(nextHalfHour() ?? ''); }} aria-pressed={when === 'later'}
+                title={nextHalfHour() === null ? '오늘은 남은 시간이 없어요' : undefined}
+                className={cn(chipBase, when === 'later' ? chipPicked : chipIdle, nextHalfHour() === null && 'opacity-50 cursor-not-allowed')}>
                 오늘 시간 정하기
               </button>
+              {nextHalfHour() === null && <span className="text-t2 text-fg-neutral-muted">오늘은 남은 시간이 없어요</span>}
               {when === 'later' && (
                 <TextField value={time} onValueChange={(d) => setTime(d.value)} className="w-32">
                   <TextFieldInput type="time" aria-label="시작 시간" />
@@ -227,7 +240,7 @@ export default function StudyRoomDialog({ open, onClose, onCreated }: Props) {
           </div>
 
           <TextField label="한 줄 안내" indicator="선택" value={note} onValueChange={(d) => setNote(d.value)} maxGraphemeCount={NOTE_MAX}>
-            <TextFieldInput placeholder="예: 수리 10번부터 20번까지, 25분 타이머로 풀어요" />
+            <TextFieldInput placeholder="예: 수리 10번부터 20번까지, 25분 타이머로 풀어요" maxLength={NOTE_MAX} />
           </TextField>
 
           <ActionButton type="submit" variant="brandSolid" className="w-full" loading={saving}

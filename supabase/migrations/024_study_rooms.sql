@@ -57,8 +57,9 @@ create table if not exists public.study_room_members (
 
 create index if not exists idx_study_room_members_office on public.study_room_members (office_id, user_id);
 
--- 나간 사람은 행을 지운다. realtime DELETE 이벤트가 office_id 필터에 걸리려면 옛 행 전체가 실려야 한다.
-alter table public.study_room_members replica identity full;
+-- 나간 사람은 행을 지운다. 삭제 이벤트에는 정책이 안 걸려서 옛 행 전체를 싣지 않는다(기본키만).
+-- 앱은 삭제 이벤트를 필터 없이 받아 아는 방의 것일 때만 다시 읽는다.
+alter table public.study_room_members replica identity default;
 
 create or replace function public.set_study_room_member_office()
 returns trigger
@@ -101,6 +102,28 @@ create policy study_rooms_delete on public.study_rooms for delete to authenticat
 revoke update on public.study_rooms from anon, authenticated;
 grant update (title, subject, note, meeting_url, starts_at, ended_at) on public.study_rooms to authenticated;
 
+-- 넣을 때도 앱이 보내는 열만 받는다. created_at·ended_at을 앱이 정하면 starts_sane 제약이 그 값을 기준으로
+-- 검사돼 2099년에 시작하는 방을 넣을 수 있다. 그 방은 영원히 '예정'으로 남고 크론도 닫지 않는다.
+revoke insert on public.study_rooms from anon, authenticated;
+grant insert (office_id, host_id, title, subject, meeting_url, note, starts_at) on public.study_rooms to authenticated;
+
+-- 시각은 서버가 정한다 (022의 set_member_joined_at과 같은 이유). 열 권한과 겹치지만 둘 중 하나가 빠져도 막히게.
+create or replace function public.study_rooms_before_insert()
+returns trigger
+language plpgsql security definer set search_path = public, pg_temp as $$
+begin
+  if auth.uid() is null then return new; end if; -- SQL Editor·service role 행은 그대로
+  new.created_at := now();
+  new.ended_at := null;
+  if new.starts_at is null then new.starts_at := now(); end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists study_rooms_before_insert on public.study_rooms;
+create trigger study_rooms_before_insert before insert on public.study_rooms
+  for each row execute function public.study_rooms_before_insert();
+
 -- 참여자: 같은 오피스 멤버가 본다. 들어가는 건 본인만, 끝나지 않은 방에만. 나가는 것도 본인만.
 drop policy if exists study_members_select on public.study_room_members;
 create policy study_members_select on public.study_room_members for select to authenticated
@@ -118,6 +141,7 @@ create policy study_members_delete on public.study_room_members for delete to au
 -- UPDATE 정책 없음. 다시 들어올 때는 insert … on conflict do nothing으로 처리하므로 필요 없다.
 
 revoke all on function public.set_study_room_member_office() from public, anon, authenticated;
+revoke all on function public.study_rooms_before_insert() from public, anon, authenticated;
 
 -- ========== ④ Realtime ==========
 do $$

@@ -41,7 +41,12 @@ export const DialogDescription = ({ children }: SlotProps) => <>{children}</>;
 
 export const DialogFooter = ResponsiveDialogFooter;
 
-/** 자식 트리에서 특정 컴포넌트를 찾아 children을 꺼낸다(한 단계 중첩까지). */
+/**
+ * 자식 트리에서 특정 컴포넌트를 찾아 children을 꺼낸다.
+ * DialogHeader 안과 Fragment(<>…</>) 안도 들여다본다. 멤버 기록 모달처럼 `{member && (<>…</>)}`로
+ * 감싼 호출부는 제목이 조각 안에 있어서, 조각을 풀지 않으면 제목이 헤더로 올라가지 못하고
+ * 본문과 함께 스크롤돼 사라졌다.
+ */
 function pick(
   nodes: React.ReactNode,
   target: React.ElementType,
@@ -57,12 +62,18 @@ function pick(
       found = (child.props as { children?: React.ReactNode }).children;
       return;
     }
-    if (child.type === DialogHeader) {
-      // 헤더 안에 제목·설명이 들어 있는 모양을 풀어 본다
+    if (child.type === DialogHeader || child.type === React.Fragment) {
+      // 헤더·조각 안에 제목·설명이 들어 있는 모양을 풀어 본다
       const inner = pick((child.props as { children?: React.ReactNode }).children, target);
       if (inner.found !== null && inner.found !== undefined) {
         found = inner.found;
-        if (inner.rest.length) rest.push(<DialogHeader key="header">{inner.rest}</DialogHeader>);
+        if (inner.rest.length) {
+          rest.push(
+            child.type === DialogHeader
+              ? <DialogHeader key="header">{inner.rest}</DialogHeader>
+              : <React.Fragment key="fragment">{inner.rest}</React.Fragment>,
+          );
+        }
         return;
       }
     }

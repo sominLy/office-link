@@ -5,6 +5,8 @@
 // - action "announce" / "announce_poll": [공지] 커밋을 업데이트 공지로 게시 + 전원 푸시
 // - action "study": 스터디룸(024)을 연 사람을 제외한 오피스 멤버 전원에게 푸시
 // - action "feedback" / "feedback_reply": 의견·문의(025)가 오면 운영자에게, 답변하면 보낸 사람에게 푸시
+// 사용자 액션은 전부 '방금 생긴 근거 행'(근무 세션·소식 글·응원·방·문의)이 있어야 보낸다. 글을 올리지 않고
+// 함수만 되풀이해 부르거나, 같은 행으로 되풀이해 부르는 것을 막는다. 크론 액션은 CRON_SECRET이 있으면 헤더로 확인한다.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import webpush from 'npm:web-push@3';
 
@@ -44,6 +46,36 @@ async function isMember(officeId: string, userId: string): Promise<boolean> {
 const USER_ACTIONS = new Set(['clock_in', 'cheer', 'feed', 'study']);
 // 오피스와 무관한 사용자 액션. 본인 확인과 횟수 제한은 같지만 오피스 멤버 검사는 하지 않는다.
 const ACCOUNT_ACTIONS = new Set(['feedback', 'feedback_reply']);
+// 크론만 부르는 액션. CRON_SECRET이 설정돼 있으면 x-cron-secret 헤더가 맞아야 한다.
+// 비밀값이 없는 동안은 예전처럼 열어 둔다 — 설정 전에 크론이 멈추면 자정 퇴근·회고 푸시가 끊긴다.
+const CRON_ACTIONS = new Set(['nudge', 'announce_poll', 'midnight_clockout']);
+// 근거 행이 이보다 오래됐으면 푸시를 보내지 않는다 (같은 행으로 되풀이해 부르는 것을 막는다)
+const FRESH_MS = 2 * 60_000;
+const isFresh = (iso: unknown) => typeof iso === 'string' && Date.now() - new Date(iso).getTime() < FRESH_MS;
+
+// 길이가 달라도 같은 시간이 걸리게 비교한다
+function sameSecret(a: string, b: string): boolean {
+  const ea = new TextEncoder().encode(a);
+  const eb = new TextEncoder().encode(b);
+  let diff = ea.length ^ eb.length;
+  for (let i = 0; i < Math.max(ea.length, eb.length); i++) diff |= (ea[i] ?? 0) ^ (eb[i] ?? 0);
+  return diff === 0;
+}
+
+// 이 오피스에서 쓰는 이름. 023의 오피스별 이름이 있으면 그것, 없으면 프로필 이름.
+// 공개 오피스에서 가명으로 들어온 사람의 본명이 푸시 제목에 실리면 안 된다.
+async function nameIn(officeId: string | null, userId: string): Promise<string> {
+  if (officeId) {
+    const { data: m } = await supabase.from('office_members').select('nickname')
+      .eq('office_id', officeId).eq('user_id', userId).maybeSingle();
+    if (m?.nickname) return m.nickname as string;
+  }
+  const { data: p } = await supabase.from('profiles').select('nickname').eq('id', userId).maybeSingle();
+  return (p?.nickname as string) || '멤버';
+}
+// 응원 이모지는 그림 문자 하나·둘만 (아무 글자나 실어 보내지 못하게)
+const pickEmoji = (v: unknown, fallback: string) =>
+  typeof v === 'string' && /^\p{Extended_Pictographic}{1,2}$/u.test(v) ? v : fallback;
 // 앱이 보낸 글자는 코드포인트 기준으로 자른다
 const clip = (v: unknown, n: number) => [...(typeof v === 'string' ? v : '')].slice(0, n).join('');
 
@@ -64,6 +96,8 @@ async function sendTo(userIds: string[], title: string, body: string, tag = 'off
         // tag를 넘기면 같은 종류 알림이 쌓이지 않고 하나로 갱신된다 (스팸 필터 완화)
         // url: 알림을 누르면 열 화면
         JSON.stringify({ title, body, tag, url }),
+        // 응답하지 않는 주소(가짜 구독)에 매달리면 다음 사람들의 푸시까지 늦어진다
+        { timeout: 5000, TTL: 3600 },
       );
     } catch (e) {
       // 만료된 구독은 정리
@@ -137,23 +171,37 @@ Deno.serve(async (req) => {
         return new Response('forbidden', { status: 403, headers: cors });
       }
     }
-    // 한 사람이 10분에 20번까지 (push_log 테이블이 아직 없으면 count가 null이라 그대로 통과한다)
-    const { count } = await supabase.from('push_log').select('*', { count: 'exact', head: true })
+    // 한 사람이 10분에 20번까지. 먼저 적고 센다 — 동시에 200번 보내도 세는 시점에 이미 적혀 있다.
+    // 기록이 안 되면 보내지 않는다 (022의 push_log가 없으면 멈춘다. 공개 전에 022는 적용돼 있다).
+    const { error: logError } = await supabase.from('push_log').insert({ actor_id: uid });
+    const { count, error: countError } = await supabase.from('push_log').select('*', { count: 'exact', head: true })
       .eq('actor_id', uid).gte('at', new Date(Date.now() - 600_000).toISOString());
-    if ((count ?? 0) >= 20) return new Response('too many', { status: 429, headers: cors });
-    await supabase.from('push_log').insert({ actor_id: uid });
+    if (logError || countError) return new Response('rate limit unavailable', { status: 503, headers: cors });
+    if ((count ?? 99) > 20) return new Response('too many', { status: 429, headers: cors });
+  }
+
+  if (CRON_ACTIONS.has(payload.action)) {
+    const want = Deno.env.get('CRON_SECRET');
+    if (want && !sameSecret(req.headers.get('x-cron-secret') ?? '', want)) {
+      return new Response('unauthorized', { status: 401, headers: cors });
+    }
   }
 
   if (payload.action === 'clock_in') {
     const { office_id, actor_id } = payload;
     if (!office_id || !actor_id) return new Response('bad request', { status: 400, headers: cors });
-    const { data: actor } = await supabase.from('profiles').select('nickname').eq('id', actor_id).single();
+    // 근거: 방금(2분 안에) 연 근무 세션. 출근하지 않고 함수만 되풀이해 불러 전원을 깨우지 못하게.
+    const { data: session } = await supabase.from('work_sessions').select('started_at')
+      .eq('office_id', office_id).eq('user_id', actor_id).is('ended_at', null)
+      .order('started_at', { ascending: false }).limit(1).maybeSingle();
+    if (!session || !isFresh(session.started_at)) return new Response('no recent clock-in', { status: 403, headers: cors });
+    const name = await nameIn(office_id, actor_id);
     const { data: members } = await supabase
       .from('office_members').select('user_id')
       .eq('office_id', office_id).neq('user_id', actor_id);
     await sendTo(
       (members || []).map((m) => m.user_id),
-      `${actor?.nickname || '멤버'}님이 출근했어요 👋`,
+      `${name}님이 출근했어요 👋`,
       '오피스에서 함께 달려봐요!',
       `clockin-${office_id}`,
     );
@@ -161,14 +209,25 @@ Deno.serve(async (req) => {
   }
 
   if (payload.action === 'cheer') {
-    const { target_id, actor_id } = payload;
-    const emoji = clip(payload.emoji, 8);
-    const task_title = clip(payload.task_title, 60);
+    const { office_id, target_id, actor_id, task_id } = payload;
+    const emoji = pickEmoji(payload.emoji, '👍');
     if (!target_id || !actor_id || target_id === actor_id) return new Response('ok', { headers: cors });
-    const { data: actor } = await supabase.from('profiles').select('nickname').eq('id', actor_id).single();
+    // 근거: 상대의 할 일에 방금 남긴 응원. 제목은 앱이 보낸 글이 아니라 DB의 할 일에서 읽는다.
+    if (!task_id) return new Response('bad request', { status: 400, headers: cors });
+    const { data: task } = await supabase.from('tasks').select('title, user_id, office_id, is_private')
+      .eq('id', task_id).maybeSingle();
+    if (!task || task.user_id !== target_id || task.office_id !== office_id || task.is_private) {
+      return new Response('forbidden', { status: 403, headers: cors });
+    }
+    const { data: reaction } = await supabase.from('task_reactions').select('created_at')
+      .eq('task_id', task_id).eq('user_id', actor_id).order('created_at', { ascending: false }).limit(1).maybeSingle();
+    if (!reaction || !isFresh(reaction.created_at)) return new Response('no recent reaction', { status: 403, headers: cors });
+    const { data: off } = await supabase.from('offices').select('is_public').eq('id', office_id).maybeSingle();
+    const task_title = off?.is_public ? '' : clip(task.title, 60);
+    const name = await nameIn(office_id, actor_id);
     await sendTo(
       [target_id],
-      `${actor?.nickname || '멤버'}님이 ${emoji || '👍'} 응원을 보냈어요!`,
+      `${name}님이 ${emoji} 응원을 보냈어요!`,
       task_title ? `"${task_title}" 화이팅!` : '오늘도 화이팅!',
       'cheer',
     );
@@ -177,20 +236,28 @@ Deno.serve(async (req) => {
 
   if (payload.action === 'feed') {
     // 게시글/인사 푸시: target이 있으면 그 사람에게만, 없으면 오피스 전체(작성자 제외)
-    const { office_id, actor_id, target_id, kind } = payload;
-    const emoji = clip(payload.emoji, 8);
-    if (!office_id || !actor_id) return new Response('bad request', { status: 400, headers: cors });
-    // 화면의 200자 제한은 함수를 직접 부르면 적용되지 않는다
+    // 종류·대상·본문은 앱이 보낸 값이 아니라 방금 올린 소식 행(feed_id)에서 읽는다.
+    // 글을 올리지 않고 함수만 되풀이해 불러 전원을 깨우는 것을 막는다.
+    const { office_id, actor_id, feed_id } = payload;
+    if (!office_id || !actor_id || !feed_id) return new Response('bad request', { status: 400, headers: cors });
+    const { data: row } = await supabase.from('office_feed').select('type, target_user_id, content, emoji, created_at')
+      .eq('id', feed_id).eq('office_id', office_id).eq('user_id', actor_id).maybeSingle();
+    if (!row || !isFresh(row.created_at) || (row.type !== 'post' && row.type !== 'wave')) {
+      return new Response('no recent feed row', { status: 403, headers: cors });
+    }
+    const kind = row.type;
+    const target_id = row.target_user_id as string | null;
+    if (target_id && !(await isMember(office_id, target_id))) return new Response('forbidden', { status: 403, headers: cors });
+    const emoji = pickEmoji(row.emoji, '👋');
     // 공개 오피스 푸시에는 남이 쓴 문구를 싣지 않는다 (화면의 금지어·링크 검사는 함수를 직접 부르면 건너뛴다)
     const { data: off } = await supabase.from('offices').select('is_public').eq('id', office_id).maybeSingle();
-    const content = off?.is_public ? '' : clip(payload.content, 200);
-    const { data: actor } = await supabase.from('profiles').select('nickname').eq('id', actor_id).single();
-    const name = actor?.nickname || '멤버';
+    const content = off?.is_public ? '' : clip(row.content, 200);
+    const name = await nameIn(office_id, actor_id);
 
     let title = '';
     let body = '';
     if (kind === 'wave') {
-      title = `${name}님이 반갑다고 인사해요 ${emoji || '👋'}`;
+      title = `${name}님이 반갑다고 인사해요 ${emoji}`;
       body = '나도 인사를 돌려줘 볼까요?';
     } else if (target_id) {
       title = `${name}님이 나에게 응원을 남겼어요 💌`;
@@ -219,16 +286,15 @@ Deno.serve(async (req) => {
     const { office_id, actor_id, room_id } = payload;
     if (!office_id || !actor_id || !room_id) return new Response('bad request', { status: 400, headers: cors });
     const { data: room } = await supabase
-      .from('study_rooms').select('title, office_id, host_id, starts_at, ended_at')
+      .from('study_rooms').select('title, office_id, host_id, starts_at, ended_at, created_at')
       .eq('id', room_id).maybeSingle();
-    if (!room || room.office_id !== office_id || room.host_id !== actor_id || room.ended_at) {
+    if (!room || room.office_id !== office_id || room.host_id !== actor_id || room.ended_at || !isFresh(room.created_at)) {
       return new Response('forbidden', { status: 403, headers: cors });
     }
     // 공개 오피스 푸시에는 남이 쓴 문구를 싣지 않는다 (feed와 같은 규칙)
     const { data: off } = await supabase.from('offices').select('is_public').eq('id', office_id).maybeSingle();
     const title = off?.is_public ? '' : clip(room.title, 40);
-    const { data: actor } = await supabase.from('profiles').select('nickname').eq('id', actor_id).single();
-    const name = actor?.nickname || '멤버';
+    const name = await nameIn(office_id, actor_id);
     // 예정 방이면 시작 시각을 KST로 적는다
     const startsMs = new Date(room.starts_at as string).getTime();
     const upcoming = startsMs - Date.now() > 60_000;
@@ -253,9 +319,9 @@ Deno.serve(async (req) => {
     const { actor_id, feedback_id } = payload;
     if (!feedback_id) return new Response('bad request', { status: 400, headers: cors });
     const { data: fb } = await supabase
-      .from('feedback').select('user_id, kind, message')
+      .from('feedback').select('user_id, kind, message, created_at')
       .eq('id', feedback_id).maybeSingle();
-    if (!fb || fb.user_id !== actor_id) return new Response('forbidden', { status: 403, headers: cors });
+    if (!fb || fb.user_id !== actor_id || !isFresh(fb.created_at)) return new Response('forbidden', { status: 403, headers: cors });
     const { data: admins } = await supabase.from('app_admins').select('user_id');
     const recipients = (admins || []).map((a) => a.user_id).filter((id) => id !== actor_id);
     const title = ({
@@ -275,11 +341,24 @@ Deno.serve(async (req) => {
       .from('app_admins').select('user_id').eq('user_id', actor_id).maybeSingle();
     if (!admin) return new Response('forbidden', { status: 403, headers: cors });
     const { data: fb } = await supabase
-      .from('feedback').select('user_id, reply, status')
+      .from('feedback').select('user_id, reply, status, notify_on_done, replied_at')
       .eq('id', feedback_id).maybeSingle();
     if (!fb) return new Response('not found', { status: 404, headers: cors });
     if (fb.user_id === actor_id) return new Response('ok', { headers: cors });
+    if (!isFresh(fb.replied_at)) return new Response('no recent reply', { status: 403, headers: cors });
     const reply = clip(fb.reply, 80);
+    if (fb.status === 'applied') {
+      // 바란 것이 앱에 들어갔다. 알려 달라고 한 사람에게만, 홈을 열게.
+      if (fb.notify_on_done === false) return new Response('ok', { headers: cors });
+      await sendTo(
+        [fb.user_id],
+        '문의하신 내용이 업데이트됐어요 🎉',
+        reply ? `${reply} · 바로 확인해 보세요` : '바로 확인해 보시겠어요?',
+        'feedback-reply',
+        '/',
+      );
+      return new Response('ok', { headers: cors });
+    }
     await sendTo(
       [fb.user_id],
       '보낸 의견에 답변이 왔어요 💌',
@@ -292,7 +371,8 @@ Deno.serve(async (req) => {
 
   if (payload.action === 'announce') {
     // 기능 업데이트 공지: GitHub Actions가 배포 시 호출한다 (비밀키 검증)
-    if (!payload.secret || payload.secret !== Deno.env.get('ANNOUNCE_SECRET')) {
+    const announceSecret = Deno.env.get('ANNOUNCE_SECRET') ?? '';
+    if (!announceSecret || typeof payload.secret !== 'string' || !sameSecret(payload.secret, announceSecret)) {
       return new Response('unauthorized', { status: 401, headers: cors });
     }
     const message = (payload.message || '').trim();
@@ -346,17 +426,22 @@ Deno.serve(async (req) => {
     }).format(new Date());
     if (kstClock > '00:10') return new Response('not midnight', { headers: cors });
     const now = new Date().toISOString();
+    // 018의 DB 크론과 같은 범위: 오늘(KST) 0시 전에 시작한 것만 닫는다. 자정 직후에 출근한 사람과
+    // 여러 날 이어지는 '휴가 중'은 그대로 둔다.
+    const kstDay = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(new Date());
+    const todayStart = new Date(`${kstDay}T00:00:00+09:00`).toISOString();
     const { data: openSessions } = await supabase
       .from('work_sessions')
       .select('id, user_id, office_id')
-      .is('ended_at', null);
+      .is('ended_at', null)
+      .lt('started_at', todayStart);
     if (!openSessions || openSessions.length === 0) return new Response('ok', { headers: cors });
 
     const userIds = [...new Set(openSessions.map((s) => s.user_id))];
     // 근무·집중·상태 세션 모두 종료
-    await supabase.from('work_sessions').update({ ended_at: now }).is('ended_at', null);
-    await supabase.from('focus_sessions').update({ ended_at: now }).is('ended_at', null);
-    await supabase.from('status_sessions').update({ ended_at: now }).is('ended_at', null);
+    await supabase.from('work_sessions').update({ ended_at: now }).is('ended_at', null).lt('started_at', todayStart);
+    await supabase.from('focus_sessions').update({ ended_at: now }).is('ended_at', null).lt('started_at', todayStart);
+    await supabase.from('status_sessions').update({ ended_at: now }).is('ended_at', null).lt('started_at', todayStart).neq('status', '휴가 중');
     // 소식 피드에 퇴근 기록
     await supabase.from('office_feed').insert(
       openSessions.map((s) => ({ office_id: s.office_id, user_id: s.user_id, type: 'clock_out' })),

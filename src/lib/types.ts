@@ -157,10 +157,11 @@ export interface Feedback {
   kind: FeedbackKind;
   message: string;
   page: string | null; // 보낸 화면 경로
-  status: 'open' | 'done';
+  status: 'open' | 'done' | 'applied'; // 접수 → 답변 완료 / 업데이트 완료(바란 것이 앱에 들어감)
   reply: string | null; // 운영자 답변
   replied_at: string | null;
   created_at: string;
+  notify_on_done: boolean; // 업데이트되면 알려 달라고 했는지
 }
 
 /** 운영자 목록(admin_feedback_list)은 보낸 사람의 닉네임·이메일이 붙어 온다 */

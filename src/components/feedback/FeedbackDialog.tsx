@@ -6,7 +6,8 @@ import { toast } from '@/lib/toast';
 import { track } from '@/lib/funnel';
 import { cn } from '@/lib/utils';
 import type { FeedbackKind } from '@/lib/types';
-import { FEEDBACK_KINDS, FEEDBACK_MAX, checkFeedback } from '@/lib/feedback';
+import { AUTO_REPLY, AUTO_REPLY_NOTIFY, FEEDBACK_KINDS, FEEDBACK_MAX, checkFeedback } from '@/lib/feedback';
+import { isMuted, notificationsEnabled } from '@/lib/notify';
 import { ActionButton } from '@/seed/ui/action-button';
 import { TextField, TextFieldTextarea } from '@/seed/ui/text-field';
 import { Label } from '@/components/ui/label';
@@ -33,7 +34,10 @@ export default function FeedbackDialog({ open, onClose, onSent }: Props) {
   const { pathname } = useLocation();
   const [kind, setKind] = useState<FeedbackKind>('idea');
   const [message, setMessage] = useState('');
+  const [notifyOnDone, setNotifyOnDone] = useState(true); // 업데이트되면 알려 달라
   const [sending, setSending] = useState(false);
+  // 푸시는 알림을 켠 기기에만 간다. 켜지 않은 사람에게 "알려드릴게요"라고 하면 거짓말이 된다.
+  const pushOn = notificationsEnabled() && !isMuted();
 
   const submit = async (e?: FormEvent) => {
     e?.preventDefault();
@@ -46,7 +50,7 @@ export default function FeedbackDialog({ open, onClose, onSent }: Props) {
     setSending(true);
     const { data, error } = await supabase
       .from('feedback')
-      .insert({ user_id: user.id, kind, message: message.trim(), page: pathname.slice(0, 100) })
+      .insert({ user_id: user.id, kind, message: message.trim(), page: pathname.slice(0, 100), notify_on_done: notifyOnDone })
       .select('id')
       .single();
     setSending(false);
@@ -57,12 +61,14 @@ export default function FeedbackDialog({ open, onClose, onSent }: Props) {
         toast.error('의견 보내기는 아직 켜지지 않았어요');
       } else if (error?.code === 'P0003') {
         toast.error('한 시간에 10개까지 보낼 수 있어요. 잠시 뒤에 다시 보내 주세요');
+      } else if (error?.code === '23514') {
+        toast.error(`2자 이상 ${FEEDBACK_MAX}자 이하로 적어 주세요`);
       } else {
         toast.error('보내지 못했어요. 잠시 후 다시 시도해 주세요');
       }
       return;
     }
-    track('feedback_sent', { kind });
+    track('feedback_sent', { kind, notify: notifyOnDone });
     // 운영자에게 푸시. 실패해도 글은 들어갔으므로 결과를 버린다.
     supabase.functions.invoke('push-notify', {
       body: { action: 'feedback', actor_id: user.id, feedback_id: data.id },
@@ -71,7 +77,8 @@ export default function FeedbackDialog({ open, onClose, onSent }: Props) {
     setKind('idea');
     onSent?.();
     onClose();
-    toast.success('보냈어요. 답변이 오면 알려드리고, 내 계정에서도 볼 수 있어요 📮');
+    // 자동 답변 — 보낸 사람이 바로 받는 첫 응답
+    toast.success(AUTO_REPLY + (notifyOnDone && pushOn ? AUTO_REPLY_NOTIFY : ''), { duration: 6000 });
   };
 
   return (
@@ -97,9 +104,20 @@ export default function FeedbackDialog({ open, onClose, onSent }: Props) {
           </div>
 
           <TextField label="내용" value={message} onValueChange={(d) => setMessage(d.value)} maxGraphemeCount={FEEDBACK_MAX}>
-            <TextFieldTextarea autoFocus
+            <TextFieldTextarea autoFocus maxLength={FEEDBACK_MAX}
               placeholder={kind === 'bug' ? '무엇을 했을 때, 어떻게 안 됐는지 적어 주시면 빨리 고칠 수 있어요' : '편하게 적어 주세요'} />
           </TextField>
+          <label className="flex items-start gap-2 text-t4 text-fg-neutral cursor-pointer">
+            <input type="checkbox" checked={notifyOnDone} onChange={(e) => setNotifyOnDone(e.target.checked)} className="accent-amber-500 mt-1" />
+            <span>
+              업데이트되면 알려주세요
+              <span className="block text-t2 text-fg-neutral-muted">
+                {pushOn
+                  ? '바라신 내용이 앱에 들어가면 "바로 확인해 보시겠어요?" 알림을 보내드려요'
+                  : '알림이 꺼져 있어요. 홈의 ✨ 더보기 → 알림 켜기를 해 두면 업데이트됐을 때 알려드려요. 내 계정에서는 언제든 볼 수 있어요'}
+              </span>
+            </span>
+          </label>
           <p className="text-t2 text-fg-neutral-muted">
             보낸 화면(<code className="text-fg-neutral">{pathname}</code>)과 계정이 함께 전달돼요. 답변은 내 계정 → 의견·문의에서 볼 수 있어요
           </p>

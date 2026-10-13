@@ -1,7 +1,7 @@
--- 공개 전 점검 — 019·022·023·024·025가 운영 DB에 의도대로 들어갔는지 한 표로 본다.
+-- 공개 전 점검 — 019·022·023·024·025·026이 운영 DB에 의도대로 들어갔는지 한 표로 본다.
 -- 실행: Supabase 대시보드 → SQL Editor에 붙여넣고 Run.
 -- 모든 줄이 ✅이어야 링크를 밖에 돌린다. ❌이면 '고칠 일' 칸대로 한 뒤 다시 Run.
--- 019·022·023·024·025를 적용한 DB에서 실행한다 (적용 전에는 없는 열·테이블 때문에 표 대신 오류가 난다).
+-- 019·022·023·024·025·026을 적용한 DB에서 실행한다 (적용 전에는 없는 열·테이블 때문에 표 대신 오류가 난다).
 
 select t.item as "항목",
        case when t.ok then '✅' else '❌' end as "상태",
@@ -77,8 +77,11 @@ from (values
   ('스터디룸 수정 범위',
     has_column_privilege('authenticated', 'public.study_rooms', 'ended_at', 'UPDATE')
       and not has_column_privilege('authenticated', 'public.study_rooms', 'host_id', 'UPDATE')
-      and not has_column_privilege('authenticated', 'public.study_rooms', 'office_id', 'UPDATE'),
-    '024 다시 실행 (방의 host_id·office_id를 바꿀 수 있는 상태다)'),
+      and not has_column_privilege('authenticated', 'public.study_rooms', 'office_id', 'UPDATE')
+      and has_column_privilege('authenticated', 'public.study_rooms', 'starts_at', 'INSERT')
+      and not has_column_privilege('authenticated', 'public.study_rooms', 'created_at', 'INSERT')
+      and not has_column_privilege('authenticated', 'public.study_rooms', 'ended_at', 'INSERT'),
+    '024 다시 실행 (방의 host_id·office_id를 바꾸거나 created_at을 앱이 정할 수 있는 상태다)'),
   ('스터디룸 이벤트 허용',
     exists (
       select 1 from pg_constraint
@@ -91,6 +94,61 @@ from (values
       and to_regprocedure('public.admin_feedback_list()') is not null
       and to_regprocedure('public.admin_reply_feedback(uuid, text, text)') is not null,
     '025 실행'),
+  ('의견·문의 횟수 기록',
+    to_regclass('public.feedback_attempts') is not null,
+    '025 다시 실행 (보낸 글을 지우고 다시 보내는 것으로 한 시간 10개 제한을 피할 수 있다)'),
+  -- 026: 공개 운영 보강
+  ('프로필 열 범위',
+    has_column_privilege('authenticated', 'public.profiles', 'nickname', 'SELECT')
+      and not has_column_privilege('authenticated', 'public.profiles', 'work_start', 'SELECT')
+      and not has_column_privilege('authenticated', 'public.profiles', 'current_office_id', 'SELECT')
+      and to_regprocedure('public.my_profile()') is not null,
+    '026 실행 (낯선 사람이 남의 근무 시간·마지막 오피스를 읽을 수 있는 상태다)'),
+  ('공개 오피스는 프로필을 열지 않음',
+    pg_get_functiondef('public.shares_office_with(uuid)'::regprocedure) like '%is_public%',
+    '026 다시 실행 (공개 오피스 멤버끼리 본명·사진이 보인다)'),
+  ('공개 오피스 멤버 이름 채움',
+    not exists (
+      select 1 from public.office_members m join public.offices o on o.id = m.office_id
+      where o.is_public and m.nickname is null
+    ),
+    '026 다시 실행 (공개 오피스에서 이름이 빈 멤버가 "알 수 없음"으로 보인다)'),
+  ('쓰기 횟수 기록 표',
+    to_regclass('public.write_attempts') is not null
+      and to_regprocedure('public.rate_limit(text, text, integer, interval)') is not null,
+    '026 실행'),
+  ('세션 표 수정·넣기 범위',
+    has_column_privilege('authenticated', 'public.work_sessions', 'ended_at', 'UPDATE')
+      and not has_column_privilege('authenticated', 'public.work_sessions', 'office_id', 'UPDATE')
+      and not has_column_privilege('authenticated', 'public.work_sessions', 'started_at', 'INSERT')
+      and not has_column_privilege('authenticated', 'public.status_sessions', 'started_at', 'INSERT')
+      and not has_column_privilege('authenticated', 'public.focus_sessions', 'duration_seconds', 'INSERT'),
+    '026 다시 실행 (세션을 다른 오피스로 옮기거나 시각을 앱이 정할 수 있는 상태다)'),
+  ('열린 상태 세션은 하나',
+    exists (select 1 from pg_indexes where schemaname = 'public' and indexname = 'one_open_status'),
+    '026 다시 실행'),
+  ('할 일 루틴 id 검사',
+    exists (
+      select 1 from pg_policies
+      where schemaname = 'public' and tablename = 'tasks'
+        and policyname = 'tasks_insert' and with_check like '%routines%'
+    ),
+    '026 다시 실행 (남의 루틴 id를 끼워 넣어 그 사람의 루틴 생성을 막을 수 있다)'),
+  ('소식·채팅·세션·이벤트 트리거',
+    exists (select 1 from pg_trigger where tgname = 'office_feed_before_insert' and not tgisinternal)
+      and exists (select 1 from pg_trigger where tgname = 'chat_before_insert' and not tgisinternal)
+      and exists (select 1 from pg_trigger where tgname = 'status_sessions_guard' and not tgisinternal)
+      and exists (select 1 from pg_trigger where tgname = 'events_guard' and not tgisinternal),
+    '026 다시 실행'),
+  ('아바타 버킷 제한',
+    exists (select 1 from storage.buckets where id = 'avatars' and file_size_limit is not null and allowed_mime_types is not null),
+    '026 다시 실행 (아무 파일이나 크기 제한 없이 올릴 수 있다)'),
+  ('푸시 구독 주소 제한',
+    exists (select 1 from pg_constraint where conname = 'push_endpoint_https'),
+    '026 다시 실행'),
+  ('글귀 제보자 숨김',
+    not has_column_privilege('authenticated', 'public.quotes', 'created_by', 'SELECT'),
+    '026 다시 실행'),
   ('의견·문의 쓰기 범위',
     has_column_privilege('authenticated', 'public.feedback', 'message', 'INSERT')
       and not has_column_privilege('authenticated', 'public.feedback', 'status', 'INSERT')

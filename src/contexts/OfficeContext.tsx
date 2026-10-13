@@ -7,6 +7,7 @@ import { notify } from '@/lib/notify';
 import { track } from '@/lib/funnel';
 import { requestTrophyCheck } from '@/lib/awards';
 import { addDays, kstStartOfTodayISO, kstToday } from '@/lib/dates';
+import { fetchMyProfile } from '@/lib/profile';
 
 // 한국시간 오늘 0시 전에 시작했는데 아직 열린 세션 = 자정 자동 퇴근이 안 된 것
 const isStaleSession = (startedAt: string) => new Date(startedAt).getTime() < new Date(kstStartOfTodayISO()).getTime();
@@ -80,11 +81,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       .order('created_at');
     setOffices(officeList || []);
 
-    const { data: prof } = await supabase
-      .from('profiles')
-      .select('current_office_id')
-      .eq('id', user.id)
-      .single();
+    const prof = await fetchMyProfile(user.id);
     const current = (officeList || []).find(o => o.id === prof?.current_office_id) || (officeList || [])[0] || null;
     setOffice(current);
     setLoading(false);
@@ -295,12 +292,11 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
 
   const clockIn = async () => {
     if (!user || !office || myWorkSession) return;
-    const now = new Date().toISOString();
+    // started_at은 보내지 않는다. 026부터 서버 시계로만 찍히고(열 권한), 기기 시계가 틀려도 기록이 맞다.
     // DB의 partial unique index(one_open_work)가 중복 출근을 차단한다 (탭 2개 동시 출근 등)
     const { error } = await supabase.from('work_sessions').insert({
       office_id: office.id,
       user_id: user.id,
-      started_at: now,
     });
     if (error) {
       toast.error(error.code === '23505' ? '이미 출근했어요' : '출근하지 못했어요. 잠시 후 다시 시도해 주세요');
@@ -381,13 +377,13 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       await fetchMembers();
       return false;
     }
+    // started_at은 서버 시계로 (026). 열린 상태는 한 사람당 하나라 다른 탭이 먼저 넣었으면 23505가 온다.
     const { error } = await supabase.from('status_sessions').insert({
       office_id: office.id,
       user_id: user.id,
       status,
-      started_at: now,
     });
-    if (error) toast.error('상태를 바꾸지 못했어요. 잠시 후 다시 시도해 주세요');
+    if (error) toast.error(error.code === '23505' ? '다른 탭에서 방금 상태를 바꿨어요' : '상태를 바꾸지 못했어요. 잠시 후 다시 시도해 주세요');
     await fetchMySession();
     await fetchMembers();
     return !error;

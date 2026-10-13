@@ -3,7 +3,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/lib/toast';
 import type { Feedback } from '@/lib/types';
-import { STATUS_META, formatSentAt, kindMeta } from '@/lib/feedback';
+import { AUTO_REPLY, AUTO_REPLY_NOTIFY, STATUS_META, formatSentAt, kindMeta, statusLabel } from '@/lib/feedback';
+import { isMuted, notificationsEnabled } from '@/lib/notify';
 import { ActionButton } from '@/seed/ui/action-button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageSquareText, Trash2 } from 'lucide-react';
@@ -48,6 +49,7 @@ export default function MyFeedback() {
   };
 
   const waiting = items.filter(i => i.status === 'open').length;
+  const pushOn = notificationsEnabled() && !isMuted();
 
   return (
     <Card className="border-stroke-neutral-subtle">
@@ -73,13 +75,24 @@ export default function MyFeedback() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-t2 font-medium text-fg-neutral">{k.emoji} {k.label}</span>
                     <span className="text-t1 text-fg-neutral-muted">{formatSentAt(f.created_at)}</span>
-                    <span className={`ml-auto rounded-full border px-2 py-px text-t1 font-medium ${st.chip}`}>{st.label}</span>
+                    <span className={`ml-auto rounded-full border px-2 py-px text-t1 font-medium ${st.chip}`}>{statusLabel(f)}</span>
                     <button type="button" onClick={() => remove(f.id)} aria-label="보낸 글 지우기"
                       className="text-fg-neutral-subtle hover:text-fg-critical-contrast p-1 -m-1">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                   <p className="text-t4 text-fg-neutral whitespace-pre-wrap break-keep [overflow-wrap:anywhere]">{f.message}</p>
+                  {/* 자동 답변 — 운영자 답변이 오기 전까지 접수됐다는 걸 보여준다 */}
+                  {f.status === 'open' && !f.reply && (
+                    <p className="rounded-lg bg-bg-neutral-muted px-3 py-2 text-t2 text-fg-neutral-muted">
+                      🐥 {AUTO_REPLY}{f.notify_on_done && pushOn ? AUTO_REPLY_NOTIFY : ''}
+                    </p>
+                  )}
+                  {f.status === 'applied' && (
+                    <p className="rounded-lg bg-bg-positive-weak px-3 py-2 text-t2 text-fg-positive-contrast">
+                      🎉 문의하신 내용이 앱에 들어갔어요. 홈에서 바로 확인해 보세요
+                    </p>
+                  )}
                   {f.reply && (
                     <div className="rounded-lg bg-bg-brand-weak px-3 py-2 space-y-0.5">
                       <p className="text-t1 font-medium text-fg-brand">
