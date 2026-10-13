@@ -75,7 +75,7 @@ export const NEW_MEETING_LINKS: { provider: MeetingProvider; label: string; url:
   { provider: 'zoom', label: '줌 회의 시작하기', url: 'https://zoom.us/start/videomeeting' },
 ];
 
-/** 인적성 영역 칩. 고르지 않아도 된다. */
+/** 주제 칩. 고르지 않아도 된다. */
 export const STUDY_SUBJECTS = ['언어', '수리', '추리', '시각', '상식', '인성', '기타'] as const;
 
 export const TITLE_MAX = 40;

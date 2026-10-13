@@ -198,7 +198,7 @@ export default function StudyRooms() {
           <Video className="w-4 h-4 mr-1" /> 스터디룸 열기
         </ActionButton>
       </div>
-      <p className="px-x4 pb-x2 t2-regular text-fg-neutral-muted">줌·구글밋 링크로 모여서 인적성을 같이 풀어요. 누가 들어와 있는지 바로 보여요</p>
+      <p className="px-x4 pb-x2 t2-regular text-fg-neutral-muted">줌·구글밋 링크로 모여서 같이 공부해요. 누가 들어와 있는지 바로 보여요</p>
 
       {shown.length === 0 ? (
         <div className="rounded-r3 bg-bg-layer-default px-x5 py-x8 text-center">
