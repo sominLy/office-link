@@ -1,7 +1,7 @@
--- 공개 전 점검 — 019·022가 운영 DB에 의도대로 들어갔는지 한 표로 본다.
+-- 공개 전 점검 — 019·022·023이 운영 DB에 의도대로 들어갔는지 한 표로 본다.
 -- 실행: Supabase 대시보드 → SQL Editor에 붙여넣고 Run.
 -- 모든 줄이 ✅이어야 링크를 밖에 돌린다. ❌이면 '고칠 일' 칸대로 한 뒤 다시 Run.
--- 019·022를 적용한 DB에서 실행한다 (적용 전에는 없는 열·테이블 때문에 표 대신 오류가 난다).
+-- 019·022·023을 적용한 DB에서 실행한다 (적용 전에는 없는 열·테이블 때문에 표 대신 오류가 난다).
 
 select t.item as "항목",
        case when t.ok then '✅' else '❌' end as "상태",
@@ -34,6 +34,11 @@ from (values
         and policyname = 'members_insert' and with_check like '%is_public_office%'
     ),
     '022 다시 실행'),
+  ('멤버 행 수정 범위',
+    has_column_privilege('authenticated', 'public.office_members', 'nickname', 'UPDATE')
+      and not has_column_privilege('authenticated', 'public.office_members', 'office_id', 'UPDATE')
+      and not has_column_privilege('authenticated', 'public.office_members', 'role', 'UPDATE'),
+    '023 다시 실행 (멤버 행의 office_id를 바꿔 다른 오피스에 들어갈 수 있는 상태다)'),
   ('초대 코드 입장 함수',
     to_regprocedure('public.join_office_by_code(text)') is not null,
     '022 다시 실행'),
@@ -122,7 +127,7 @@ from (values
         and p.policyname <> all (array[
           'achievements_insert','achievements_select','announcements_select','chat_delete','chat_insert','chat_select',
           'reads_insert','reads_select','reads_update','events_insert','focus_insert','focus_select','focus_update','focus_update_admin',
-          'feed_delete','feed_insert','feed_select','members_delete','members_insert','members_select',
+          'feed_delete','feed_insert','feed_select','members_delete','members_insert','members_select','members_update_self',
           'offices_delete','offices_insert','offices_select','offices_update','profiles_insert','profiles_select','profiles_update',
           'push_delete','push_insert','push_select','push_update','quotes_delete','quotes_insert','quotes_select',
           'routines_delete','routines_insert','routines_select','routines_update','status_insert','status_select','status_update','status_update_admin',

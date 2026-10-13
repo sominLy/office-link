@@ -35,6 +35,13 @@ create policy members_update_self on public.office_members for update to authent
   using (user_id = auth.uid())
   with check (user_id = auth.uid());
 
+-- 위 정책은 "내 행"이면 어떤 열이든 통과시킨다. 그대로 두면 office_id를 다른 오피스 id로 바꿔서
+-- 초대 코드 없이 그 오피스의 멤버가 될 수 있다(022가 insert에서 닫은 문이 update로 다시 열린다).
+-- joined_at을 과거로 바꿔 직급 순서를 앞당기는 것도 된다. 앱이 고치는 열은 nickname뿐이므로
+-- 테이블 전체 UPDATE 권한을 거두고 그 열만 준다.
+revoke update on public.office_members from anon, authenticated;
+grant update (nickname) on public.office_members to authenticated;
+
 -- role을 바꾸려는 시도는 거절한다. with check로는 '바뀌었는지'를 볼 수 없어 트리거로 막는다.
 create or replace function public.office_members_guard_role()
 returns trigger language plpgsql security definer set search_path = public as $$
