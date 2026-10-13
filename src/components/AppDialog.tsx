@@ -18,6 +18,7 @@
  */
 import * as React from 'react';
 import { useResponsiveDialogContext } from '@seed-design/react';
+import { useDrawerContext } from '@seed-design/react-drawer';
 import {
   ResponsiveDialogRoot,
   ResponsiveDialogTrigger,
@@ -36,8 +37,26 @@ const SNAP_HALF = 0.65;
 const SNAP_FULL = 1;
 const SNAP_POINTS = [SNAP_HALF, SNAP_FULL];
 
-/** 손잡이를 이만큼 넘게 끌었으면 탭이 아니라 드래그로 본다(px) */
-const TAP_SLOP = 6;
+/**
+ * 절반 높이일 때 화면 아래 가장자리가 본문 안 어디에 오는지. 시트가 화면 높이의
+ * (1 - SNAP_HALF)만큼 아래로 밀려 있고, Content가 safe-area만큼 바닥 패딩을 둔다.
+ */
+const HALF_EDGE = `(100% - ${Math.round((1 - SNAP_HALF) * 100)}dvh + var(--seed-safe-area-bottom))`;
+/** 그 가장자리 위로 내용이 흐려지는 띠. 더 끌어올리면 내용이 있다는 표시다. */
+const HALF_FADE = `linear-gradient(to bottom, #000 calc(${HALF_EDGE} - 48px), transparent calc(${HALF_EDGE}))`;
+
+/** 보이는 높이의 이만큼 넘게 끌어내리면 닫는다. vaul이 snap point 없는 시트에 쓰는 값과 같다. */
+const CLOSE_RATIO = 0.25;
+
+/** 키보드 포커스인가. :focus-visible을 모르는 브라우저(Safari 15.4 전)에서는 matches가 던진다. */
+function isKeyboardFocus(el: Element) {
+  try {
+    return el.matches(':focus-visible');
+  } catch {
+    // 그런 브라우저에서는 탭으로 버튼에 포커스가 가지 않아서, 포커스는 거의 키보드에서 온다
+    return true;
+  }
+}
 
 interface SheetLayout {
   expandable: boolean;
@@ -106,7 +125,10 @@ export const Dialog = ({ children, expandable = false, headerAlign, open, ...pro
           activeSnapPoint: snap,
           setActiveSnapPoint: setSnap,
           // 절반 높이에서도 뒤 화면을 어둡게 덮는다. 기본값은 다 펼쳤을 때만 덮는다.
+          // (끌 때 배경이 깜빡이지 않게 index.css에서 불투명도를 고정한다)
           fadeFromIndex: 0,
+          // 다 펼친 시트를 세게 튕겨 내려도 한 번에 닫지 않고 절반 높이에 선다
+          snapToSequentialPoint: true,
         }),
       }}
     >
@@ -194,6 +216,88 @@ function withoutMaxWidth(className?: string) {
     .join(' ');
 }
 
+/**
+ * 열린 바텀시트의 하단 고정 버튼 높이. 스낵바는 화면 맨 아래(z-index 최대)에 떠서 그대로 두면
+ * 하단 버튼을 덮는다 — 버튼을 누르려던 손가락이 스낵바를 누르고, 그건 시트 바깥을 누른
+ * 것이라 시트가 닫힌다. index.css가 이 값만큼 스낵바를 올린다.
+ * 시트가 겹쳐 열릴 수 있어 시트마다 높이를 따로 두고 가장 큰 값을 쓴다.
+ */
+const footerClearances = new Map<symbol, number>();
+
+function applyFooterClearance() {
+  const height = Math.max(0, ...footerClearances.values());
+  const root = document.documentElement.style;
+  if (height > 0) root.setProperty('--sheet-footer-clearance', `${height}px`);
+  else root.removeProperty('--sheet-footer-clearance');
+}
+
+/** 푸터 DOM에 붙이는 callback ref. 시트가 닫혀 푸터가 사라지면 null로 불려 높이를 지운다. */
+function useFooterClearanceRef() {
+  const tracked = React.useRef<{ id: symbol; observer: ResizeObserver } | null>(null);
+  return React.useCallback((el: HTMLDivElement | null) => {
+    if (tracked.current) {
+      tracked.current.observer.disconnect();
+      footerClearances.delete(tracked.current.id);
+      tracked.current = null;
+      applyFooterClearance();
+    }
+    if (!el) return;
+    const id = Symbol('sheet-footer');
+    const measure = () => {
+      footerClearances.set(id, el.offsetHeight);
+      applyFooterClearance();
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    tracked.current = { id, observer };
+    measure();
+  }, []);
+}
+
+/**
+ * 절반 높이에서 아래로 끌어 닫기. vaul은 snap point가 있으면 끌어내린 거리로 닫지 않고,
+ * 놓은 자리에서 가장 가까운 snap point로 돌아간다. 닫힘 자리는 snap point가 아니라서
+ * 천천히 또는 길게 끌어내린 시트가 절반 높이로 되돌아왔다. 다른 시트처럼 보이는 높이의
+ * 25%를 넘게 끌어내리면 닫는다. 바텀시트(Drawer) 안에서만 그린다.
+ */
+function HalfSheetDragClose({ collapsed }: { collapsed: boolean }) {
+  const { drawerRef, closeDrawer } = useDrawerContext();
+  // 리스너는 한 번만 단다. closeDrawer는 드래그가 시작되면(isDragging) 새로 만들어지는데,
+  // 그때마다 다시 달면 누를 때 기록한 시작 위치가 사라진다.
+  const latest = React.useRef({ collapsed, closeDrawer });
+  React.useEffect(() => {
+    latest.current = { collapsed, closeDrawer };
+  });
+
+  React.useEffect(() => {
+    const el = drawerRef.current;
+    if (!el) return;
+    let start: { y: number; visible: number } | null = null;
+    const onDown = (e: PointerEvent) => {
+      start = latest.current.collapsed
+        ? { y: e.pageY, visible: window.innerHeight - el.getBoundingClientRect().top }
+        : null;
+    };
+    const onUp = (e: PointerEvent) => {
+      const s = start;
+      start = null;
+      if (!s || e.pageY - s.y < s.visible * CLOSE_RATIO) return;
+      // vaul의 놓기 처리(가장 가까운 snap point로 되돌리기)까지 가지 않게 여기서 끝낸다.
+      // 시트 요소의 capture 단계라 React의 bubble 핸들러가 받지 못한다.
+      e.stopPropagation();
+      latest.current.closeDrawer(false, { reason: 'drag', event: e });
+    };
+    el.addEventListener('pointerdown', onDown, true);
+    el.addEventListener('pointerup', onUp, true);
+    return () => {
+      el.removeEventListener('pointerdown', onDown, true);
+      el.removeEventListener('pointerup', onUp, true);
+    };
+  }, [drawerRef]);
+
+  return null;
+}
+
 export interface DialogContentProps extends React.HTMLAttributes<HTMLDivElement> {
   showCloseButton?: boolean;
   /**
@@ -223,21 +327,21 @@ export const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps
       else rest.push(child);
     });
 
-    // 손잡이를 누르면 절반 ↔ 다 펼침. 손잡이에서 시작한 드래그 끝에 오는 click은 무시한다.
-    const handleDownY = React.useRef<number | null>(null);
-    const handleProps = detents
-      ? {
-          onPointerDownCapture: (e: React.PointerEvent) => {
-            handleDownY.current = e.clientY;
-          },
-          onClick: (e: React.MouseEvent) => {
-            const start = handleDownY.current;
-            handleDownY.current = null;
-            if (start !== null && Math.abs(e.clientY - start) > TAP_SLOP) return;
-            setExpanded(!expanded);
-          },
-        }
-      : undefined;
+    // 손잡이를 누르면 절반 ↔ 다 펼침. SEED 손잡이의 기본 click(snap point 순환, 다 펼친
+    // 상태에서는 닫기)을 이걸로 바꾼다. 드래그 끝에 오는 click은 DrawerContent가 capture
+    // 단계에서 삼키므로 여기 오는 click은 탭이다.
+    const handleProps = detents ? { onClick: () => setExpanded(!expanded) } : undefined;
+
+    // 절반 높이로 접을 때 본문 스크롤을 맨 위로. 펼쳐서 내려 본 채로 접으면 overflow-hidden에
+    // 갇혀 위쪽 내용(인사 보내기·오늘)을 다시 볼 수 없었다.
+    const bodyRef = React.useRef<HTMLDivElement>(null);
+    React.useLayoutEffect(() => {
+      if (!collapsed) return;
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      bodyRef.current?.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+    }, [collapsed]);
+
+    const footerRef = useFooterClearanceRef();
 
     return (
       <ResponsiveDialogContent
@@ -261,7 +365,9 @@ export const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps
         )}
         {...props}
       >
+        {detents && <HalfSheetDragClose collapsed={collapsed} />}
         <ResponsiveDialogBody
+          ref={bodyRef}
           className={cn(
             'gap-x4',
             // 본문은 세로 flex라 자식이 기본으로 줄어든다. overflow-hidden인 상장 그림 같은
@@ -269,23 +375,32 @@ export const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps
             '[&>*]:shrink-0',
             // 푸터가 없으면 마지막 블록이 시트 바닥에 붙지 않게 띄운다
             footer.length === 0 && 'pb-x6',
+            // 끌어올리는 시트는 본문이 남은 높이를 채워야 본문 바닥이 시트 바닥에 붙고,
+            // 그래야 절반 높이의 흐린 띠(HALF_FADE)가 화면 가장자리에 정확히 온다
+            detents && 'flex-1 min-h-0',
             // 절반 높이에서는 본문 대신 시트가 움직여야 한다. 본문이 같이 스크롤되면
             // 손가락 하나에 두 가지가 움직인다.
             collapsed && 'overflow-hidden',
           )}
+          style={collapsed ? { maskImage: HALF_FADE, WebkitMaskImage: HALF_FADE } : undefined}
           // 키보드로 화면 밖 내용에 들어가면 펼쳐서 보여 준다. 손가락으로 누른 버튼도
           // 포커스를 받으므로 :focus-visible(키보드 포커스)일 때만 펼친다.
           onFocusCapture={
             collapsed
               ? (e) => {
-                  if (e.target instanceof Element && e.target.matches(':focus-visible')) setExpanded(true);
+                  if (e.target instanceof Element && isKeyboardFocus(e.target)) setExpanded(true);
                 }
               : undefined
           }
         >
           {rest}
         </ResponsiveDialogBody>
-        {footer}
+        {footer.map((f, i) =>
+          // 바텀시트일 때 첫 푸터의 높이만큼 스낵바를 올린다(가운데 다이얼로그 푸터는 화면 가운데라 필요 없다)
+          i === 0 && shouldUseBottomSheet && React.isValidElement<{ ref?: React.Ref<HTMLDivElement> }>(f)
+            ? React.cloneElement(f, { ref: footerRef })
+            : f,
+        )}
       </ResponsiveDialogContent>
     );
   },

@@ -44,6 +44,7 @@
     "@radix-ui/react-tooltip": "^1.1.4",
     "@seed-design/css": "^3.0.2",
     "@seed-design/react": "^3.0.0",
+    "@seed-design/react-drawer": "^3.0.0",
     "@seed-design/tailwind3-plugin": "^3.0.1",
     "@supabase/supabase-js": "^2.110.2",
     "@tanstack/react-query": "^5.56.2",
