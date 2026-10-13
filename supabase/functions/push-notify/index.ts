@@ -22,6 +22,27 @@ const cors = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// 이 함수는 Verify JWT를 끈 채 배포한다(크론이 토큰 없이 부른다). 그래서 주소만 알면 누구나 부를 수 있고,
+// 사용자 액션은 여기서 직접 확인하지 않으면 남의 이름으로 푸시를 보낼 수 있다.
+// 앱은 supabase.functions.invoke로 부르므로 로그인한 사람의 토큰이 Authorization에 실려 온다.
+async function callerId(req: Request): Promise<string | null> {
+  const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
+  if (!token) return null;
+  const { data, error } = await supabase.auth.getUser(token);
+  return error ? null : data.user?.id ?? null;
+}
+
+async function isMember(officeId: string, userId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from('office_members').select('user_id')
+    .eq('office_id', officeId).eq('user_id', userId).maybeSingle();
+  return !!data;
+}
+
+const USER_ACTIONS = new Set(['clock_in', 'cheer', 'feed']);
+// 앱이 보낸 글자는 코드포인트 기준으로 자른다
+const clip = (v: unknown, n: number) => [...(typeof v === 'string' ? v : '')].slice(0, n).join('');
+
 async function sendTo(userIds: string[], title: string, body: string, tag = 'office-link', url = '/') {
   const uniqueIds = [...new Set(userIds)]; // 여러 오피스 중복 수신 방지
   if (uniqueIds.length === 0) return;
@@ -100,6 +121,23 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   const payload = await req.json().catch(() => ({}));
 
+  // 보낸 사람이 본인이고, 보낸 사람과 받는 사람이 모두 그 오피스 멤버일 때만 사용자 액션을 처리한다
+  if (USER_ACTIONS.has(payload.action)) {
+    const uid = await callerId(req);
+    if (!uid || uid !== payload.actor_id) return new Response('unauthorized', { status: 401, headers: cors });
+    if (!payload.office_id || !(await isMember(payload.office_id, uid))) {
+      return new Response('forbidden', { status: 403, headers: cors });
+    }
+    if (payload.target_id && !(await isMember(payload.office_id, payload.target_id))) {
+      return new Response('forbidden', { status: 403, headers: cors });
+    }
+    // 한 사람이 10분에 20번까지 (push_log 테이블이 아직 없으면 count가 null이라 그대로 통과한다)
+    const { count } = await supabase.from('push_log').select('*', { count: 'exact', head: true })
+      .eq('actor_id', uid).gte('at', new Date(Date.now() - 600_000).toISOString());
+    if ((count ?? 0) >= 20) return new Response('too many', { status: 429, headers: cors });
+    await supabase.from('push_log').insert({ actor_id: uid });
+  }
+
   if (payload.action === 'clock_in') {
     const { office_id, actor_id } = payload;
     if (!office_id || !actor_id) return new Response('bad request', { status: 400, headers: cors });
@@ -117,7 +155,9 @@ Deno.serve(async (req) => {
   }
 
   if (payload.action === 'cheer') {
-    const { target_id, actor_id, emoji, task_title } = payload;
+    const { target_id, actor_id } = payload;
+    const emoji = clip(payload.emoji, 8);
+    const task_title = clip(payload.task_title, 60);
     if (!target_id || !actor_id || target_id === actor_id) return new Response('ok', { headers: cors });
     const { data: actor } = await supabase.from('profiles').select('nickname').eq('id', actor_id).single();
     await sendTo(
@@ -131,8 +171,13 @@ Deno.serve(async (req) => {
 
   if (payload.action === 'feed') {
     // 게시글/인사 푸시: target이 있으면 그 사람에게만, 없으면 오피스 전체(작성자 제외)
-    const { office_id, actor_id, target_id, kind, content, emoji } = payload;
+    const { office_id, actor_id, target_id, kind } = payload;
+    const emoji = clip(payload.emoji, 8);
     if (!office_id || !actor_id) return new Response('bad request', { status: 400, headers: cors });
+    // 화면의 200자 제한은 함수를 직접 부르면 적용되지 않는다
+    // 공개 오피스 푸시에는 남이 쓴 문구를 싣지 않는다 (화면의 금지어·링크 검사는 함수를 직접 부르면 건너뛴다)
+    const { data: off } = await supabase.from('offices').select('is_public').eq('id', office_id).maybeSingle();
+    const content = off?.is_public ? '' : clip(payload.content, 200);
     const { data: actor } = await supabase.from('profiles').select('nickname').eq('id', actor_id).single();
     const name = actor?.nickname || '멤버';
 
@@ -211,6 +256,12 @@ Deno.serve(async (req) => {
 
   if (payload.action === 'midnight_clockout') {
     // 매일 자정(KST)에 실행: 열려 있는 근무 세션을 전부 자동 퇴근 처리
+    // 크론만 부르는 액션이지만 주소가 열려 있다. 자정 직후 10분 동안만 동작하게 해서
+    // 낮에 불러 전원을 퇴근시키는 일을 막는다. (자정에 남은 세션은 018의 DB 크론도 0시 1분에 닫는다)
+    const kstClock = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    }).format(new Date());
+    if (kstClock > '00:10') return new Response('not midnight', { headers: cors });
     const now = new Date().toISOString();
     const { data: openSessions } = await supabase
       .from('work_sessions')

@@ -229,7 +229,20 @@ export default function Home() {
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
-            {/* 공개 오피스는 코드 없이 들어오므로 초대 코드를 보여주지 않는다 */}
+            {/* 공개 오피스는 코드 없이 들어오므로 초대 코드 대신 주소를 나눈다 */}
+            {office?.is_public && (
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/?utm_source=share`);
+                  toast.success('링크를 복사했어요. 같이 출근할 사람에게 보내 보세요');
+                }}
+                className="flex items-center gap-1 text-t2 bg-bg-brand-weak hover:bg-bg-brand-weak-pressed text-fg-brand border border-stroke-brand-weak rounded-full px-2.5 py-1 transition-colors flex-shrink-0"
+                title="링크 복사"
+              >
+                <Copy className="w-3 h-3 flex-shrink-0" />
+                <span>링크 복사</span>
+              </button>
+            )}
             {office && !office.is_public && (
               <button
                 onClick={() => {

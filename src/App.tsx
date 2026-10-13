@@ -4,7 +4,7 @@ import { SnackbarBridge } from '@/lib/toast';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Navigate, Routes, Route, useLocation } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { OfficeProvider } from '@/contexts/OfficeContext';
@@ -20,6 +20,7 @@ import Guide from './pages/Guide';
 import LoginRoute from './pages/LoginRoute';
 import Retro from './pages/Retro';
 import Trophies from './pages/Trophies';
+import { Privacy, Terms } from './pages/Legal';
 import TrophyWatcher from '@/components/awards/TrophyWatcher';
 import UsageTracker from '@/components/UsageTracker';
 
@@ -78,7 +79,11 @@ const App = () => (
               <Route path="/login" element={<LoginRoute />} />
               <Route path="/retro" element={<Retro />} />
               <Route path="/trophies" element={<Trophies />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
               <Route path="/admin" element={<Suspense fallback={null}><Admin /></Suspense>} />
+              {/* 없는 주소는 빈 화면 대신 첫 화면으로 */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </BrowserRouter>
           </SnackbarProvider>

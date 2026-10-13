@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { track } from '@/lib/funnel';
 import { toast } from '@/lib/toast';
 import { ActionButton } from '@/seed/ui/action-button';
 import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { SegmentedControl, SegmentedControlItem } from '@/seed/ui/segmented-control';
+import { Checkbox } from '@/seed/ui/checkbox';
 
 type Mode = 'login' | 'register';
 
@@ -17,9 +18,14 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (mode === 'register' && !agreed) {
+      toast.error('이용약관과 개인정보 처리방침에 동의해 주세요');
+      return;
+    }
     setLoading(true);
 
     if (mode === 'login') {
@@ -28,13 +34,18 @@ export default function Login() {
       if (error) toast.error('이메일이나 비밀번호를 다시 확인해 주세요');
     } else {
       track('signup_start');
-      const { error, isNewAccount } = await signUp(email, password);
+      const { error, isNewAccount, needsEmailConfirm } = await signUp(email, password);
       if (error) {
-        toast.error('가입하지 못했어요. 잠시 후 다시 시도해 주세요');
+        toast.error(
+          /already registered/i.test(error.message)
+            ? '이미 가입한 이메일이에요. 로그인해 주세요'
+            : '가입하지 못했어요. 잠시 후 다시 시도해 주세요',
+        );
       } else {
-        // 가입 폼 통과 지점(이메일 인증 전). 같은 이메일 재제출은 세지 않는다
+        // 가입 폼 통과 지점. 같은 이메일 재제출은 세지 않는다
         if (isNewAccount) track('signup_complete');
-        toast.success('메일함에서 인증 링크를 눌러 주세요');
+        // 이메일 인증을 끈 프로젝트는 여기서 바로 로그인된다. 켠 프로젝트만 메일 안내를 띄운다.
+        if (needsEmailConfirm) toast.success('메일함에서 인증 링크를 눌러 주세요');
       }
     }
     setLoading(false);
@@ -86,6 +97,22 @@ export default function Login() {
               minLength={mode === 'register' ? 6 : undefined}
             />
           </TextField>
+          {mode === 'register' && (
+            <Checkbox
+              checked={agreed}
+              onCheckedChange={setAgreed}
+              label={
+                // keep-all이 없으면 좁은 화면에서 "동의해 / 요"로 끊긴다
+                <span className="[word-break:keep-all]">
+                  만 14세 이상이고,{' '}
+                  {/* 새 창으로 연다. 같은 창에서 열면 적어둔 이메일과 비밀번호가 지워진다. */}
+                  <Link to="/terms" target="_blank" className="underline underline-offset-2">이용약관</Link>과{' '}
+                  <Link to="/privacy" target="_blank" className="underline underline-offset-2">개인정보 처리방침</Link>에
+                  동의해요
+                </span>
+              }
+            />
+          )}
           <ActionButton
             type="submit"
             variant="brandSolid"

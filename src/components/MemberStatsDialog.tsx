@@ -119,7 +119,7 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
       // 내 할 일이 아닐 때만 상대에게 응원 푸시
       if (!error && member.user_id !== user.id) {
         supabase.functions.invoke('push-notify', {
-          body: { action: 'cheer', target_id: member.user_id, actor_id: user.id, emoji, task_title: task.title },
+          body: { action: 'cheer', office_id: officeId, target_id: member.user_id, actor_id: user.id, emoji, task_title: task.title },
         }).catch(() => {});
       }
     }

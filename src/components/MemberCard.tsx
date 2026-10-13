@@ -33,7 +33,8 @@ export default function MemberCard({ member, onSelect }: { member: MemberStatus;
   const isOffline = member.current_status === '퇴근';
   const { office } = useOffice();
   const shownName = displayName(member.nickname, office?.title_mode, member.rank_index);
-  const meta = PRESENCE_META[member.current_status];
+  // 목록에 없는 상태 값이 DB에 들어오면 meta가 undefined가 되어 홈 전체가 그려지지 않는다
+  const meta = PRESENCE_META[member.current_status] ?? PRESENCE_META['퇴근'];
 
   return (
     <ListButtonItem

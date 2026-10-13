@@ -1,4 +1,6 @@
 -- 오피스별 단체 채팅
+-- ⚠️ 022_public_office.sql을 적용한 뒤에는 이 파일을 다시 실행하지 않는다. 여기의 정책이 022에서 잠근 내용을
+--    예전 것으로 되돌린다. 다시 실행했다면 022도 다시 실행하고 supabase/queries/launch_check.sql로 확인한다.
 create table if not exists public.chat_messages (
   id uuid primary key default gen_random_uuid(),
   office_id uuid not null references public.offices(id) on delete cascade,

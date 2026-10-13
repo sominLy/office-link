@@ -12,7 +12,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   // isNewAccount: 실제로 새 계정이 만들어졌는가. 이미 가입된 이메일로 다시 제출해도
   // Supabase는 계정 열거를 막으려고 error를 주지 않으므로, 전환 집계에는 이 값을 써야 한다.
-  signUp: (email: string, password: string) => Promise<{ error: Error | null; isNewAccount: boolean }>;
+  signUp: (email: string, password: string) => Promise<{ error: Error | null; isNewAccount: boolean; needsEmailConfirm: boolean }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -80,11 +80,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: window.location.origin },
+      options: {
+        emailRedirectTo: window.location.origin,
+        // 가입 폼의 동의 체크를 통과해야만 여기로 온다. 언제 동의했는지를 계정에 함께 둔다.
+        data: { agreed_terms_at: new Date().toISOString() },
+      },
     });
     // 이미 가입된 이메일이면 identities가 빈 배열로 돌아온다
     const isNewAccount = (data?.user?.identities?.length ?? 0) > 0;
-    return { error: error as Error | null, isNewAccount };
+    // 이메일 인증을 끈 프로젝트는 가입 즉시 세션이 온다. 바로 뒤에 적재하는 signup_complete에
+    // user_id가 빠지지 않게 여기서 먼저 알려준다.
+    if (data?.session?.user) setFunnelUser(data.session.user.id);
+    return { error: error as Error | null, isNewAccount, needsEmailConfirm: !error && !data?.session };
   };
 
   const signOut = async () => {

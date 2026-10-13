@@ -8,6 +8,8 @@
 --   기존 멤버는 전부 null이라 지금 보이는 이름이 그대로 유지된다.
 --
 -- 실행: Supabase 대시보드 → SQL Editor에 붙여넣고 Run (여러 번 실행해도 안전)
+-- 순서: 022 다음에 실행한다. 022의 join_office_by_code가 서버에서 멤버 행을 넣으므로,
+--   입장할 때 고른 이름은 그 뒤에 UPDATE로 붙인다 — 아래 members_update_self가 필요하다.
 
 alter table public.office_members
   add column if not exists nickname text;
