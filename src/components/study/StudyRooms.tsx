@@ -12,7 +12,7 @@ import { PROVIDER_META, formatSince, formatStartTime, openRoomsSince, providerOf
 import { AvatarIcon } from '@/components/illustrations/RewardIcon';
 import { ActionButton } from '@/seed/ui/action-button';
 import { ListHeader } from '@/seed/ui/list-header';
-import { ExternalLink, Video } from 'lucide-react';
+import { ExternalLink, Trash2, Video } from 'lucide-react';
 import StudyRoomDialog from './StudyRoomDialog';
 
 // host는 FK 이름으로 못박는다. study_room_members의 FK 두 개가 기본키 안에 있어서 PostgREST가 그 표를
@@ -32,6 +32,13 @@ export default function StudyRooms() {
   const [unavailable, setUnavailable] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  // 삭제는 두 번 눌러 확정한다. 첫 번째 누름 뒤 4초 안에 다시 누르지 않으면 되돌린다.
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!confirmDeleteId) return;
+    const t = setTimeout(() => setConfirmDeleteId(null), 4000);
+    return () => clearTimeout(t);
+  }, [confirmDeleteId]);
   // 경과 시간("12분째")을 30초마다 다시 그린다
   const [, bump] = useState(0);
 
@@ -102,6 +109,20 @@ export default function StudyRooms() {
           }
         }
         fetchRooms();
+      })
+      // 방 삭제도 기본키만 실려 온다. 아는 방이면 목록에서 치우고, 들어가 있던 사람의 상태를 되돌린다.
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'study_rooms' }, (payload) => {
+        const old = payload.old as { id?: string };
+        const gone = old?.id ? roomsRef.current.find(r => r.id === old.id) : undefined;
+        if (!gone) return;
+        const me = userIdRef.current;
+        if (me && gone.host_id !== me) {
+          const wasIn = (gone.study_room_members ?? []).some(p => p.user_id === me);
+          const elsewhere = roomsRef.current.some(r => r.id !== gone.id && !r.ended_at && (r.study_room_members ?? []).some(p => p.user_id === me));
+          if (wasIn && !elsewhere && statusRef.current === '스터디/회의 중') void changeStatus('출근');
+          toast(`"${gone.title}" 스터디룸이 삭제됐어요`);
+        }
+        setRooms(prev => prev.filter(r => r.id !== gone.id));
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'study_room_members', filter: `office_id=eq.${office.id}` }, () => {
         fetchRooms();
@@ -188,6 +209,32 @@ export default function StudyRooms() {
     if (isIn(room) && !inAnyOtherRoom(room.id) && myStatusSession?.status === '스터디/회의 중') void changeStatus('출근');
     await fetchRooms();
     toast.success(`"${room.title}" 스터디룸을 닫았어요. 모두 수고했어요 👏`);
+  };
+
+  // 방을 지운다 (연 사람만, 024의 study_rooms_delete). 참여 기록도 같이 지워지고(cascade) 소식에는 남지 않는다.
+  const remove = async (room: StudyRoom) => {
+    if (!user || busyId) return;
+    if (confirmDeleteId !== room.id) {
+      setConfirmDeleteId(room.id);
+      toast('한 번 더 누르면 방을 지워요');
+      return;
+    }
+    setConfirmDeleteId(null);
+    setBusyId(room.id);
+    const { data, error } = await supabase
+      .from('study_rooms')
+      .delete()
+      .eq('id', room.id)
+      .select('id');
+    setBusyId(null);
+    if (error || !data || data.length === 0) {
+      toast.error('방을 지우지 못했어요. 잠시 후 다시 시도해 주세요');
+      await fetchRooms();
+      return;
+    }
+    if (isIn(room) && !inAnyOtherRoom(room.id) && myStatusSession?.status === '스터디/회의 중') void changeStatus('출근');
+    setRooms(prev => prev.filter(r => r.id !== room.id));
+    toast(`"${room.title}" 스터디룸을 지웠어요`);
   };
 
   return (
@@ -292,6 +339,13 @@ export default function StudyRooms() {
                   {canEnd && (
                     <ActionButton variant="ghost" size="small" onClick={() => end(room)} disabled={busy} title="모두에게 끝났다고 알려요">
                       종료
+                    </ActionButton>
+                  )}
+                  {user?.id === room.host_id && (
+                    <ActionButton variant="ghost" size="small" onClick={() => remove(room)} disabled={busy}
+                      aria-label={confirmDeleteId === room.id ? '한 번 더 누르면 방을 지워요' : '방 삭제'}
+                      className={confirmDeleteId === room.id ? 'text-fg-critical' : 'text-fg-neutral-muted'}>
+                      {confirmDeleteId === room.id ? '정말 삭제' : <Trash2 className="w-4 h-4" aria-hidden="true" />}
                     </ActionButton>
                   )}
                 </div>
