@@ -101,6 +101,12 @@ from (values
   ('초대 코드 형식',
     not exists (select 1 from public.offices where invite_code <> upper(btrim(invite_code))),
     '소문자·공백이 섞인 코드는 입장 함수가 찾지 못한다. update public.offices set invite_code = upper(btrim(invite_code))'),
+  -- 길이 제약은 기존 행을 검사하지 않지만 그 행을 수정할 때는 검사한다. 걸리는 행이 있으면
+  -- 그 사람의 오피스 전환 저장과 미출근 알림 기록까지 실패한다.
+  ('길이 제한에 걸리는 예전 행 없음',
+    not exists (select 1 from public.profiles where char_length(btrim(nickname)) not between 1 and 30)
+      and not exists (select 1 from public.offices where char_length(name) not between 1 and 40),
+    '해당 닉네임·오피스 이름을 줄인다'),
   -- 운영 DB의 테이블은 001보다 먼저 대시보드에서 만들어졌다. 그때 만든 정책이 다른 이름으로 남아 있으면
   -- 022의 잠금과 OR로 합쳐져 잠금이 풀린다. 위 줄들은 정해진 이름만 보므로 따로 확인한다.
   ('RLS 꺼진 테이블 없음',

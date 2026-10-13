@@ -40,6 +40,8 @@ async function isMember(officeId: string, userId: string): Promise<boolean> {
 }
 
 const USER_ACTIONS = new Set(['clock_in', 'cheer', 'feed']);
+// 앱이 보낸 글자는 코드포인트 기준으로 자른다
+const clip = (v: unknown, n: number) => [...(typeof v === 'string' ? v : '')].slice(0, n).join('');
 
 async function sendTo(userIds: string[], title: string, body: string, tag = 'office-link', url = '/') {
   const uniqueIds = [...new Set(userIds)]; // 여러 오피스 중복 수신 방지
@@ -129,6 +131,11 @@ Deno.serve(async (req) => {
     if (payload.target_id && !(await isMember(payload.office_id, payload.target_id))) {
       return new Response('forbidden', { status: 403, headers: cors });
     }
+    // 한 사람이 10분에 20번까지 (push_log 테이블이 아직 없으면 count가 null이라 그대로 통과한다)
+    const { count } = await supabase.from('push_log').select('*', { count: 'exact', head: true })
+      .eq('actor_id', uid).gte('at', new Date(Date.now() - 600_000).toISOString());
+    if ((count ?? 0) >= 20) return new Response('too many', { status: 429, headers: cors });
+    await supabase.from('push_log').insert({ actor_id: uid });
   }
 
   if (payload.action === 'clock_in') {
@@ -148,7 +155,9 @@ Deno.serve(async (req) => {
   }
 
   if (payload.action === 'cheer') {
-    const { target_id, actor_id, emoji, task_title } = payload;
+    const { target_id, actor_id } = payload;
+    const emoji = clip(payload.emoji, 8);
+    const task_title = clip(payload.task_title, 60);
     if (!target_id || !actor_id || target_id === actor_id) return new Response('ok', { headers: cors });
     const { data: actor } = await supabase.from('profiles').select('nickname').eq('id', actor_id).single();
     await sendTo(
@@ -162,10 +171,13 @@ Deno.serve(async (req) => {
 
   if (payload.action === 'feed') {
     // 게시글/인사 푸시: target이 있으면 그 사람에게만, 없으면 오피스 전체(작성자 제외)
-    const { office_id, actor_id, target_id, kind, emoji } = payload;
+    const { office_id, actor_id, target_id, kind } = payload;
+    const emoji = clip(payload.emoji, 8);
     if (!office_id || !actor_id) return new Response('bad request', { status: 400, headers: cors });
     // 화면의 200자 제한은 함수를 직접 부르면 적용되지 않는다
-    const content = typeof payload.content === 'string' ? payload.content.slice(0, 200) : '';
+    // 공개 오피스 푸시에는 남이 쓴 문구를 싣지 않는다 (화면의 금지어·링크 검사는 함수를 직접 부르면 건너뛴다)
+    const { data: off } = await supabase.from('offices').select('is_public').eq('id', office_id).maybeSingle();
+    const content = off?.is_public ? '' : clip(payload.content, 200);
     const { data: actor } = await supabase.from('profiles').select('nickname').eq('id', actor_id).single();
     const name = actor?.nickname || '멤버';
 

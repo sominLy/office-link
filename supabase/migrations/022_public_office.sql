@@ -129,6 +129,8 @@ declare
   v_office uuid;
   v_uid uuid := auth.uid();
 begin
+  -- 같은 사람의 요청은 한 번에 하나씩 처리한다. 동시에 보내면 전부 "10번 미만"을 보고 통과한다.
+  perform pg_advisory_xact_lock(hashtextextended(v_uid::text, 0));
   if (select count(*) from invite_attempts where user_id = v_uid and at > now() - interval '1 hour') >= 10 then
     raise exception 'too many attempts' using errcode = 'P0003';
   end if;
@@ -246,6 +248,26 @@ drop policy if exists reads_update on public.chat_reads;
 create policy reads_update on public.chat_reads for update to authenticated
   using (user_id = auth.uid())
   with check (user_id = auth.uid() and public.is_office_member(office_id));
+
+-- 푸시 횟수: push-notify 함수가 한 사람이 10분에 20번 넘게 푸시를 부르지 못하게 여기에 기록한다.
+-- 공개 오피스 멤버가 글을 올리지 않고 함수만 반복해서 불러 전원에게 알림을 울릴 수 있었다.
+-- 이 테이블이 없어도 함수는 동작한다(제한 없이 통과).
+create table if not exists public.push_log (
+  actor_id uuid not null references auth.users(id) on delete cascade,
+  at timestamptz not null default now()
+);
+create index if not exists idx_push_log on public.push_log (actor_id, at);
+alter table public.push_log enable row level security; -- 정책 없음 = 앱에서 접근 불가
+
+-- 횟수 기록은 하루가 지나면 지운다 (매일 04:17 KST)
+do $$
+begin
+  if exists (select 1 from pg_extension where extname = 'pg_cron') then
+    perform cron.schedule('launch-logs-retention', '17 19 * * *',
+      'delete from public.push_log where at < now() - interval ''1 day''; '
+      || 'delete from public.invite_attempts where at < now() - interval ''1 day''');
+  end if;
+end $$;
 
 -- ========== ⑧ 헬퍼 함수 search_path ==========
 -- 001·008의 정의자 권한 함수도 새 함수들과 같게 pg_temp를 맨 뒤로 고정한다
