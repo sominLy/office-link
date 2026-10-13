@@ -418,7 +418,10 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       .update({ nickname })
       .eq('office_id', officeId)
       .eq('user_id', user.id);
-    if (error && error.code !== '42703' && error.code !== '23505') {
+    // 칼럼이 없는 DB(023 미적용)에서는 읽기는 42703, 쓰기는 PGRST204로 온다.
+    // 둘 다 조용히 넘긴다 — 이름만 안 붙고 입장은 되게.
+    const missingColumn = error?.code === '42703' || error?.code === 'PGRST204';
+    if (error && !missingColumn && error.code !== '23505') {
       console.warn('입장 이름 적용 실패', error.message);
     }
   };
@@ -433,8 +436,12 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
     if (error) {
       // 23505 = 같은 오피스에 같은 이름이 이미 있다 (office_members_nickname_uniq)
       if (error.code === '23505') return { error: '이 오피스에 같은 이름을 쓰는 사람이 있어요' };
-      // 42703 = nickname 열이 없다 (023 미적용)
-      if (error.code === '42703') return { error: '아직 준비되지 않은 기능이에요' };
+      // nickname 칼럼이 없는 DB. 읽기는 42703, 쓰기는 PGRST204로 온다.
+      // 다시 시도해도 되지 않으므로 그렇게 말하지 않는다.
+      if (error.code === '42703' || error.code === 'PGRST204') {
+        console.warn('023_office_nickname.sql 미적용 — office_members.nickname 없음');
+        return { error: '오피스별 이름은 아직 켜지지 않았어요' };
+      }
       return { error: '이름을 바꾸지 못했어요. 잠시 후 다시 시도해 주세요' };
     }
     await fetchMembers();
@@ -510,9 +517,6 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
         office_id: newOffice.id,
         user_id: user.id,
         role: 'admin',
-        // 새로 만들 때는 insert에 바로 넣는다 — 행이 여기서 생기므로 따로 update할 이유가 없다.
-        // 023 미적용 DB에서는 이 열이 없어 insert가 거부되므로 nickname이 있을 때만 넣는다.
-        ...(nickname ? { nickname } : {}),
       });
       if (memberError) {
         // 고아 오피스 방지. 롤백까지 실패하면 사용자가 할 수 있는 일이 없으므로
@@ -521,6 +525,9 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
         if (rollbackError) console.error('고아 오피스 롤백 실패', newOffice.id, rollbackError);
         return { error: '오피스를 만들지 못했어요. 잠시 후 다시 시도해 주세요' };
       }
+      // 이름은 멤버 행을 만든 뒤에 붙인다. insert에 넣으면 칼럼이 없는 DB에서
+      // 오피스 생성 자체가 거부된다.
+      await applyEntryNickname(newOffice.id, nickname);
       const { error: currentError } = await supabase
         .from('profiles')
         .update({ current_office_id: newOffice.id })
