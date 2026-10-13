@@ -28,9 +28,11 @@ interface OfficeContextType {
   clockOut: () => Promise<boolean>;
   /** 새 상태가 DB에 반영됐으면 true. 실패 안내는 changeStatus가 직접 띄운다. */
   changeStatus: (status: StatusPreset) => Promise<boolean>;
-  joinOffice: (inviteCode: string) => Promise<{ error: string | null }>;
-  joinPublicOffice: (officeId: string) => Promise<{ error: string | null }>;
-  createOffice: (name: string) => Promise<{ error: string | null }>;
+  /** 이 오피스에서 쓰는 내 이름. null이면 프로필 이름으로 되돌아간다. */
+  setMyOfficeNickname: (nickname: string | null) => Promise<{ error: string | null }>;
+  joinOffice: (inviteCode: string, nickname?: string | null) => Promise<{ error: string | null }>;
+  joinPublicOffice: (officeId: string, nickname?: string | null) => Promise<{ error: string | null }>;
+  createOffice: (name: string, nickname?: string | null) => Promise<{ error: string | null }>;
 }
 
 const OfficeContext = createContext<OfficeContextType | undefined>(undefined);
@@ -115,13 +117,27 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
 
   const fetchMembers = useCallback(async () => {
     if (!office) return;
-    const { data: memberList } = await supabase
+    // nickname은 이 오피스에서 쓰는 이름이다. 없으면 profiles 이름을 쓴다.
+    // 023 미적용 DB에는 이 열이 없어서 쿼리가 42703으로 실패한다. 그러면 멤버 목록이
+    // 통째로 비어 홈 화면이 망가지므로, 열 없이 한 번 더 조회한다.
+    const memberColumns = 'user_id, role, joined_at, profiles(id, nickname, avatar_url)';
+    let { data: memberList, error: memberError } = await supabase
       .from('office_members')
-      .select('user_id, role, joined_at, profiles(id, nickname, avatar_url)')
+      .select(`user_id, role, joined_at, nickname, profiles(id, nickname, avatar_url)`)
       .eq('office_id', office.id)
       .order('joined_at');
 
-    if (!memberList) return;
+    if (memberError?.code === '42703') {
+      const retry = await supabase
+        .from('office_members')
+        .select(memberColumns)
+        .eq('office_id', office.id)
+        .order('joined_at');
+      memberList = retry.data as typeof memberList;
+      memberError = retry.error;
+    }
+
+    if (memberError || !memberList) return;
     setMyRole((memberList.find(m => m.user_id === userIdRef.current)?.role as 'admin' | 'member') || null);
 
     // 멤버별 반복 쿼리 대신 오피스 단위로 한 번에 조회 (N+1 제거)
@@ -157,7 +173,8 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       const st = statusMap.get(member.user_id);
       return {
         user_id: member.user_id,
-        nickname: profile?.nickname || '알 수 없음',
+        // 이 오피스에서 쓰는 이름이 있으면 그것, 없으면 프로필 이름
+        nickname: member.nickname || profile?.nickname || '알 수 없음',
         avatar_url: profile?.avatar_url || null,
         current_status: (st?.status as MemberStatus['current_status']) || '퇴근',
         status_started_at: st?.started_at || new Date().toISOString(),
@@ -389,10 +406,46 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
     await fetchOffice();
   };
 
-  const joinOffice = async (inviteCode: string) => {
+  /**
+   * 입장할 때 고른 이름을 멤버 행에 넣는다.
+   * 가입 경로가 RPC·직접 insert로 갈리므로 가입이 끝난 뒤 오피스 id로 따로 적용한다.
+   * 023 미적용 DB에서는 열이 없어 42703이 나는데, 이름만 못 붙고 입장은 되게 둔다.
+   */
+  const applyEntryNickname = async (officeId: string, nickname?: string | null) => {
+    if (!user || !nickname) return;
+    const { error } = await supabase
+      .from('office_members')
+      .update({ nickname })
+      .eq('office_id', officeId)
+      .eq('user_id', user.id);
+    if (error && error.code !== '42703' && error.code !== '23505') {
+      console.warn('입장 이름 적용 실패', error.message);
+    }
+  };
+
+  const setMyOfficeNickname = async (nickname: string | null): Promise<{ error: string | null }> => {
+    if (!user || !office) return { error: '로그인하고 다시 시도해 주세요' };
+    const { error } = await supabase
+      .from('office_members')
+      .update({ nickname })
+      .eq('office_id', office.id)
+      .eq('user_id', user.id);
+    if (error) {
+      // 23505 = 같은 오피스에 같은 이름이 이미 있다 (office_members_nickname_uniq)
+      if (error.code === '23505') return { error: '이 오피스에 같은 이름을 쓰는 사람이 있어요' };
+      // 42703 = nickname 열이 없다 (023 미적용)
+      if (error.code === '42703') return { error: '아직 준비되지 않은 기능이에요' };
+      return { error: '이름을 바꾸지 못했어요. 잠시 후 다시 시도해 주세요' };
+    }
+    await fetchMembers();
+    return { error: null };
+  };
+
+  const joinOffice = async (inviteCode: string, nickname?: string | null) => {
     if (!user) return { error: '로그인하고 다시 시도해 주세요' };
     const { data: joinedId, error: rpcError } = await supabase.rpc('join_office_by_code', { p_code: inviteCode });
     if (!rpcError) {
+      await applyEntryNickname(joinedId as string, nickname);
       await enterJoinedOffice(joinedId as string, 'invite');
       return { error: null };
     }
@@ -415,12 +468,13 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       role: 'member',
     });
     if (error) return { error: '이미 가입한 오피스예요' };
+    await applyEntryNickname(officeData.id, nickname);
     await enterJoinedOffice(officeData.id, 'invite');
     return { error: null };
   };
 
   // 초대 코드 없이 공개 오피스에 들어간다. members_insert 정책이 공개 오피스의 멤버 가입만 통과시킨다.
-  const joinPublicOffice = async (officeId: string) => {
+  const joinPublicOffice = async (officeId: string, nickname?: string | null) => {
     if (!user) return { error: '로그인하고 다시 시도해 주세요' };
     const { error } = await supabase.from('office_members').insert({
       office_id: officeId,
@@ -430,11 +484,12 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
     if (error) {
       return { error: error.code === '23505' ? '이미 가입한 오피스예요' : '오피스에 들어가지 못했어요. 잠시 후 다시 시도해 주세요' };
     }
+    await applyEntryNickname(officeId, nickname);
     await enterJoinedOffice(officeId, 'public');
     return { error: null };
   };
 
-  const createOffice = async (name: string) => {
+  const createOffice = async (name: string, nickname?: string | null) => {
     if (!user) return { error: '로그인하고 다시 시도해 주세요' };
     // invite_code unique 제약과 충돌하면 코드를 새로 뽑아 재시도
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -453,6 +508,9 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
         office_id: newOffice.id,
         user_id: user.id,
         role: 'admin',
+        // 새로 만들 때는 insert에 바로 넣는다 — 행이 여기서 생기므로 따로 update할 이유가 없다.
+        // 023 미적용 DB에서는 이 열이 없어 insert가 거부되므로 nickname이 있을 때만 넣는다.
+        ...(nickname ? { nickname } : {}),
       });
       if (memberError) {
         // 고아 오피스 방지. 롤백까지 실패하면 사용자가 할 수 있는 일이 없으므로
@@ -478,7 +536,8 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
     <OfficeContext.Provider value={{
       office, offices, myRole, switchOffice, updateTitleMode,
       members, myWorkSession, myStatusSession, loading,
-      clockIn, clockOut, changeStatus, joinOffice, joinPublicOffice, createOffice,
+      clockIn, clockOut, changeStatus, setMyOfficeNickname,
+      joinOffice, joinPublicOffice, createOffice,
     }}>
       {children}
     </OfficeContext.Provider>

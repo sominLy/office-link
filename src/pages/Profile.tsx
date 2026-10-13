@@ -17,6 +17,8 @@ import { AvatarIcon } from '@/components/illustrations/RewardIcon';
 import BottomNav from '@/components/BottomNav';
 import MyTasksByOffice from '@/components/MyTasksByOffice';
 import GrapeBoard from '@/components/GrapeBoard';
+import { useOffice } from '@/contexts/OfficeContext';
+import { randomNickname, normalizeNickname } from '@/lib/nickname';
 import RetroSettingsDialog from '@/components/retro/RetroSettingsDialog';
 import { describePrefs, nextDeliveryLabel, readRetroPrefs } from '@/lib/retro';
 
@@ -24,8 +26,20 @@ import { Icon } from '@seed-design/react';
 export default function Profile() {
   const [retroSettingsOpen, setRetroSettingsOpen] = useState(false);
   const { user, profile, refreshProfile, signOut } = useAuth();
+  const { office, members, setMyOfficeNickname } = useOffice();
   const navigate = useNavigate();
   const [nickname, setNickname] = useState(profile?.nickname || '');
+
+  // 이 오피스에서 쓰는 이름. 비우면 프로필 이름으로 되돌아간다.
+  const myMember = members.find(m => m.user_id === user?.id);
+  const [officeNickname, setOfficeNickname] = useState('');
+  const [officeNameSaving, setOfficeNameSaving] = useState(false);
+  useEffect(() => {
+    // 멤버 목록의 이름은 방별 이름이 있으면 그것, 없으면 프로필 이름이다.
+    // 프로필 이름과 같으면 방별 이름을 따로 안 쓰는 상태로 본다.
+    const shown = myMember?.nickname || '';
+    setOfficeNickname(shown && shown !== profile?.nickname ? shown : '');
+  }, [myMember?.nickname, profile?.nickname]);
 
   // 프로필은 마운트 뒤에 비동기로 도착한다. useState 초기값만 쓰면 주소로 바로 들어왔을 때
   // 입력칸이 빈 채로 남는다. 사용자가 고쳐 둔 값은 덮지 않도록 프로필이 바뀔 때만 맞춘다.
@@ -197,6 +211,51 @@ export default function Profile() {
             </form>
           </CardContent>
         </Card>
+
+        {/* 이 오피스에서 쓰는 이름 */}
+        {office && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-t5">{office.name}에서 쓰는 이름</CardTitle>
+              <CardDescription>
+                이름은 오피스마다 따로예요. 비우면 프로필 이름({profile?.nickname})으로 보여요.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-x2 items-end">
+                <TextField
+                  label="이 오피스 이름"
+                  className="flex-1"
+                  value={officeNickname}
+                  onValueChange={(d) => setOfficeNickname(d.value)}
+                >
+                  <TextFieldInput id="office-nickname" maxLength={20} placeholder={profile?.nickname || ''} />
+                </TextField>
+                <ActionButton
+                  variant="neutralOutline"
+                  onClick={() => setOfficeNickname(randomNickname())}
+                  disabled={officeNameSaving}
+                >
+                  랜덤
+                </ActionButton>
+                <ActionButton
+                  variant="brandSolid"
+                  loading={officeNameSaving}
+                  disabled={officeNameSaving}
+                  onClick={async () => {
+                    setOfficeNameSaving(true);
+                    const { error } = await setMyOfficeNickname(normalizeNickname(officeNickname));
+                    if (error) toast.error(error);
+                    else toast.success('이 오피스에서 쓰는 이름을 바꿨어요');
+                    setOfficeNameSaving(false);
+                  }}
+                >
+                  저장
+                </ActionButton>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* 공략집 바로가기 */}
         <button
