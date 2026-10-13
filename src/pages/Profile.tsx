@@ -20,6 +20,7 @@ import GrapeBoard from '@/components/GrapeBoard';
 import { useOffice } from '@/contexts/OfficeContext';
 import { randomNickname, normalizeNickname } from '@/lib/nickname';
 import RetroSettingsDialog from '@/components/retro/RetroSettingsDialog';
+import MyFeedback from '@/components/feedback/MyFeedback';
 import { describePrefs, nextDeliveryLabel, readRetroPrefs } from '@/lib/retro';
 
 import { Icon } from '@seed-design/react';
@@ -294,6 +295,9 @@ export default function Profile() {
             </span>
           </button>
         )}
+
+        {/* 의견·문의 — 보내기와 운영자 답변 */}
+        <MyFeedback />
 
         {/* 주간 회고 · 진열장 */}
         <Card className="border-stroke-neutral-subtle">

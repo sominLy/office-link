@@ -4,6 +4,7 @@
 //                   + 각자 정한 주간 회고 시간이 지나면 "회고 도착" 푸시 (주 1회)
 // - action "announce" / "announce_poll": [공지] 커밋을 업데이트 공지로 게시 + 전원 푸시
 // - action "study": 스터디룸(024)을 연 사람을 제외한 오피스 멤버 전원에게 푸시
+// - action "feedback" / "feedback_reply": 의견·문의(025)가 오면 운영자에게, 답변하면 보낸 사람에게 푸시
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import webpush from 'npm:web-push@3';
 
@@ -41,6 +42,8 @@ async function isMember(officeId: string, userId: string): Promise<boolean> {
 }
 
 const USER_ACTIONS = new Set(['clock_in', 'cheer', 'feed', 'study']);
+// 오피스와 무관한 사용자 액션. 본인 확인과 횟수 제한은 같지만 오피스 멤버 검사는 하지 않는다.
+const ACCOUNT_ACTIONS = new Set(['feedback', 'feedback_reply']);
 // 앱이 보낸 글자는 코드포인트 기준으로 자른다
 const clip = (v: unknown, n: number) => [...(typeof v === 'string' ? v : '')].slice(0, n).join('');
 
@@ -123,14 +126,16 @@ Deno.serve(async (req) => {
   const payload = await req.json().catch(() => ({}));
 
   // 보낸 사람이 본인이고, 보낸 사람과 받는 사람이 모두 그 오피스 멤버일 때만 사용자 액션을 처리한다
-  if (USER_ACTIONS.has(payload.action)) {
+  if (USER_ACTIONS.has(payload.action) || ACCOUNT_ACTIONS.has(payload.action)) {
     const uid = await callerId(req);
     if (!uid || uid !== payload.actor_id) return new Response('unauthorized', { status: 401, headers: cors });
-    if (!payload.office_id || !(await isMember(payload.office_id, uid))) {
-      return new Response('forbidden', { status: 403, headers: cors });
-    }
-    if (payload.target_id && !(await isMember(payload.office_id, payload.target_id))) {
-      return new Response('forbidden', { status: 403, headers: cors });
+    if (USER_ACTIONS.has(payload.action)) {
+      if (!payload.office_id || !(await isMember(payload.office_id, uid))) {
+        return new Response('forbidden', { status: 403, headers: cors });
+      }
+      if (payload.target_id && !(await isMember(payload.office_id, payload.target_id))) {
+        return new Response('forbidden', { status: 403, headers: cors });
+      }
     }
     // 한 사람이 10분에 20번까지 (push_log 테이블이 아직 없으면 count가 null이라 그대로 통과한다)
     const { count } = await supabase.from('push_log').select('*', { count: 'exact', head: true })
@@ -239,6 +244,48 @@ Deno.serve(async (req) => {
       `${name}님이 스터디룸을 열었어요 📚`,
       body,
       `study-${office_id}`,
+    );
+    return new Response('ok', { headers: cors });
+  }
+
+  if (payload.action === 'feedback') {
+    // 의견·문의 도착 푸시 → 운영자(019의 app_admins) 전원. 본문은 앱이 보낸 값이 아니라 DB의 글에서 읽는다.
+    const { actor_id, feedback_id } = payload;
+    if (!feedback_id) return new Response('bad request', { status: 400, headers: cors });
+    const { data: fb } = await supabase
+      .from('feedback').select('user_id, kind, message')
+      .eq('id', feedback_id).maybeSingle();
+    if (!fb || fb.user_id !== actor_id) return new Response('forbidden', { status: 403, headers: cors });
+    const { data: admins } = await supabase.from('app_admins').select('user_id');
+    const recipients = (admins || []).map((a) => a.user_id).filter((id) => id !== actor_id);
+    const title = ({
+      idea: '새 의견이 도착했어요 💡',
+      question: '새 문의가 도착했어요 ❓',
+      bug: '버그 제보가 도착했어요 🐛',
+    } as Record<string, string>)[fb.kind as string] ?? '새 메시지가 도착했어요 💬';
+    await sendTo(recipients, title, clip(fb.message, 80), 'feedback', '/admin?tab=feedback');
+    return new Response('ok', { headers: cors });
+  }
+
+  if (payload.action === 'feedback_reply') {
+    // 답변 푸시 → 글을 보낸 사람. 부른 사람이 운영자일 때만.
+    const { actor_id, feedback_id } = payload;
+    if (!feedback_id) return new Response('bad request', { status: 400, headers: cors });
+    const { data: admin } = await supabase
+      .from('app_admins').select('user_id').eq('user_id', actor_id).maybeSingle();
+    if (!admin) return new Response('forbidden', { status: 403, headers: cors });
+    const { data: fb } = await supabase
+      .from('feedback').select('user_id, reply, status')
+      .eq('id', feedback_id).maybeSingle();
+    if (!fb) return new Response('not found', { status: 404, headers: cors });
+    if (fb.user_id === actor_id) return new Response('ok', { headers: cors });
+    const reply = clip(fb.reply, 80);
+    await sendTo(
+      [fb.user_id],
+      '보낸 의견에 답변이 왔어요 💌',
+      reply || (fb.status === 'done' ? '확인했다고 표시했어요. 내 계정에서 볼 수 있어요' : '내 계정 → 의견·문의에서 볼 수 있어요'),
+      'feedback-reply',
+      '/profile',
     );
     return new Response('ok', { headers: cors });
   }

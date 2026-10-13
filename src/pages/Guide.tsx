@@ -90,7 +90,7 @@ export default function Guide() {
         </div>
 
         <p className="text-center text-t2 text-fg-neutral-muted pt-2">
-          더 궁금한 건 소식 탭에 남겨주세요! 🐥
+          더 궁금한 건 홈의 ✨ 더보기 → 의견·문의 보내기로 알려주세요! 🐥
         </p>
       </main>
       <BottomNav />

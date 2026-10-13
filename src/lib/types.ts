@@ -147,3 +147,24 @@ export interface StudyRoomMember {
   office_id: string;
   joined_at: string;
 }
+
+// 의견·문의 (025) — 운영자에게 보내는 의견·문의·버그 제보와 그 답변
+export type FeedbackKind = 'idea' | 'question' | 'bug' | 'other';
+
+export interface Feedback {
+  id: string;
+  user_id: string;
+  kind: FeedbackKind;
+  message: string;
+  page: string | null; // 보낸 화면 경로
+  status: 'open' | 'done';
+  reply: string | null; // 운영자 답변
+  replied_at: string | null;
+  created_at: string;
+}
+
+/** 운영자 목록(admin_feedback_list)은 보낸 사람의 닉네임·이메일이 붙어 온다 */
+export interface AdminFeedback extends Feedback {
+  nickname: string | null;
+  email: string | null;
+}

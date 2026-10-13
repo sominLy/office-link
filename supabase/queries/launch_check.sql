@@ -1,7 +1,7 @@
--- 공개 전 점검 — 019·022·023·024가 운영 DB에 의도대로 들어갔는지 한 표로 본다.
+-- 공개 전 점검 — 019·022·023·024·025가 운영 DB에 의도대로 들어갔는지 한 표로 본다.
 -- 실행: Supabase 대시보드 → SQL Editor에 붙여넣고 Run.
 -- 모든 줄이 ✅이어야 링크를 밖에 돌린다. ❌이면 '고칠 일' 칸대로 한 뒤 다시 Run.
--- 019·022·023·024를 적용한 DB에서 실행한다 (적용 전에는 없는 열·테이블 때문에 표 대신 오류가 난다).
+-- 019·022·023·024·025를 적용한 DB에서 실행한다 (적용 전에는 없는 열·테이블 때문에 표 대신 오류가 난다).
 
 select t.item as "항목",
        case when t.ok then '✅' else '❌' end as "상태",
@@ -85,6 +85,18 @@ from (values
       where conname = 'events_name_allowed' and pg_get_constraintdef(oid) like '%study_room_created%'
     ),
     '024 다시 실행 (스터디룸 열기·참여가 퍼널에 적재되지 않는다)'),
+  -- 025: 의견·문의. 앱은 user_id·kind·message·page만 넣고, 상태·답변은 운영자 함수만 바꾼다.
+  ('의견·문의 테이블',
+    to_regclass('public.feedback') is not null
+      and to_regprocedure('public.admin_feedback_list()') is not null
+      and to_regprocedure('public.admin_reply_feedback(uuid, text, text)') is not null,
+    '025 실행'),
+  ('의견·문의 쓰기 범위',
+    has_column_privilege('authenticated', 'public.feedback', 'message', 'INSERT')
+      and not has_column_privilege('authenticated', 'public.feedback', 'status', 'INSERT')
+      and not has_column_privilege('authenticated', 'public.feedback', 'reply', 'INSERT')
+      and not has_table_privilege('authenticated', 'public.feedback', 'UPDATE'),
+    '025 다시 실행 (앱에서 상태·답변을 직접 바꿀 수 있는 상태다)'),
   ('오피스 수정 정책',
     exists (
       select 1 from pg_policies
@@ -150,6 +162,7 @@ from (values
           'reflections_delete','reflections_insert','reflections_select','reflections_update',
           'study_rooms_select','study_rooms_insert','study_rooms_update','study_rooms_delete',
           'study_members_select','study_members_insert','study_members_delete',
+          'feedback_select','feedback_insert','feedback_delete',
           'work_insert','work_select','work_update','work_update_admin',
           'avatar_delete','avatar_insert','avatar_read','avatar_update'])
     ),

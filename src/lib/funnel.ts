@@ -21,7 +21,8 @@ export type EventName =
   | 'focus_started'
   | 'reaction_sent'
   | 'study_room_created'
-  | 'study_room_joined';
+  | 'study_room_joined'
+  | 'feedback_sent';
 
 const SOURCE_KEY = 'office-link:funnel-source';
 

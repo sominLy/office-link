@@ -6,6 +6,7 @@
 - [D. 크론(자동 실행)이 멈췄는지 확인하기](#d-크론자동-실행이-멈췄는지-확인하기)
 - [E. 운영 대시보드 켜기 (019)](#e-운영-대시보드-켜기-019)
 - [F. 스터디룸 켜기 (024)](#f-스터디룸-켜기-024)
+- [G. 의견·문의 받기 (025)](#g-의견문의-받기-025)
 
 ## A. 처음 연결할 때 (딱 3단계)
 
@@ -483,3 +484,27 @@ B의 4단계와 같은 방법으로 `supabase/functions/push-notify/index.ts`를
 select jobname, schedule, active from cron.job where jobname = 'study-rooms-autoclose';
 ```
 앱 → 홈 → **스터디룸 열기** → 링크 칸에 `https://meet.google.com/abc-defg-hij`를 넣고 열어 보세요. 다른 멤버의 홈에 바로 떠야 해요.
+
+## G. 의견·문의 받기 (025)
+
+사용자가 홈의 ✨ 더보기 → **의견·문의 보내기**(또는 내 계정)에서 의견·문의·버그를 보내면 운영 대시보드의 **문의** 탭에 모여요. 답변을 저장하면 보낸 사람에게 푸시가 가고, 그 사람의 내 계정에 답변이 보여요. **DB 마이그레이션 1개 + push-notify 재배포**가 필요해요.
+
+### 1단계. 025 실행
+[025_feedback.sql (raw)](https://raw.githubusercontent.com/sominLy/office-link/main/supabase/migrations/025_feedback.sql) 복사 → SQL Editor 새 스니펫 → Run → "Success" 확인. 여러 번 실행해도 안전해요. 019 다음(운영자 등록 뒤)에 실행하세요.
+
+이 SQL이 하는 일:
+- `feedback` 테이블. 본인 글과 답변은 본인이, 전체는 운영자(`app_admins`)만 봐요
+- 앱은 글만 넣을 수 있고, 답변·완료 처리는 `admin_reply_feedback` 함수(운영자만)로만 해요
+- 한 사람이 한 시간에 10개까지
+- 퍼널 이벤트 허용 목록에 `feedback_sent` 추가 (024의 스터디룸 이벤트 포함)
+
+### 2단계. push-notify 함수 다시 배포
+B의 4단계와 같은 방법으로 다시 배포하세요. 새 `feedback`(운영자에게)·`feedback_reply`(보낸 사람에게) 액션이 푸시를 보내요. 배포 전에는 푸시만 안 가고 글과 답변은 다 돼요.
+
+### 3단계. 확인
+앱 → 홈 → ✨ 더보기 → 의견·문의 보내기로 아무 글이나 보낸 뒤, 내 계정 → 운영 대시보드 → **문의** 탭에서 보이면 성공이에요. 답변을 적어 저장하면 내 계정 → 의견·문의에 답변이 떠요.
+
+```sql
+-- launch_check.sql의 '의견·문의 …' 두 줄이 ✅이면 됐어요. 바로 세어 보려면:
+select status, count(*) from public.feedback group by status;
+```

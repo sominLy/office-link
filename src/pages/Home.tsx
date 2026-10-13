@@ -8,7 +8,7 @@ import { ActionButton } from '@/seed/ui/action-button';
 import { Badge } from '@/components/ui/badge';
 import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { LogOut, ChevronDown, Clock, Copy, Bell, Building2, Plus, Tag, Check, UtensilsCrossed, Palmtree, BellOff, BookOpenText, NotebookPen, Sparkles, MessageSquarePlus, RotateCw } from 'lucide-react';
+import { LogOut, ChevronDown, Clock, Copy, Bell, Building2, Plus, Tag, Check, UtensilsCrossed, Palmtree, BellOff, BookOpenText, NotebookPen, Sparkles, MessageSquarePlus, MessageSquareText, RotateCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/lib/toast';
 import { supabase } from '@/lib/supabase';
@@ -22,6 +22,7 @@ import FocusCompanion, { WATCH_KEY, CLOCKOUT_KEY } from '@/components/FocusCompa
 import OverdueTasksDialog from '@/components/OverdueTasksDialog';
 import RetroBanner from '@/components/retro/RetroBanner';
 import StudyRooms from '@/components/study/StudyRooms';
+import FeedbackDialog from '@/components/feedback/FeedbackDialog';
 import BottomNav from '@/components/BottomNav';
 import { notificationsEnabled, requestNotificationPermission, notify, isMuted, setMuted } from '@/lib/notify';
 import { subscribePush, unsubscribePush } from '@/lib/push';
@@ -52,6 +53,7 @@ export default function Home() {
   const [clockInBase, setClockInBase] = useState(''); // 출근 버튼 누른 시각 (HH:MM), +N시간 계산 기준
   const [overdueOpen, setOverdueOpen] = useState(false); // 출근 직후 "마감 지난 할 일" 확인
   const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false); // 의견·문의 보내기
   const [quoteText, setQuoteText] = useState('');
   const [userQuotes, setUserQuotes] = useState<string[]>([]);
   const [shuffledQuote, setShuffledQuote] = useState<string | null>(null); // 새로고침으로 뽑은 글귀
@@ -441,6 +443,10 @@ export default function Home() {
               <MessageSquarePlus className="w-4 h-4 text-fg-brand mt-0.5 flex-shrink-0" />
               <span><span className="text-t4 text-fg-neutral font-medium">응원 글귀 제보</span><br/><span className="text-t2 text-fg-neutral-muted">내 한마디가 모두의 홈에</span></span>
             </button>
+            <button onClick={() => { setMoreOpen(false); setFeedbackOpen(true); }} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-bg-brand-weak text-left">
+              <MessageSquareText className="w-4 h-4 text-fg-brand mt-0.5 flex-shrink-0" />
+              <span><span className="text-t4 text-fg-neutral font-medium">의견·문의 보내기</span><br/><span className="text-t2 text-fg-neutral-muted">불편한 점 · 바라는 기능 · 궁금한 것</span></span>
+            </button>
             <button onClick={toggleNotifications} className="w-full flex items-start gap-2.5 px-4 py-2.5 hover:bg-bg-brand-weak text-left">
               {notifOn ? <Bell className="w-4 h-4 text-fg-brand mt-0.5 flex-shrink-0" /> : <BellOff className="w-4 h-4 text-fg-neutral-subtle mt-0.5 flex-shrink-0" />}
               <span><span className="text-t4 text-fg-neutral font-medium">알림 {notifOn ? '끄기' : '켜기'}</span><br/><span className="text-t2 text-fg-neutral-muted">출근·응원 소식 푸시</span></span>
@@ -482,6 +488,7 @@ export default function Home() {
       </Dialog>
 
       <MenuPickDialog open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <FeedbackDialog open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
       <FocusCompanion open={focusOpen} onClose={() => setFocusOpen(false)} />
       <OverdueTasksDialog open={overdueOpen} onClose={() => setOverdueOpen(false)} />
 
