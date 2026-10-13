@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { MemberStatus } from '@/lib/types';
 import { ListButtonItem } from '@/seed/ui/list';
 import { defaultAvatar } from '@/lib/avatar';
+import { AvatarIcon } from '@/components/illustrations/RewardIcon';
 import { displayName } from '@/lib/callsign';
 import { useOffice } from '@/contexts/OfficeContext';
 import { PRESENCE_META } from '@/lib/presence';
@@ -44,7 +45,7 @@ export default function MemberCard({ member, onSelect }: { member: MemberStatus;
           <span className="w-x10 h-x10 rounded-full bg-bg-brand-weak grid place-items-center text-t6 overflow-hidden">
             {member.avatar_url
               ? <img src={member.avatar_url} alt="" className="w-x10 h-x10 rounded-full object-cover" />
-              : defaultAvatar(member.nickname)}
+              : <AvatarIcon name={defaultAvatar(member.nickname)} className="w-x8 h-x8" />}
           </span>
           {/* 상태 점은 아바타에 붙여 목록을 훑을 때 색만으로 구분되게 한다 */}
           <span

@@ -12,6 +12,7 @@ import { ArrowLeft, Send, Trash2, Sun, Moon, Hand, MessageCircleHeart } from 'lu
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/lib/toast';
 import { defaultAvatar } from '@/lib/avatar';
+import { AvatarIcon } from '@/components/illustrations/RewardIcon';
 import { displayName } from '@/lib/callsign';
 import BottomNav from '@/components/BottomNav';
 import OfficeChat from '@/components/OfficeChat';
@@ -146,11 +147,11 @@ export default function Feed() {
     const name = nameOf(item.user_id, item.author?.nickname);
     switch (item.type) {
       case 'clock_in':
-        return <span><b>{name}</b>이(가) 출근했습니다 <Sun className="w-3.5 h-3.5 inline text-fg-brand" /></span>;
+        return <span><b>{name}</b>이 출근했어요 <Sun className="w-3.5 h-3.5 inline text-fg-brand" /></span>;
       case 'clock_out':
-        return <span><b>{name}</b>이(가) 퇴근했습니다 <Moon className="w-3.5 h-3.5 inline text-indigo-400" /></span>;
+        return <span><b>{name}</b>이 퇴근했어요 <Moon className="w-3.5 h-3.5 inline text-indigo-400" /></span>;
       case 'wave':
-        return <span><b>{name}</b>이(가) <b>{item.target_user_id ? nameOf(item.target_user_id, item.target?.nickname) : '멤버'}</b>에게 반갑다고 인사했어요 {item.emoji || '👋'}</span>;
+        return <span><b>{name}</b>이 <b>{item.target_user_id ? nameOf(item.target_user_id, item.target?.nickname) : '멤버'}</b>에게 반갑다고 인사했어요 {item.emoji || '👋'}</span>;
       case 'post':
         return (
           <span>
@@ -237,7 +238,7 @@ export default function Feed() {
                   ) : item.type === 'wave' ? (
                     <Hand className="w-4 h-4 text-fg-brand" />
                   ) : (
-                    defaultAvatar(item.author?.nickname)
+                    <AvatarIcon name={defaultAvatar(item.author?.nickname)} className="w-x7 h-x7" />
                   )}
                 </span>
                 <div className="flex-1 min-w-0">

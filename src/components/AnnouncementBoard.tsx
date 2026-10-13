@@ -5,6 +5,21 @@ import { cn } from '@/lib/utils';
 
 interface Announcement { id: string; message: string; created_at: string }
 
+/**
+ * 공지 본문을 읽기 좋게 끊는다.
+ *
+ * 공지는 "✅ 할 일이 똑똑해졌어요! ① … ② … ③ …" 처럼 한 줄로 저장돼 있다. 그대로 그리면
+ * 네 항목이 한 덩어리로 흘러서 어디서 끊기는지 눈으로 찾아야 한다. ①~⑩ 앞에서 줄을 나눈다.
+ * DB 글을 고치지 않고 그리는 쪽에서 끊으면 지난 공지까지 함께 정리된다.
+ */
+const MARKERS = /(?=[①②③④⑤⑥⑦⑧⑨⑩])/;
+
+function announcementLines(message: string): string[] {
+  return message.split(MARKERS).map(part => part.trim()).filter(Boolean);
+}
+
+
+
 const SEEN_KEY = 'announce_seen_at';
 
 const dateLabel = (iso: string) =>
@@ -49,7 +64,11 @@ export default function AnnouncementBoard() {
         {isNew && <span className="text-t1 font-bold text-fg-critical-contrast bg-bg-critical-weak rounded-full px-1.5 py-px">NEW</span>}
         <span className="ml-auto text-t1 text-fg-brand">{dateLabel(latest.created_at)}</span>
       </div>
-      <p className="text-t4 text-fg-neutral-muted leading-relaxed break-keep [overflow-wrap:anywhere]">{latest.message}</p>
+      <div className="flex flex-col gap-x1 text-t4 text-fg-neutral-muted leading-relaxed break-keep [overflow-wrap:anywhere]">
+        {announcementLines(latest.message).map((line, i) => (
+          <p key={i}>{line}</p>
+        ))}
+      </div>
 
       {older.length > 0 && (
         <>
@@ -66,7 +85,11 @@ export default function AnnouncementBoard() {
               {older.map(a => (
                 <li key={a.id} className="text-t2 leading-relaxed">
                   <span className="text-fg-brand mr-1.5">{dateLabel(a.created_at)}</span>
-                  <span className="text-fg-neutral-muted break-keep [overflow-wrap:anywhere]">{a.message}</span>
+                  <span className="text-fg-neutral-muted break-keep [overflow-wrap:anywhere]">
+                    {announcementLines(a.message).map((line, i) => (
+                      <span key={i} className="block">{line}</span>
+                    ))}
+                  </span>
                 </li>
               ))}
             </ul>
