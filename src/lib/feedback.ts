@@ -26,12 +26,19 @@ export const AUTO_REPLY_NOTIFY = ' 업데이트되면 바로 알려드릴게요 
 export const FEEDBACK_MIN = 2;
 export const FEEDBACK_MAX = 1000;
 
-/** 보낸 글 검사. 길이는 DB CHECK와 같다. */
+/** 보낸 글 검사. 길이는 DB CHECK(char_length = 코드포인트)와 같은 단위로 센다. '👍' 하나는 1자다. */
 export function checkFeedback(raw: string): { ok: boolean; reason?: string } {
-  const text = raw.trim();
-  if (text.length < FEEDBACK_MIN) return { ok: false, reason: '조금만 더 적어 주세요 (2자 이상)' };
-  if (text.length > FEEDBACK_MAX) return { ok: false, reason: `너무 길어요 (${FEEDBACK_MAX}자 이하)` };
+  const len = [...raw.trim()].length;
+  if (len < FEEDBACK_MIN) return { ok: false, reason: '조금만 더 적어 주세요 (2자 이상)' };
+  if (len > FEEDBACK_MAX) return { ok: false, reason: `너무 길어요 (${FEEDBACK_MAX}자 이하)` };
   return { ok: true };
+}
+
+/** 카드에 보이는 상태 이름. '답변 없이 완료'한 글에 '답변 완료'라고 쓰면 없는 답변을 찾게 된다. */
+export function statusLabel(f: Pick<Feedback, 'status' | 'reply'>): string {
+  if (f.status === 'applied') return STATUS_META.applied.label;
+  if (f.status === 'done') return f.reply ? '답변 완료' : '확인 완료';
+  return STATUS_META.open.label;
 }
 
 /** "10월 13일 오후 2:30" */

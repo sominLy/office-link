@@ -32,11 +32,25 @@ create table if not exists public.feedback (
   constraint feedback_page_len check (page is null or char_length(page) <= 100)
 );
 
+-- 먼저 만든 판에는 없던 열·값. create table if not exists는 이미 있는 표를 건너뛰므로 따로 더한다.
+alter table public.feedback add column if not exists notify_on_done boolean not null default true;
+alter table public.feedback drop constraint if exists feedback_status_check;
+alter table public.feedback add constraint feedback_status_check check (status in ('open', 'done', 'applied'));
+
 create index if not exists idx_feedback_user on public.feedback (user_id, created_at desc);
 create index if not exists idx_feedback_status on public.feedback (status, created_at desc);
 
 -- ========== ② 보낼 때 ==========
--- 한 시간에 10개까지. 상태·답변·시각은 앱이 보낸 값을 버리고 서버가 정한다.
+-- 한 시간에 10개까지. 보낸 글 자체를 세면 지우고 다시 보내는 것으로 피할 수 있어서(본인 글은 지울 수 있다),
+-- 앱에서 지울 수 없는 표에 시도를 따로 적고 그것을 센다 (022의 invite_attempts와 같은 방식).
+create table if not exists public.feedback_attempts (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  at timestamptz not null default now()
+);
+create index if not exists idx_feedback_attempts on public.feedback_attempts (user_id, at);
+alter table public.feedback_attempts enable row level security; -- 정책 없음 = 앱에서 접근 불가
+
+-- 상태·답변·시각은 앱이 보낸 값을 버리고 서버가 정한다.
 create or replace function public.feedback_before_insert()
 returns trigger
 language plpgsql security definer set search_path = public, pg_temp as $$
@@ -45,9 +59,10 @@ begin
   if auth.uid() is null then return new; end if;
   -- 같은 사람의 요청은 한 번에 하나씩 (022의 초대 코드 함수와 같은 이유)
   perform pg_advisory_xact_lock(hashtextextended('feedback:' || new.user_id::text, 0));
-  if (select count(*) from feedback where user_id = new.user_id and created_at > now() - interval '1 hour') >= 10 then
+  if (select count(*) from feedback_attempts where user_id = new.user_id and at > now() - interval '1 hour') >= 10 then
     raise exception 'too many feedback' using errcode = 'P0003';
   end if;
+  insert into feedback_attempts (user_id) values (new.user_id);
   new.created_at := now();
   new.status := 'open';
   new.reply := null;
@@ -133,6 +148,15 @@ revoke all on function public.admin_feedback_list() from public, anon;
 revoke all on function public.admin_reply_feedback(uuid, text, text) from public, anon;
 grant execute on function public.admin_feedback_list() to authenticated;
 grant execute on function public.admin_reply_feedback(uuid, text, text) to authenticated;
+
+-- 시도 기록은 하루가 지나면 지운다 (022의 launch-logs-retention과 같은 시각)
+do $$
+begin
+  if exists (select 1 from pg_extension where extname = 'pg_cron') then
+    perform cron.schedule('feedback-attempts-retention', '17 19 * * *',
+      $job$delete from public.feedback_attempts where at < now() - interval '1 day'$job$);
+  end if;
+end $$;
 
 -- ========== ⑤ 퍼널 이벤트 ==========
 -- 021의 허용 목록에 feedback_sent를 더한다 (024의 스터디룸 이벤트 포함, src/lib/funnel.ts의 EventName과 같아야 한다)

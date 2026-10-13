@@ -77,8 +77,11 @@ from (values
   ('스터디룸 수정 범위',
     has_column_privilege('authenticated', 'public.study_rooms', 'ended_at', 'UPDATE')
       and not has_column_privilege('authenticated', 'public.study_rooms', 'host_id', 'UPDATE')
-      and not has_column_privilege('authenticated', 'public.study_rooms', 'office_id', 'UPDATE'),
-    '024 다시 실행 (방의 host_id·office_id를 바꿀 수 있는 상태다)'),
+      and not has_column_privilege('authenticated', 'public.study_rooms', 'office_id', 'UPDATE')
+      and has_column_privilege('authenticated', 'public.study_rooms', 'starts_at', 'INSERT')
+      and not has_column_privilege('authenticated', 'public.study_rooms', 'created_at', 'INSERT')
+      and not has_column_privilege('authenticated', 'public.study_rooms', 'ended_at', 'INSERT'),
+    '024 다시 실행 (방의 host_id·office_id를 바꾸거나 created_at을 앱이 정할 수 있는 상태다)'),
   ('스터디룸 이벤트 허용',
     exists (
       select 1 from pg_constraint
@@ -91,6 +94,9 @@ from (values
       and to_regprocedure('public.admin_feedback_list()') is not null
       and to_regprocedure('public.admin_reply_feedback(uuid, text, text)') is not null,
     '025 실행'),
+  ('의견·문의 횟수 기록',
+    to_regclass('public.feedback_attempts') is not null,
+    '025 다시 실행 (보낸 글을 지우고 다시 보내는 것으로 한 시간 10개 제한을 피할 수 있다)'),
   ('의견·문의 쓰기 범위',
     has_column_privilege('authenticated', 'public.feedback', 'message', 'INSERT')
       and not has_column_privilege('authenticated', 'public.feedback', 'status', 'INSERT')

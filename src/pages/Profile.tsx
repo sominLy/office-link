@@ -279,7 +279,7 @@ export default function Profile() {
           <span className="text-t9">📖</span>
           <span className="text-left flex-1">
             <p className="text-t4 font-semibold text-fg-neutral">200% 활용 공략집</p>
-            <p className="text-t2 text-fg-neutral-muted">고인물 팁 14가지 + 아이폰 앱으로 설치하는 법</p>
+            <p className="text-t2 text-fg-neutral-muted">고인물 팁 모음 + 아이폰 앱으로 설치하는 법</p>
           </span>
         </button>
 
