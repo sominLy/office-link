@@ -19,7 +19,7 @@ const MOVE_OPTIONS = [
   { days: 7, label: '+일주일' },
 ];
 
-/** 개수·상태 알약. 시트 안 최소 글자(t3)로 맞춘다 */
+/** 개수·상태 알약. 글자는 쓰는 곳에서 붙인다 — 라벨은 t4, 제목 옆 개수 배지만 시트 최소 글자(t3) */
 const PILL = 'inline-flex items-center whitespace-nowrap rounded-full border px-x2 py-x0_5';
 
 /**
@@ -139,28 +139,28 @@ export default function OverdueTasksDialog({ open, onClose, onChanged }: { open:
                         <CalendarDays className="w-4 h-4 flex-shrink-0" />
                         <span>{formatDateLabel(task.due_date as string)}{timeLabel ? ` ${timeLabel}` : ''}까지였어요</span>
                         {task.status === 'in_progress' && (
-                          <span className={`${PILL} t3-medium border-stroke-informative-weak bg-bg-informative-weak text-fg-informative-contrast`}>진행 중</span>
+                          <span className={`${PILL} t4-medium border-stroke-informative-weak bg-bg-informative-weak text-fg-informative-contrast`}>진행 중</span>
                         )}
                       </p>
                     </div>
-                    <span className={`${PILL} t3-bold border-stroke-critical-weak bg-bg-layer-default text-fg-critical-contrast`}>
+                    <span className={`${PILL} t4-medium border-stroke-critical-weak bg-bg-layer-default text-fg-critical-contrast`}>
                       {late}일 지남
                     </span>
                   </div>
 
                   {/* 기간 늘리기 — 버튼 아래에 옮겨갈 날짜를 같이 보여준다.
-                      다섯 칸에 '+일주일'이 한 줄로 들어가도록 칸 사이는 좁게 둔다 */}
-                  <div className="grid grid-cols-5 gap-x1">
+                      다섯 칸에 '+일주일'이 한 줄로 들어가도록 칸 사이와 칸 안 여백을 비운다(320px 폭 기준) */}
+                  <div className="grid grid-cols-5 gap-x0_5">
                     {MOVE_OPTIONS.map(o => {
                       const target = addDays(today, o.days);
                       return (
                         <button
                           key={o.days}
                           onClick={() => move(task, target)}
-                          className="flex min-h-x12 flex-col items-center justify-center rounded-r2 border border-stroke-brand-weak bg-bg-layer-default px-x0_5 py-x1_5 text-center transition-colors hover:bg-bg-brand-weak active:bg-bg-brand-weak-pressed"
+                          className="flex min-h-x12 flex-col items-center justify-center rounded-r2 border border-stroke-brand-weak bg-bg-layer-default px-0 py-x1_5 text-center transition-colors hover:bg-bg-brand-weak active:bg-bg-brand-weak-pressed"
                           title={`${formatDateLabel(target)}까지로 옮기기`}
                         >
-                          <span className="t4-bold text-fg-brand whitespace-nowrap">{o.label}</span>
+                          <span className="t4-medium text-fg-brand whitespace-nowrap">{o.label}</span>
                           <span className="t3-regular text-fg-neutral-muted whitespace-nowrap">{formatShortDate(target).replace(' ', '')}</span>
                         </button>
                       );
@@ -177,7 +177,7 @@ export default function OverdueTasksDialog({ open, onClose, onChanged }: { open:
                         <ActionButton variant="neutralWeak" size="medium" onClick={() => setPickerFor(null)}>
                           취소
                         </ActionButton>
-                        <ActionButton variant="brandSolid" size="medium" disabled={!pickedDate} onClick={() => pickedDate && move(task, pickedDate)}>
+                        <ActionButton variant="neutralSolid" size="medium" disabled={!pickedDate} onClick={() => pickedDate && move(task, pickedDate)}>
                           옮기기
                         </ActionButton>
                       </div>

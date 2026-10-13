@@ -602,53 +602,58 @@ export default function Tasks() {
       <Dialog open={routineDialogOpen} onOpenChange={setRoutineDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Repeat className="w-4 h-4 text-fg-brand" /> 반복 할 일 (루틴)</DialogTitle>
-            <DialogDescription className="text-left">
+            <DialogTitle className="flex items-center gap-x2"><Repeat className="w-5 h-5 flex-shrink-0 text-fg-brand" /> 반복 할 일 (루틴)</DialogTitle>
+            <DialogDescription>
               매주 하는 일을 한 번만 등록하면, 매주 이번 주 할 일에 자동으로 담겨요.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
-            {routines.length === 0 ? (
-              <div className="text-center py-4 rounded-lg bg-bg-brand-weak border border-dashed border-stroke-brand-weak">
-                <p className="text-t4 text-fg-neutral-muted">아직 루틴이 없어요</p>
-                <p className="text-t2 text-fg-neutral-muted mt-0.5">예: 주간 회고 쓰기, 영어 단어 50개</p>
-              </div>
-            ) : (
-              <ul className="space-y-1.5 max-h-48 overflow-y-auto">
-                {routines.map(r => (
-                  <li key={r.id} className="flex items-center gap-2 text-t4 bg-bg-brand-weak border border-stroke-brand-weak rounded-lg pl-3 pr-1 py-1.5">
-                    <Repeat className="w-3.5 h-3.5 text-fg-brand flex-shrink-0" />
-                    <span className="flex-1 min-w-0 truncate text-fg-neutral-muted">{r.title}</span>
-                    {r.category && <Badge variant="outline" className="text-t1 bg-bg-layer-default text-fg-brand border-stroke-brand-weak max-w-[6rem] truncate">{r.category}</Badge>}
-                    <ActionButton variant="ghost" layout="iconOnly" className="w-8 h-8 text-fg-neutral-muted hover:text-fg-critical" onClick={() => deleteRoutine(r)} aria-label={`루틴 ${r.title} 삭제`}>
-              <Icon svg={<Trash2 className="w-3.5 h-3.5" />} />
-            </ActionButton>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <div className="space-y-2 border-t pt-3">
-              <TextField value={routineTitle} onValueChange={(d) => setRoutineTitle(d.value)}>
-<TextFieldInput placeholder="예: 영어 단어 50개 외우기" onKeyDown={(e) => isSubmitEnter(e) && addRoutine()} maxLength={100} aria-label="루틴 이름" />
-</TextField>
-              <div className="flex gap-2">
-                <TextField value={routineCategory} onValueChange={(d) => setRoutineCategory(d.value)} className="flex-1">
-<TextFieldInput placeholder="카테고리 (선택)" onKeyDown={(e) => isSubmitEnter(e) && addRoutine()} maxLength={20} aria-label="루틴 카테고리" />
-</TextField>
-                <ActionButton variant="brandSolid" onClick={addRoutine} disabled={!routineTitle.trim() || routineSaving} >추가</ActionButton>
-              </div>
-              {suggestCategories.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {suggestCategories.map((c) => (
-                    <button key={c} type="button" onClick={() => setRoutineCategory(routineCategory === c ? '' : c)}
-                      className={cn('text-t2 rounded-full px-2 py-0.5 border max-w-[10rem] truncate',
-                        routineCategory === c ? 'bg-bg-brand-solid text-white border-stroke-brand-solid' : 'bg-bg-brand-weak hover:bg-bg-brand-weak-pressed text-fg-brand border-stroke-brand-weak')}>
-                      {c}
-                    </button>
-                  ))}
-                </div>
-              )}
+          {routines.length === 0 ? (
+            <div className="flex flex-col items-center gap-x0_5 rounded-r3 border border-dashed border-stroke-brand-weak bg-bg-brand-weak p-x4 text-center">
+              <p className="t5-medium text-fg-neutral">아직 루틴이 없어요</p>
+              <p className="t4-regular text-fg-neutral-muted">예: 주간 회고 쓰기, 영어 단어 50개</p>
             </div>
+          ) : (
+            // 목록이 길어도 안쪽 스크롤 없이 시트 본문이 같이 스크롤된다
+            <ul className="flex flex-col gap-x2">
+              {routines.map(r => (
+                <li key={r.id} className="flex min-h-x12 items-center gap-x2 rounded-r3 border border-stroke-brand-weak bg-bg-brand-weak py-x1 pl-x3 pr-x1">
+                  <Repeat className="w-4 h-4 text-fg-brand flex-shrink-0" />
+                  <span className="flex-1 min-w-0 truncate t5-regular text-fg-neutral">{r.title}</span>
+                  {r.category && (
+                    <span className="max-w-[6rem] flex-shrink-0 truncate rounded-full border border-stroke-brand-weak bg-bg-layer-default px-x2 py-x0_5 t3-medium text-fg-brand">{r.category}</span>
+                  )}
+                  <ActionButton variant="ghost" size="medium" layout="iconOnly" color="fg.neutralMuted" className="flex-shrink-0" onClick={() => deleteRoutine(r)} aria-label={`루틴 ${r.title} 삭제`}>
+                    <Icon svg={<Trash2 />} />
+                  </ActionButton>
+                </li>
+              ))}
+            </ul>
+          )}
+          {/* 추가 버튼은 입력칸과 한 몸이라 푸터로 빼지 않고 칸 옆에 둔다 */}
+          <div className="flex flex-col gap-x2 border-t border-stroke-neutral-subtle pt-x4">
+            <TextField value={routineTitle} onValueChange={(d) => setRoutineTitle(d.value)}>
+              <TextFieldInput placeholder="예: 영어 단어 50개 외우기" onKeyDown={(e) => isSubmitEnter(e) && addRoutine()} maxLength={100} aria-label="루틴 이름" />
+            </TextField>
+            <div className="flex gap-x2">
+              {/* TextField의 className은 안쪽 입력 상자에 붙어서, 칸 너비는 바깥 div로 잡는다 */}
+              <div className="flex-1 min-w-0">
+                <TextField value={routineCategory} onValueChange={(d) => setRoutineCategory(d.value)}>
+                  <TextFieldInput placeholder="카테고리 (선택)" onKeyDown={(e) => isSubmitEnter(e) && addRoutine()} maxLength={20} aria-label="루틴 카테고리" />
+                </TextField>
+              </div>
+              <ActionButton variant="brandSolid" size="large" className="flex-shrink-0" onClick={addRoutine} disabled={!routineTitle.trim() || routineSaving}>추가</ActionButton>
+            </div>
+            {suggestCategories.length > 0 && (
+              <div className="flex flex-wrap gap-x2">
+                {suggestCategories.map((c) => (
+                  <button key={c} type="button" onClick={() => setRoutineCategory(routineCategory === c ? '' : c)}
+                    className={cn('inline-flex h-x10 max-w-[10rem] items-center rounded-full border px-x3 t4-medium transition-colors',
+                      routineCategory === c ? 'bg-bg-brand-solid text-fg-on-brand-solid border-stroke-brand-solid' : 'bg-bg-brand-weak hover:bg-bg-brand-weak-pressed text-fg-brand border-stroke-brand-weak')}>
+                    <span className="truncate">{c}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

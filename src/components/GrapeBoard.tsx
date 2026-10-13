@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent } from '@/components/AppDialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/AppDialog';
 import { ActionButton } from '@/seed/ui/action-button';
 import { Award, ChevronLeft, ChevronRight } from 'lucide-react';
 import AwardCertificate from '@/components/awards/AwardCertificate';
@@ -86,9 +86,13 @@ export default function GrapeBoard() {
           </div>
         )}
 
-        {/* 상장 다이얼로그 — 판마다 다른 디자인, ◀▶로 지난 상장도 */}
-        <Dialog open={certOpen} onOpenChange={setCertOpen}>
+        {/* 상장 다이얼로그 — 판마다 다른 디자인, ◀▶로 지난 상장도.
+            제목이 없으면 상장이 손잡이·닫기 버튼 밑에 깔리고 시트 이름도 비어서 제목을 단다 */}
+        <Dialog open={certOpen} onOpenChange={setCertOpen} headerAlign="center">
           <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-center">🍇 포도알 완주상</DialogTitle>
+            </DialogHeader>
             <AwardCertificate
               data={{
                 template: templateAt(certNo - 1),
@@ -104,17 +108,18 @@ export default function GrapeBoard() {
               }}
             />
             {completedBoards > 1 && (
-              <div className="flex items-center justify-center gap-3">
+              <div className="flex items-center justify-center gap-x3">
                 <ActionButton variant="ghost" layout="iconOnly" disabled={certNo <= 1} onClick={() => setCertNo(n => n - 1)} aria-label="이전 상장">
-              <Icon svg={<ChevronLeft className="w-4 h-4" />} />
-            </ActionButton>
-                <span className="text-t4 text-fg-neutral-muted">{certNo} / {completedBoards}</span>
+                  <Icon svg={<ChevronLeft />} />
+                </ActionButton>
+                <span className="t4-medium tabular-nums text-fg-neutral-muted">{certNo} / {completedBoards}</span>
                 <ActionButton variant="ghost" layout="iconOnly" disabled={certNo >= completedBoards} onClick={() => setCertNo(n => n + 1)} aria-label="다음 상장">
-              <Icon svg={<ChevronRight className="w-4 h-4" />} />
-            </ActionButton>
+                  <Icon svg={<ChevronRight />} />
+                </ActionButton>
               </div>
             )}
-            <p className="text-center text-t1 text-fg-neutral-muted">판을 채울 때마다 다른 디자인의 상장이 나와요 · 캡처해서 자랑해 보세요!</p>
+            {/* 안내는 위 설명 대신 아래 캡션으로 — 위에 두면 작은 폰에서 ◀▶가 화면 밖으로 밀린다 */}
+            <p className="t3-regular text-center text-fg-neutral-muted">판을 채울 때마다 다른 디자인의 상장이 나와요 · 캡처해서 자랑해 보세요!</p>
           </DialogContent>
         </Dialog>
       </CardContent>

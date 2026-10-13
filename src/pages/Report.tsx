@@ -5,7 +5,7 @@ import { useOffice } from '@/contexts/OfficeContext';
 import { ActionButton } from '@/seed/ui/action-button';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, Calendar, Target, CheckCircle2, Clock, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/AppDialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/AppDialog';
 import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/lib/toast';
@@ -279,19 +279,15 @@ export default function Report() {
           <DialogHeader>
             <DialogTitle>출퇴근 기록 수정</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 pt-1">
-            <div className="space-y-1.5">
-              <TextField label="출근 시간" value={editStart} onValueChange={(d) => setEditStart(d.value)}>
-<TextFieldInput type="datetime-local" />
-</TextField>
-            </div>
-            <div className="space-y-1.5">
-              <TextField label={'퇴근 시간 (비우면 "근무 중"으로)'} value={editEnd} onValueChange={(d) => setEditEnd(d.value)}>
-<TextFieldInput type="datetime-local" />
-</TextField>
-            </div>
-            <ActionButton variant="brandSolid" onClick={saveSession} className="w-full">저장</ActionButton>
-          </div>
+          <TextField label="출근 시간" value={editStart} onValueChange={(d) => setEditStart(d.value)}>
+            <TextFieldInput type="datetime-local" />
+          </TextField>
+          <TextField label={'퇴근 시간 (비우면 "근무 중"으로)'} value={editEnd} onValueChange={(d) => setEditEnd(d.value)}>
+            <TextFieldInput type="datetime-local" />
+          </TextField>
+          <DialogFooter>
+            <ActionButton size="large" variant="brandSolid" onClick={saveSession} className="w-full">저장</ActionButton>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
       <BottomNav />

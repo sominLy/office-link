@@ -53,7 +53,8 @@ export default function MenuPickDialog({ open, onClose }: { open: boolean; onClo
         </DialogHeader>
         <SegmentedControl aria-label="끼니" value={tab} onValueChange={changeTab}>
           {Object.entries(TAB_LABELS).map(([k, v]) => (
-            <SegmentedControlItem key={k} value={k}>{v.label}</SegmentedControlItem>
+            // SEED 기본 높이(34px)는 터치 영역 40px에 못 미쳐 올린다(클래스는 SEED CSS에 질 수 있어 style)
+            <SegmentedControlItem key={k} value={k} style={{ minHeight: 'var(--seed-dimension-x10)' }}>{v.label}</SegmentedControlItem>
           ))}
         </SegmentedControl>
         {/* 뽑기 결과 자리. 굴리는 동안은 브랜드색으로 바뀌며 돌아간다 */}

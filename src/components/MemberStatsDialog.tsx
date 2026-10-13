@@ -223,11 +223,11 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
         {member && (
           <>
             {/* 인사 보내기 (내 기록이 아닐 때만). 라벨을 이모지 줄 위에 두어야 방장의
-                퇴근시키기 버튼까지 360px 폭 한 줄에 들어간다. */}
+                퇴근시키기 버튼까지 360px 폭 한 줄에 들어간다. 그보다 좁으면 버튼이 다음 줄로 내려간다. */}
             {user && member.user_id !== user.id && (
               <section className="flex flex-col gap-x2">
                 <h3 className={SECTION_LABEL}>인사 보내기</h3>
-                <div className="flex items-center gap-x2">
+                <div className="flex flex-wrap items-center gap-x2">
                   {WAVE_EMOJIS.map(e => (
                     <button
                       key={e}
@@ -335,9 +335,12 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
                                   const all = reactions.filter(r => r.task_id === task.id && r.emoji === emoji);
                                   const mine = !!user && all.some(r => r.user_id === user.id);
                                   return (
+                                    // small 레시피 높이는 36px라 터치 최소 40px에 못 미친다. 청크 로드 순서와
+                                    // 상관없이 레시피 height를 덮도록 !important로 올린다.
                                     <ReactionButton
                                       key={emoji}
                                       size="small"
+                                      className="!h-x10"
                                       pressed={mine}
                                       onClick={() => toggleReaction(task, emoji)}
                                     >

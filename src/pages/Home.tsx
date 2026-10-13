@@ -24,7 +24,7 @@ import RetroBanner from '@/components/retro/RetroBanner';
 import BottomNav from '@/components/BottomNav';
 import { notificationsEnabled, requestNotificationPermission, notify, isMuted, setMuted } from '@/lib/notify';
 import { subscribePush, unsubscribePush } from '@/lib/push';
-import { kstToday } from '@/lib/dates';
+import { kstToday, kstNowHM } from '@/lib/dates';
 import { todayQuoteFrom, randomQuoteFrom } from '@/lib/quotes';
 import { checkQuote } from '@/lib/profanity';
 import { displayName, TITLE_MODES } from '@/lib/callsign';
@@ -37,6 +37,13 @@ import { Checkbox } from '@/seed/ui/checkbox';
 import { Callout } from '@/seed/ui/callout';
 
 const STATUS_OPTIONS: StatusPreset[] = ['출근', '집중 중', '업무 중', '휴식 중', '자리 비움', '스터디/회의 중', '점심 먹는 중', '저녁 먹는 중', '야식 먹는 중'];
+
+/** "HH:MM"에 h시간을 더한다. 자정을 넘기면 null — 그날 안의 시각만 퇴근 알림으로 쓸 수 있다. */
+function addHoursHM(base: string, h: number): string | null {
+  const [bh, bm] = (base || '09:00').split(':').map(Number);
+  if (bh + h >= 24) return null;
+  return `${String(bh + h).padStart(2, '0')}:${String(bm).padStart(2, '0')}`;
+}
 
 export default function Home() {
   const { user, profile, signOut } = useAuth();
@@ -317,12 +324,10 @@ export default function Home() {
                 <ActionButton
                   variant="brandSolid"
                   onClick={() => {
-                    const now = new Intl.DateTimeFormat('en-GB', {
-                      timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false,
-                    }).format(new Date());
-                    // 기본값 = 출근한 지금 시각
-                    setClockInBase(now);
-                    setOffTarget(now);
+                    // +N시간 계산 기준은 지금 시각. 예상 퇴근 시간은 비워 둔다 — 지금 시각을
+                    // 넣어 두면 그대로 출근했을 때 "예상 퇴근 시간이 됐어요"가 바로 울렸다.
+                    setClockInBase(kstNowHM());
+                    setOffTarget('');
                     setClockInOpen(true);
                   }}
                   className="flex-1 sm:flex-none"
@@ -476,7 +481,10 @@ export default function Home() {
             <TextField value={quoteText} onValueChange={(d) => setQuoteText(d.value)}>
               <TextFieldInput onKeyDown={(e) => isSubmitEnter(e) && submitQuote()} placeholder="예: 오늘도 조용히 애쓰는 당신을 응원해요 🌱" maxLength={60} aria-label="예: 오늘도 조용히 애쓰는 당신을 응원해요 🌱" />
             </TextField>
-            <p className="t3-regular text-fg-neutral-muted">비속어·차별 표현은 자동으로 걸러져요. {quoteText.length}/60</p>
+            <div className="flex items-start justify-between gap-x2">
+              <p className="t4-regular text-fg-neutral-muted">비속어·차별 표현은 자동으로 걸러져요.</p>
+              <span className="t3-regular text-fg-neutral-muted tabular-nums shrink-0">{quoteText.length}/60</span>
+            </div>
           </div>
           <DialogFooter>
             <ActionButton variant="brandSolid" size="large" onClick={submitQuote} disabled={!quoteText.trim()} className="w-full">등록하기</ActionButton>
@@ -503,12 +511,13 @@ export default function Home() {
             {/* 출근 시각 기준 빠른 설정 */}
             <div className="grid grid-cols-4 gap-x2">
               {[1, 3, 5, 10].map(h => {
-                const [bh, bm] = (clockInBase || '09:00').split(':').map(Number);
-                const target = `${String((bh + h) % 24).padStart(2, '0')}:${String(bm).padStart(2, '0')}`;
-                const selected = offTarget === target;
+                // 자정을 넘기는 시간은 고를 수 없다. 자정에 자동 퇴근되고, 알림은 오늘 시각끼리
+                // 비교해서 "01:20"을 고르면 출근하자마자 울린다.
+                const target = addHoursHM(clockInBase, h);
+                const selected = target !== null && offTarget === target;
                 return (
-                  <button key={h} onClick={() => setOffTarget(target)} aria-pressed={selected}
-                    className={`h-x10 rounded-full border t4-medium transition-colors ${selected ? 'bg-bg-brand-solid text-fg-on-brand-solid border-stroke-brand-solid' : 'bg-bg-layer-default text-fg-neutral border-stroke-neutral-muted hover:bg-bg-neutral-weak'}`}>
+                  <button key={h} onClick={() => target && setOffTarget(target)} aria-pressed={selected} disabled={target === null}
+                    className={`h-x10 rounded-full border t4-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${selected ? 'bg-bg-brand-solid text-fg-on-brand-solid border-stroke-brand-solid' : 'bg-bg-layer-default text-fg-neutral border-stroke-neutral-muted enabled:hover:bg-bg-neutral-weak'}`}>
                     +{h}시간
                   </button>
                 );
@@ -518,10 +527,11 @@ export default function Home() {
           <Checkbox
             size="large"
             checked={offTarget === ''}
-            onCheckedChange={(checked) => setOffTarget(checked ? '' : clockInBase)}
+            // 체크를 풀면 입력칸을 한 시간 뒤로 채운다. 지금 시각은 이미 지난 시각이라 알림이 걸리지 않는다.
+            onCheckedChange={(checked) => setOffTarget(checked ? '' : addHoursHM(clockInBase, 1) ?? '23:59')}
             label="일단 퇴근 시간 설정하지 않음"
-            // SEED large 체크박스 줄은 36px — 위아래 2px씩 더해 누르는 칸을 40px로 맞춘다
-            className="py-x0_5"
+            // SEED large 체크박스 줄은 min-height 36px(border-box)라 padding만으로는 안 커진다 — min-h-x10으로 40px, py-x0_5로 체크 표시를 가운데 둔다
+            className="min-h-x10 py-x0_5"
           />
           <DialogFooter>
             <ActionButton
@@ -529,7 +539,10 @@ export default function Home() {
               size="large"
               className="w-full"
               onClick={() => {
-                if (offTarget) {
+                // 이미 지난 시각은 알림을 걸지 않는다. 알림은 "지금 ≥ 예상 시각"이면 울려서
+                // 지난 시각을 걸면 출근하자마자 퇴근 알림이 뜬다.
+                const armed = !!offTarget && offTarget > kstNowHM();
+                if (armed) {
                   localStorage.setItem(CLOCKOUT_KEY, offTarget);
                   localStorage.removeItem(`clockout_fired-${kstToday()}`);
                 } else {
@@ -538,7 +551,11 @@ export default function Home() {
                 setClockInOpen(false);
                 clockIn();
                 toast.success(
-                  offTarget ? `출근했어요. ${offTarget}에 퇴근 알림을 보낼게요 🏃` : '출근했어요. 오늘도 화이팅 💪',
+                  armed
+                    ? `출근했어요. ${offTarget}에 퇴근 알림을 보낼게요 🏃`
+                    : offTarget
+                      ? '출근했어요. 고른 퇴근 시간이 이미 지나서 알림은 보내지 않아요'
+                      : '출근했어요. 오늘도 화이팅 💪',
                 );
                 checkOverdueTasks();
               }}

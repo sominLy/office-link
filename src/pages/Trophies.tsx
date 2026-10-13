@@ -217,13 +217,13 @@ export default function Trophies() {
         )}
       </main>
 
-      <Dialog open={!!openCert} onOpenChange={(o) => !o && setOpenCert(null)}>
+      <Dialog open={!!openCert} onOpenChange={(o) => !o && setOpenCert(null)} headerAlign="center">
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-center">{openCert?.awardEmoji} {openCert?.awardTitle}</DialogTitle>
             <DialogDescription className="text-center">{openCert?.periodLabel} · 캡처해서 자랑해 보세요 📸</DialogDescription>
           </DialogHeader>
-          {openCert && <AwardCertificate data={openCert} />}
+          {openCert && <AwardCertificate data={openCert} className="shrink-0" />}
         </DialogContent>
       </Dialog>
       <BottomNav />

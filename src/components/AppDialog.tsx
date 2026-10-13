@@ -132,12 +132,32 @@ export const DialogFooter = ResponsiveDialogFooter;
 
 type Picked = { found: React.ReactNode; className?: string; rest: React.ReactNode[] };
 
-/** 자식 트리에서 특정 컴포넌트를 찾아 children·className을 꺼낸다(한 단계 중첩까지). */
-function pick(nodes: React.ReactNode, target: React.ElementType): Picked {
+/**
+ * Fragment를 풀어 한 줄로 편다. 호출부가 `{member && (<>…</>)}`처럼 감싸면 React.Children이
+ * Fragment 하나로 보고 그 안의 제목·푸터를 찾지 못한다 — 제목이 본문에 맨 글자로 찍히고
+ * 푸터 버튼이 스크롤 영역 안으로 들어간다. 풀어낸 자식은 key가 겹치지 않게 앞에 붙인다.
+ */
+function flatten(nodes: React.ReactNode, prefix = ''): React.ReactNode[] {
+  const out: React.ReactNode[] = [];
+  React.Children.toArray(nodes).forEach((child) => {
+    if (React.isValidElement(child) && child.type === React.Fragment) {
+      const inner = (child.props as { children?: React.ReactNode }).children;
+      out.push(...flatten(inner, `${prefix}${child.key}/`));
+    } else if (React.isValidElement(child) && prefix) {
+      out.push(React.cloneElement(child, { key: `${prefix}${child.key}` }));
+    } else {
+      out.push(child);
+    }
+  });
+  return out;
+}
+
+/** 자식 트리에서 특정 컴포넌트를 찾아 children·className을 꺼낸다(DialogHeader 안까지). */
+function pick(nodes: React.ReactNode[], target: React.ElementType): Picked {
   let found: React.ReactNode = null;
   let className: string | undefined;
   const rest: React.ReactNode[] = [];
-  React.Children.forEach(nodes, (child) => {
+  nodes.forEach((child) => {
     if (!React.isValidElement(child)) {
       rest.push(child);
       return;
@@ -150,7 +170,7 @@ function pick(nodes: React.ReactNode, target: React.ElementType): Picked {
     }
     if (child.type === DialogHeader) {
       // 헤더 안에 제목·설명이 들어 있는 모양을 풀어 본다
-      const inner = pick(props.children, target);
+      const inner = pick(flatten(props.children), target);
       if (inner.found !== null && inner.found !== undefined) {
         found = inner.found;
         className = inner.className;
@@ -161,6 +181,17 @@ function pick(nodes: React.ReactNode, target: React.ElementType): Picked {
     rest.push(child);
   });
   return { found, className, rest };
+}
+
+/**
+ * 바텀시트는 SEED가 폭을 정한다(화면 폭, 최대 480px). 호출부의 max-w-sm(384px)이 그대로
+ * 붙으면 그보다 넓은 폰에서 시트 양옆이 뜬다 — 430px 폰이면 한쪽에 23px.
+ */
+function withoutMaxWidth(className?: string) {
+  return className
+    ?.split(/\s+/)
+    .filter((c) => !c.startsWith('max-w-'))
+    .join(' ');
 }
 
 export interface DialogContentProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -181,13 +212,13 @@ export const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps
     const detents = !!shouldUseBottomSheet && expandable;
     const collapsed = detents && !expanded;
 
-    const titlePick = pick(children, DialogTitle);
+    const titlePick = pick(flatten(children), DialogTitle);
     const descPick = pick(titlePick.rest, DialogDescription);
     const body = descPick.rest;
 
     const footer: React.ReactNode[] = [];
     const rest: React.ReactNode[] = [];
-    React.Children.forEach(body, (child) => {
+    body.forEach((child) => {
       if (React.isValidElement(child) && child.type === DialogFooter) footer.push(child);
       else rest.push(child);
     });
@@ -220,19 +251,22 @@ export const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps
         handleProps={handleProps}
         // 제목이 없는 모달은 스크린리더에서 이름이 없다. 최소한의 이름을 준다.
         aria-label={titlePick.found ? undefined : '대화상자'}
-        // 호출부가 넘기는 max-w-* 는 패널 폭 제한이다. 본문에 붙이면 패널은 그대로 넓고
-        // 안쪽만 좁아져서 모달이 화면을 덮는다.
+        // 호출부가 넘기는 max-w-* 는 가운데 다이얼로그의 패널 폭 제한이다. 본문에 붙이면
+        // 패널은 그대로 넓고 안쪽만 좁아져서 모달이 화면을 덮는다.
         className={cn(
           'break-keep [overflow-wrap:anywhere]',
           // 끌어올리는 시트는 최대 높이로 그려 두고 vaul이 아래로 밀어 높이를 정한다
           detents && 'h-full',
-          className,
+          shouldUseBottomSheet ? withoutMaxWidth(className) : className,
         )}
         {...props}
       >
         <ResponsiveDialogBody
           className={cn(
             'gap-x4',
+            // 본문은 세로 flex라 자식이 기본으로 줄어든다. overflow-hidden인 상장 그림 같은
+            // 블록은 내용이 길어지면 스크롤되는 대신 찌그러진다.
+            '[&>*]:shrink-0',
             // 푸터가 없으면 마지막 블록이 시트 바닥에 붙지 않게 띄운다
             footer.length === 0 && 'pb-x6',
             // 절반 높이에서는 본문 대신 시트가 움직여야 한다. 본문이 같이 스크롤되면

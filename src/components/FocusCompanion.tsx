@@ -35,9 +35,14 @@ const PRESETS = [
 
 type FocusTab = 'pomo' | 'watch' | 'off';
 
-// 감시 모드 시·분 선택칸. SEED TextField 모양(r3, 연한 테두리, t5)에 맞춘다.
+// 탭 칸 좌우 여백. SEED 기본(24px)이면 360px 화면에서 '뽀모도로'·'퇴근알림'이 두 줄로 꺾인다.
+// 클래스(px-x2)는 SEED CSS와 불러오는 순서에 따라 지기도 해서 style로 준다.
+// 높이도 SEED 기본(34px)이면 터치 영역 40px에 못 미쳐 40px로 올린다.
+const SEGMENT_STYLE = { paddingInline: 'var(--seed-dimension-x2)', minHeight: 'var(--seed-dimension-x10)' };
+
+// 감시 모드 시·분 선택칸. 퇴근알림 시간칸과 같은 SEED TextField 모양(52px, r3, 연한 테두리, t5)에 맞춘다.
 const PICKER_CLASS =
-  'h-x12 rounded-r3 border border-stroke-neutral-weak bg-bg-layer-default px-x4 t5-medium tabular-nums text-fg-neutral';
+  'h-x13 rounded-r3 border border-stroke-neutral-weak bg-bg-layer-default px-x4 t5-regular tabular-nums text-fg-neutral';
 
 export default function FocusCompanion({ open, onClose }: { open: boolean; onClose: () => void }) {
   // ── 탭 ── 하단 버튼이 탭마다 달라서 시트 밖(여기)에서 들고 있는다.
@@ -114,11 +119,10 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
           <DialogTitle>🍅 집중 모드</DialogTitle>
         </DialogHeader>
 
-        {/* SEED 기본 좌우 여백(24px)이면 360px 화면에서 '뽀모도로'·'퇴근알림' 칸이 시트 밖으로 넘친다 */}
         <SegmentedControl aria-label="집중 모드 종류" value={tab} onValueChange={(v) => setTab(v as FocusTab)}>
-          <SegmentedControlItem value="pomo" className="px-x2">뽀모도로</SegmentedControlItem>
-          <SegmentedControlItem value="watch" className="px-x2">감시</SegmentedControlItem>
-          <SegmentedControlItem value="off" className="px-x2">퇴근알림</SegmentedControlItem>
+          <SegmentedControlItem value="pomo" style={SEGMENT_STYLE}>뽀모도로</SegmentedControlItem>
+          <SegmentedControlItem value="watch" style={SEGMENT_STYLE}>감시</SegmentedControlItem>
+          <SegmentedControlItem value="off" style={SEGMENT_STYLE}>퇴근알림</SegmentedControlItem>
         </SegmentedControl>
 
         {/* 뽀모도로 */}
@@ -145,14 +149,16 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
               </div>
             </div>
 
-            {/* 프리셋 — 이미 고른 것을 다시 눌러도 타이머를 처음으로 돌린다(예전 버튼과 같게) */}
-            <div className="flex gap-x2">
+            {/* 프리셋 — 하나만 고르는 거라 라디오 칩. 이미 고른 것을 다시 눌러도 타이머를 처음으로 돌린다(예전 버튼과 같게).
+                라디오는 다시 눌러도 onValueChange가 안 와서 onClick으로 받는다. 라벨 클릭이 두 번 들어와도 reset은 결과가 같다 */}
+            <Chip.RadioRoot aria-label="뽀모도로 시간" value={preset.label} className="flex gap-x2"
+              onValueChange={(v) => { const p = PRESETS.find(x => x.label === v); if (p) applyPreset(p); }}>
               {PRESETS.map(p => (
-                <Chip.Toggle key={p.label} size="large" checked={preset.label === p.label} onCheckedChange={() => applyPreset(p)}>
+                <Chip.RadioItem key={p.label} size="large" value={p.label} onClick={() => { if (preset.label === p.label) reset(); }}>
                   <Chip.Label>{p.label}</Chip.Label>
-                </Chip.Toggle>
+                </Chip.RadioItem>
               ))}
-            </div>
+            </Chip.RadioRoot>
           </div>
         )}
 
@@ -175,7 +181,7 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
                     {[0, 1, 2, 3, 4, 5, 6].map(h => <option key={h} value={h}>{String(h).padStart(2, '0')}</option>)}
                   </select>
                 </label>
-                <span aria-hidden="true" className="flex h-x12 items-center t5-bold text-fg-neutral-subtle">:</span>
+                <span aria-hidden="true" className="flex h-x13 items-center t5-bold text-fg-neutral-subtle">:</span>
                 <label className="flex flex-col items-center gap-x1">
                   <span className="t4-medium text-fg-neutral-muted">분</span>
                   <select value={draft % 60}
@@ -204,12 +210,14 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
               <p className="t5-bold text-fg-neutral">예상 퇴근 시간 알림</p>
               <p className="t4-regular text-fg-neutral-muted">예상 퇴근 시간을 정해두면, 그 시간에<br/>"아직 일하고 있나요?" 알림이 와요.</p>
             </div>
-            {/* 바꿀 때마다 바로 저장된다. SEED TextField 모양(52px, r3, t5, 포커스 시 진한 테두리)에 맞춘 네이티브 입력 */}
+            {/* 바꿀 때마다 바로 저장된다. SEED TextField 모양(52px, r3, t5, 포커스 시 진한 테두리)에 맞춘 네이티브 입력.
+                데스크톱 크롬은 칸 안에 자체 시계 아이콘을 또 그려서 숨기고, 대신 칸을 누르면 선택창을 연다 */}
             <div className="flex items-center gap-x2">
               <label className="flex h-x13 min-w-0 flex-1 items-center gap-x2 rounded-r3 border border-stroke-neutral-weak bg-bg-layer-default px-x4 focus-within:border-stroke-neutral-contrast">
                 <Clock className="w-5 h-5 shrink-0 text-fg-brand" />
                 <input type="time" value={clockout} onChange={(e) => saveClockout(e.target.value)} aria-label="예상 퇴근 시간"
-                  className="min-w-0 flex-1 bg-transparent t5-regular text-fg-neutral outline-none" />
+                  onClick={(e) => { try { e.currentTarget.showPicker?.(); } catch { /* iframe 등에서 막히면 타이핑으로 입력 */ } }}
+                  className="min-w-0 flex-1 bg-transparent t5-regular text-fg-neutral outline-none [&::-webkit-calendar-picker-indicator]:hidden" />
               </label>
               {clockout && <ActionButton size="large" variant="neutralWeak" onClick={() => saveClockout('')}>끄기</ActionButton>}
             </div>
@@ -223,7 +231,7 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
               <ActionButton size="large" variant="neutralWeak" layout="iconOnly" onClick={reset} aria-label="타이머 처음으로">
                 <Icon svg={<RotateCcw />} />
               </ActionButton>
-              <ActionButton size="large" variant="brandSolid" onClick={() => setRunning(r => !r)} className="flex-1">
+              <ActionButton size="large" variant="brandSolid" onClick={() => setRunning(r => !r)} flexGrow>
                 <PrefixIcon svg={running ? <Pause /> : <Play />} />
                 {running ? '일시정지' : '시작'}
               </ActionButton>
@@ -236,7 +244,7 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
               {watch > 0 && (
                 <ActionButton size="large" variant="neutralWeak" onClick={() => setWatchMode(0)}>끄기</ActionButton>
               )}
-              <ActionButton size="large" variant="brandSolid" onClick={() => setWatchMode(draft)} className="flex-1">
+              <ActionButton size="large" variant="brandSolid" onClick={() => setWatchMode(draft)} flexGrow>
                 {watch === draft && watch > 0 ? '이 간격으로 켜짐' : '이 간격으로 켜기'}
               </ActionButton>
             </div>

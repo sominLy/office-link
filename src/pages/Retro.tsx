@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/card';
 import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { TextFieldTextarea } from '@/seed/ui/text-field';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/AppDialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/AppDialog';
 import { ArrowLeft, ChevronLeft, ChevronRight, Settings2, Trophy, CheckCircle2, Share2, CalendarPlus } from 'lucide-react';
 import { toast } from '@/lib/toast';
 import BottomNav from '@/components/BottomNav';
@@ -25,7 +25,7 @@ import {
 } from '@/lib/retro';
 import { notifyTasksChanged } from '@/lib/tasks';
 
-import { Icon } from '@seed-design/react';
+import { Icon, PrefixIcon } from '@seed-design/react';
 import RewardArt from '@/components/illustrations/RewardArt';
 // 완료한 일 카테고리 비율 — 검증한 범주형 팔레트(순서 고정), 6번째부터는 '기타' 회색
 const SERIES = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4'];
@@ -496,26 +496,30 @@ export default function Retro() {
       <RetroSettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} onSaved={setPrefs} />
 
       {/* 상장 도착 축하 — 새 스티커를 받은 순간 한 번 */}
-      <Dialog open={!!celebrate} onOpenChange={(o) => !o && setCelebrate(null)}>
+      <Dialog open={!!celebrate} onOpenChange={(o) => !o && setCelebrate(null)} headerAlign="center">
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-center">🎉 {mainAward(stickers).title} 수상!</DialogTitle>
             <DialogDescription className="text-center">상장과 스티커 {celebrate?.length}개가 진열장에 담겼어요</DialogDescription>
           </DialogHeader>
-          {cert && <AwardCertificate data={cert} className="max-w-[280px]" />}
-          <div className="flex flex-wrap justify-center gap-1.5">
+          {cert && <AwardCertificate data={cert} className="max-w-[280px] shrink-0" />}
+          <div className="flex flex-wrap justify-center gap-x2">
             {celebrate?.map((s, i) => (
-              <span key={s.code} className="sticker-pop inline-flex items-center gap-1 rounded-full bg-bg-brand-weak border border-stroke-brand-weak px-2.5 py-1 text-t4" style={{ animationDelay: `${i * 90}ms` }}>
+              <span key={s.code} className="sticker-pop inline-flex items-center gap-x1 rounded-full border border-stroke-brand-weak bg-bg-brand-weak px-x3 py-x1 t4-medium text-fg-neutral" style={{ animationDelay: `${i * 90}ms` }}>
                 {s.emoji} {s.title}
               </span>
             ))}
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <ActionButton variant="neutralOutline" onClick={() => setCelebrate(null)}>회고 보기</ActionButton>
-            <ActionButton variant="brandSolid" onClick={() => navigate('/trophies')}>
-              <Trophy className="w-4 h-4 mr-1" /> 진열장
-            </ActionButton>
-          </div>
+          {/* 상장이 커서 작은 화면에선 본문이 스크롤된다. 버튼은 하단에 고정해 늘 보이게 한다 */}
+          <DialogFooter>
+            <div className="grid grid-cols-2 gap-x2">
+              <ActionButton size="large" variant="neutralWeak" onClick={() => setCelebrate(null)}>회고 보기</ActionButton>
+              <ActionButton size="large" variant="brandSolid" onClick={() => navigate('/trophies')}>
+                <PrefixIcon svg={<Trophy />} />
+                진열장
+              </ActionButton>
+            </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
       <BottomNav />
