@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/AppDialog';
 import { ActionButton } from '@/seed/ui/action-button';
-import { Chip } from '@/seed/ui/chip';
 import { SegmentedControl, SegmentedControlItem } from '@/seed/ui/segmented-control';
+import { Callout } from '@/seed/ui/callout';
 import { Play, Pause, RotateCcw, Eye, Clock } from 'lucide-react';
 import { notify } from '@/lib/notify';
 import { toast } from '@/lib/toast';
+import { CLOCKOUT_KEY, armClockout, isUpcomingHM } from '@/lib/clockout';
 
 import { Icon, PrefixIcon } from '@seed-design/react';
-// 감시 모드/퇴근 알림 설정은 localStorage에 저장 → Home의 백그라운드 타이머가 읽어 실행
+// 감시 모드/퇴근 알림 설정은 localStorage에 저장 → Home의 백그라운드 타이머가 읽어 실행 (퇴근 알림 키는 lib/clockout)
 export const WATCH_KEY = 'watch_interval_min';   // 0=off
-export const CLOCKOUT_KEY = 'clockout_target';    // "HH:MM" (오늘 기준)
 
 function fmt(sec: number): string {
   const m = Math.floor(sec / 60);
@@ -40,6 +40,11 @@ type FocusTab = 'pomo' | 'watch' | 'off';
 // 높이도 SEED 기본(34px)이면 터치 영역 40px에 못 미쳐 40px로 올린다.
 const SEGMENT_STYLE = { paddingInline: 'var(--seed-dimension-x2)', minHeight: 'var(--seed-dimension-x10)' };
 
+// 뽀모도로 프리셋 칩. 다른 시트의 "하나 고르기" 칩(출근 +N시간, 할 일 마감·우선순위, 회고 요일)과 같은 모양
+const PRESET_CHIP = 'h-x10 whitespace-nowrap rounded-full border px-x4 t4-medium transition-colors';
+const PRESET_ON = 'bg-bg-brand-solid text-fg-on-brand-solid border-stroke-brand-solid';
+const PRESET_OFF = 'bg-bg-layer-default text-fg-neutral border-stroke-neutral-muted hover:bg-bg-neutral-weak';
+
 // 감시 모드 시·분 선택칸. 퇴근알림 시간칸과 같은 SEED TextField 모양(52px, r3, 연한 테두리, t5)에 맞춘다.
 const PICKER_CLASS =
   'h-x13 rounded-r3 border border-stroke-neutral-weak bg-bg-layer-default px-x4 t5-regular tabular-nums text-fg-neutral';
@@ -49,9 +54,14 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
   // 예전 Tabs는 시트가 닫히면 같이 사라져 열 때마다 뽀모도로부터 보였다 → 열 때 되돌린다.
   const [tab, setTab] = useState<FocusTab>('pomo');
   const [prevOpen, setPrevOpen] = useState(open);
+  // 퇴근 알림 — 출근하기 시트에서도 바꾸니 열 때마다 저장된 값을 다시 읽는다
+  const [clockout, setClockout] = useState<string>(() => localStorage.getItem(CLOCKOUT_KEY) || '');
   if (open !== prevOpen) {
     setPrevOpen(open);
-    if (open) setTab('pomo');
+    if (open) {
+      setTab('pomo');
+      setClockout(localStorage.getItem(CLOCKOUT_KEY) || '');
+    }
   }
 
   // ── 뽀모도로 상태 ──
@@ -105,12 +115,14 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
   };
 
   // ── 퇴근 알림 ──
-  const [clockout, setClockout] = useState<string>(() => localStorage.getItem(CLOCKOUT_KEY) || '');
+  // 칸 값은 그대로 둔다(제어 입력이라 시·분 칸마다 바뀌어 들어온다). 알림은 아직 안 온 시각만 건다.
   const saveClockout = (v: string) => {
     setClockout(v);
-    if (v) { localStorage.setItem(CLOCKOUT_KEY, v); localStorage.removeItem('clockout_fired'); toast.success(`${v}에 퇴근 알림을 보낼게요 🏃`); }
-    else { localStorage.removeItem(CLOCKOUT_KEY); toast.success('퇴근 알림을 껐어요'); }
+    if (armClockout(v)) toast.success(`${v}에 퇴근 알림을 보낼게요 🏃`);
+    else if (v) toast('고른 시간이 이미 지나서 알림은 보내지 않아요');
+    else toast.success('퇴근 알림을 껐어요');
   };
+  const clockoutArmed = isUpcomingHM(clockout);
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -149,16 +161,19 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
               </div>
             </div>
 
-            {/* 프리셋 — 하나만 고르는 거라 라디오 칩. 이미 고른 것을 다시 눌러도 타이머를 처음으로 돌린다(예전 버튼과 같게).
-                라디오는 다시 눌러도 onValueChange가 안 와서 onClick으로 받는다. 라벨 클릭이 두 번 들어와도 reset은 결과가 같다 */}
-            <Chip.RadioRoot aria-label="뽀모도로 시간" value={preset.label} className="flex gap-x2"
-              onValueChange={(v) => { const p = PRESETS.find(x => x.label === v); if (p) applyPreset(p); }}>
-              {PRESETS.map(p => (
-                <Chip.RadioItem key={p.label} size="large" value={p.label} onClick={() => { if (preset.label === p.label) reset(); }}>
-                  <Chip.Label>{p.label}</Chip.Label>
-                </Chip.RadioItem>
-              ))}
-            </Chip.RadioRoot>
+            {/* 프리셋 — 하나만 고르는 거라 라디오. 이미 고른 것을 다시 눌러도 타이머를 처음으로 돌린다(예전 버튼과 같게) */}
+            <div role="radiogroup" aria-label="뽀모도로 시간" className="flex gap-x2">
+              {PRESETS.map(p => {
+                const on = preset.label === p.label;
+                return (
+                  <button key={p.label} type="button" role="radio" aria-checked={on}
+                    onClick={() => (on ? reset() : applyPreset(p))}
+                    className={`${PRESET_CHIP} ${on ? PRESET_ON : PRESET_OFF}`}>
+                    {p.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -196,9 +211,7 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
             <p className="t4-medium text-center text-fg-neutral">
               {watch ? `🟢 켜짐 · ${humanMin(watch)}마다` : '⚪ 꺼짐'}
             </p>
-            <p className="flex items-start gap-x2 rounded-r3 bg-bg-brand-weak p-x3 t4-regular text-fg-brand">
-              <Eye className="w-4 h-4 shrink-0 mt-0.5" /> 알림은 앱이 켜져 있을 때 와요. 푸시 알림이 켜져 있어야 백그라운드에서도 옵니다.
-            </p>
+            <Callout prefixIcon={<Eye />} description="알림은 앱이 켜져 있을 때 와요. 푸시 알림이 켜져 있어야 백그라운드에서도 옵니다." />
           </div>
         )}
 
@@ -214,14 +227,17 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
                 데스크톱 크롬은 칸 안에 자체 시계 아이콘을 또 그려서 숨기고, 대신 칸을 누르면 선택창을 연다 */}
             <div className="flex items-center gap-x2">
               <label className="flex h-x13 min-w-0 flex-1 items-center gap-x2 rounded-r3 border border-stroke-neutral-weak bg-bg-layer-default px-x4 focus-within:border-stroke-neutral-contrast">
-                <Clock className="w-5 h-5 shrink-0 text-fg-brand" />
+                {/* 아이콘 색은 출근하기 시트의 SEED TextField 아이콘과 같게(fg-neutral-muted) */}
+                <Clock className="w-5 h-5 shrink-0 text-fg-neutral-muted" />
                 <input type="time" value={clockout} onChange={(e) => saveClockout(e.target.value)} aria-label="예상 퇴근 시간"
                   onClick={(e) => { try { e.currentTarget.showPicker?.(); } catch { /* iframe 등에서 막히면 타이핑으로 입력 */ } }}
                   className="min-w-0 flex-1 bg-transparent t5-regular text-fg-neutral outline-none [&::-webkit-calendar-picker-indicator]:hidden" />
               </label>
               {clockout && <ActionButton size="large" variant="neutralWeak" onClick={() => saveClockout('')}>끄기</ActionButton>}
             </div>
-            <p className="t4-medium text-center text-fg-neutral">{clockout ? `🟢 ${clockout}에 알림 예정` : '⚪ 설정 안 됨'}</p>
+            <p className="t4-medium text-center text-fg-neutral">
+              {clockoutArmed ? `🟢 ${clockout}에 알림 예정` : clockout ? '⚪ 이미 지난 시간이라 알림 없음' : '⚪ 설정 안 됨'}
+            </p>
           </div>
         )}
 

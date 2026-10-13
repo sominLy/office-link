@@ -18,7 +18,8 @@ import { Fragment, useState, useEffect } from 'react';
 import { MemberStatus } from '@/lib/types';
 import MemberStatsDialog from '@/components/MemberStatsDialog';
 import MenuPickDialog from '@/components/MenuPickDialog';
-import FocusCompanion, { WATCH_KEY, CLOCKOUT_KEY } from '@/components/FocusCompanion';
+import FocusCompanion, { WATCH_KEY } from '@/components/FocusCompanion';
+import { CLOCKOUT_KEY, clockoutFiredKey, armClockout } from '@/lib/clockout';
 import OverdueTasksDialog from '@/components/OverdueTasksDialog';
 import RetroBanner from '@/components/retro/RetroBanner';
 import BottomNav from '@/components/BottomNav';
@@ -193,7 +194,7 @@ export default function Home() {
       const target = localStorage.getItem(CLOCKOUT_KEY); // "HH:MM"
       if (target) {
         const nowHM = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
-        const firedKey = `clockout_fired-${kstToday()}`;
+        const firedKey = clockoutFiredKey();
         if (nowHM >= target && !localStorage.getItem(firedKey)) {
           localStorage.setItem(firedKey, '1');
           notify('🏃 예상 퇴근 시간이에요', '아직 일하고 있나요? 무리하지 말고 마무리해도 좋아요 💛');
@@ -505,8 +506,11 @@ export default function Home() {
           </DialogHeader>
           {/* 빠른 설정은 시간 입력칸을 채우는 버튼이라 입력칸에 붙여 한 묶음으로 둔다 */}
           <div className="flex flex-col gap-x2">
+            {/* 크롬·안드로이드는 칸 안에 자체 시계 아이콘을 또 그려 시계가 둘이 된다. 숨기고 칸을 누르면 선택창을 연다(집중 모드 퇴근알림 칸과 같게) */}
             <TextField value={offTarget} onValueChange={(d) => setOffTarget(d.value)} prefixIcon={<Clock />}>
-              <TextFieldInput type="time" aria-label="예상 퇴근 시간" />
+              <TextFieldInput type="time" aria-label="예상 퇴근 시간"
+                onClick={(e) => { try { e.currentTarget.showPicker?.(); } catch { /* iframe 등에서 막히면 타이핑으로 입력 */ } }}
+                className="[&::-webkit-calendar-picker-indicator]:hidden" />
             </TextField>
             {/* 출근 시각 기준 빠른 설정 */}
             <div className="grid grid-cols-4 gap-x2">
@@ -539,15 +543,8 @@ export default function Home() {
               size="large"
               className="w-full"
               onClick={() => {
-                // 이미 지난 시각은 알림을 걸지 않는다. 알림은 "지금 ≥ 예상 시각"이면 울려서
-                // 지난 시각을 걸면 출근하자마자 퇴근 알림이 뜬다.
-                const armed = !!offTarget && offTarget > kstNowHM();
-                if (armed) {
-                  localStorage.setItem(CLOCKOUT_KEY, offTarget);
-                  localStorage.removeItem(`clockout_fired-${kstToday()}`);
-                } else {
-                  localStorage.removeItem(CLOCKOUT_KEY);
-                }
+                // 이미 지난 시각은 알림을 걸지 않는다 — 걸면 출근하자마자 퇴근 알림이 뜬다.
+                const armed = armClockout(offTarget);
                 setClockInOpen(false);
                 clockIn();
                 toast.success(

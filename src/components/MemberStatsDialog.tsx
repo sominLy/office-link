@@ -51,8 +51,9 @@ const WAVE_EMOJIS = ['👋', '🙌', '☕', '💛'];
 
 // 블록 제목은 한 모양으로 통일한다. 예전에는 12px 라벨이 카드 라벨·값과 섞여 위계가 안 보였다.
 const SECTION_LABEL = 't4-bold text-fg-neutral-muted';
-// 작은 배지(분류·진행 중·완료 수). 시트 안 최소 크기 t3에 맞춘다.
-const TAG = 'inline-flex items-center rounded-r1_5 px-x2 py-x0_5 t3-medium';
+// 작은 배지(분류·진행 중·완료 수). 시트 안 최소 크기 t3에 맞추고, 지난 할 일·루틴 시트의 알약과
+// 같은 모양(둥근 끝+테두리)을 쓴다. 색은 뜻에 맞춰 쓰는 곳에서 채움과 테두리를 같이 붙인다.
+const TAG = 'inline-flex items-center whitespace-nowrap rounded-full border px-x2 py-x0_5 t3-medium';
 
 interface Reaction { task_id: string; user_id: string; emoji: string }
 
@@ -238,12 +239,14 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
                       {e}
                     </button>
                   ))}
+                  {/* 확인·되돌리기 없이 남의 세션을 바로 닫는 버튼이라 위험색으로 구분한다. color prop은 ghost에서만
+                      먹고 neutralOutline 레시피가 글자·테두리색을 직접 넣어서, 청크 로드 순서와 상관없이 !important로 덮는다 */}
                   {myRole === 'admin' && member.is_working && (
                     <ActionButton
                       variant="neutralOutline"
                       size="medium"
                       onClick={forceClockOut}
-                      className="ml-auto"
+                      className="ml-auto !border-stroke-critical-weak !text-fg-critical-contrast"
                       title="깜빡한 멤버를 대신 퇴근시켜요"
                     >
                       퇴근시키기
@@ -292,7 +295,7 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
                 <section className="flex flex-col gap-x2">
                   <div className="flex items-center gap-x2">
                     <h3 className={SECTION_LABEL}>이번 주 할 일</h3>
-                    <span className={`${TAG} bg-bg-brand-weak text-fg-brand tabular-nums`}>
+                    <span className={`${TAG} border-stroke-brand-weak bg-bg-brand-weak text-fg-brand tabular-nums`}>
                       {doneCount}/{stats.weekTasks.length}
                     </span>
                   </div>
@@ -323,11 +326,15 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
                               {task.title}
                             </p>
                             <div className="flex flex-wrap items-center gap-x1_5">
+                              {/* 분류는 20자까지라 줄바꿈 없는 알약이 시트 폭을 밀어낸다(320px에서 시트가 화면 밖으로 넓어졌다).
+                                  max-w-full로는 시트의 내용 기준 폭 계산을 못 막아서 루틴 시트처럼 고정 폭에서 말줄임한다 */}
                               {task.category && (
-                                <span className={`${TAG} bg-bg-brand-weak text-fg-brand`}>{task.category}</span>
+                                <span className={`${TAG} max-w-[6rem] border-stroke-brand-weak bg-bg-brand-weak text-fg-brand`}>
+                                  <span className="truncate">{task.category}</span>
+                                </span>
                               )}
                               {task.status === 'in_progress' && (
-                                <span className={`${TAG} bg-bg-informative-weak text-fg-informative-contrast`}>진행 중</span>
+                                <span className={`${TAG} border-stroke-informative-weak bg-bg-informative-weak text-fg-informative-contrast`}>진행 중</span>
                               )}
                               {/* 이모지 응원 버튼. 내가 누른 것은 눌린 상태(브랜드 테두리), 남이 누른 것은 숫자로 보인다 */}
                               <span className="flex items-center gap-x1 ml-auto">

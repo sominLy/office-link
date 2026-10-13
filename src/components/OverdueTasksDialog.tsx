@@ -19,7 +19,7 @@ const MOVE_OPTIONS = [
   { days: 7, label: '+일주일' },
 ];
 
-/** 개수·상태 알약. 글자는 쓰는 곳에서 붙인다 — 라벨은 t4, 제목 옆 개수 배지만 시트 최소 글자(t3) */
+/** 개수·상태 알약. 멤버·루틴 시트의 태그와 같은 모양으로 모두 시트 최소 글자(t3)를 쓰고, 굵기와 색은 쓰는 곳에서 붙인다 */
 const PILL = 'inline-flex items-center whitespace-nowrap rounded-full border px-x2 py-x0_5';
 
 /**
@@ -135,24 +135,30 @@ export default function OverdueTasksDialog({ open, onClose, onChanged }: { open:
                   <div className="flex items-start gap-x2">
                     <div className="flex flex-1 min-w-0 flex-col gap-x0_5">
                       <p className="t5-medium text-fg-neutral">{task.title}</p>
-                      <p className="t4-regular text-fg-neutral-muted flex flex-wrap items-center gap-x1">
-                        <CalendarDays className="w-4 h-4 flex-shrink-0" />
-                        <span>{formatDateLabel(task.due_date as string)}{timeLabel ? ` ${timeLabel}` : ''}까지였어요</span>
+                      {/* 아이콘과 날짜 문구는 한 묶음이라 문구는 아이콘 옆에서 줄바꿈되고 진행 중 알약만 아래 줄로 내려간다.
+                          예전에는 셋이 한 flex-wrap 줄이라 긴 문구가 통째로 다음 줄로 떨어져 아이콘만 혼자 남았다 */}
+                      <div className="flex flex-wrap items-center gap-x1">
+                        <p className="flex min-w-0 items-start gap-x1 t4-regular text-fg-neutral-muted">
+                          <CalendarDays className="w-4 h-4 mt-0.5 shrink-0" />
+                          <span className="min-w-0">{formatDateLabel(task.due_date as string)}{timeLabel ? ` ${timeLabel}` : ''}까지였어요</span>
+                        </p>
                         {task.status === 'in_progress' && (
-                          <span className={`${PILL} t4-medium border-stroke-informative-weak bg-bg-informative-weak text-fg-informative-contrast`}>진행 중</span>
+                          <span className={`${PILL} t3-medium border-stroke-informative-weak bg-bg-informative-weak text-fg-informative-contrast`}>진행 중</span>
                         )}
-                      </p>
+                      </div>
                     </div>
-                    <span className={`${PILL} t4-medium border-stroke-critical-weak bg-bg-layer-default text-fg-critical-contrast`}>
+                    <span className={`${PILL} t3-medium border-stroke-critical-weak bg-bg-layer-default text-fg-critical-contrast`}>
                       {late}일 지남
                     </span>
                   </div>
 
                   {/* 기간 늘리기 — 버튼 아래에 옮겨갈 날짜를 같이 보여준다.
-                      다섯 칸에 '+일주일'이 한 줄로 들어가도록 칸 사이와 칸 안 여백을 비운다(320px 폭 기준) */}
+                      다섯 칸을 한 줄에 두려고 칸 사이와 칸 안 여백을 비운다. 그래도 360px보다 좁으면 '+일주일'과
+                      '10/20(화)'가 칸(약 51px)을 넘쳐서, 그 폭에서만 요일을 숨기고(전체 날짜는 title에) 라벨을 t3로 줄인다 */}
                   <div className="grid grid-cols-5 gap-x0_5">
                     {MOVE_OPTIONS.map(o => {
                       const target = addDays(today, o.days);
+                      const [monthDay, weekday] = formatShortDate(target).split(' ');
                       return (
                         <button
                           key={o.days}
@@ -160,8 +166,10 @@ export default function OverdueTasksDialog({ open, onClose, onChanged }: { open:
                           className="flex min-h-x12 flex-col items-center justify-center rounded-r2 border border-stroke-brand-weak bg-bg-layer-default px-0 py-x1_5 text-center transition-colors hover:bg-bg-brand-weak active:bg-bg-brand-weak-pressed"
                           title={`${formatDateLabel(target)}까지로 옮기기`}
                         >
-                          <span className="t4-medium text-fg-brand whitespace-nowrap">{o.label}</span>
-                          <span className="t3-regular text-fg-neutral-muted whitespace-nowrap">{formatShortDate(target).replace(' ', '')}</span>
+                          <span className="t4-medium text-fg-brand whitespace-nowrap max-[359px]:text-t3">{o.label}</span>
+                          <span className="t3-regular text-fg-neutral-muted whitespace-nowrap">
+                            {monthDay}<span className="max-[359px]:hidden">{weekday}</span>
+                          </span>
                         </button>
                       );
                     })}

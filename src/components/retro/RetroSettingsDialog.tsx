@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ActionButton } from '@/seed/ui/action-button';
+import { Callout } from '@/seed/ui/callout';
 import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/AppDialog';
 import { toast } from '@/lib/toast';
@@ -98,14 +99,19 @@ export default function RetroSettingsDialog({ open, onClose, onSaved }: { open: 
           </div>
         </div>
 
-        <div className="flex flex-col gap-x1 rounded-r3 border border-stroke-brand-weak bg-bg-brand-weak p-x3 text-fg-brand-contrast">
-          <p className="t4-regular">
-            매주 <b>{WEEKDAY_NAMES[prefs.day]}요일 {prefs.time ? formatTimeLabel(prefs.time) : '—'}</b>에 회고가 도착해요
-          </p>
-          {!notificationsEnabled() && (
-            <p className="t4-regular text-fg-brand">💡 홈 ✨ 더보기 → 알림 켜기를 하면 앱을 닫아둬도 알려드려요</p>
-          )}
-        </div>
+        {/* 안내 상자는 호칭 설정 시트와 같은 SEED Callout(neutral)로 맞춘다. description이 span이라 줄은 block span으로 나눈다 */}
+        <Callout
+          description={
+            <>
+              <span className="block">
+                매주 <b>{WEEKDAY_NAMES[prefs.day]}요일 {prefs.time ? formatTimeLabel(prefs.time) : '—'}</b>에 회고가 도착해요
+              </span>
+              {!notificationsEnabled() && (
+                <span className="mt-x1 block">💡 홈 ✨ 더보기 → 알림 켜기를 하면 앱을 닫아둬도 알려드려요</span>
+              )}
+            </>
+          }
+        />
 
         <DialogFooter>
           <ActionButton size="large" variant="brandSolid" onClick={save} disabled={saving || !prefs.time} className="w-full">
