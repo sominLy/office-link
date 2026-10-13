@@ -17,6 +17,7 @@ import { fetchRetro, readRetroPrefs, weeklyCertificate } from '@/lib/retro';
 
 import { Icon } from '@seed-design/react';
 import RewardArt from '@/components/illustrations/RewardArt';
+import { RewardIcon } from '@/components/illustrations/RewardIcon';
 /** 내 진열장 — 회고 스티커가 쌓이고, 누적 기록으로 트로피가 열리고, 매주 받은 상장이 모인다 */
 export default function Trophies() {
   const { user, profile } = useAuth();
@@ -82,7 +83,9 @@ export default function Trophies() {
               <Icon svg={<ArrowLeft className="w-4 h-4" />} />
             </ActionButton>
           <div className="min-w-0 flex-1">
-            <h1 className="font-bold text-fg-neutral leading-tight">🏆 내 진열장</h1>
+            <h1 className="font-bold text-fg-neutral leading-tight flex items-center gap-x1">
+            <RewardIcon name="task_crusher" className="w-x7 h-x7 flex-shrink-0" /> 내 진열장
+          </h1>
             {stats && (
               <p className="text-t1 text-fg-neutral-muted leading-tight">
                 트로피 {trophies.length} · 스티커 {stats.stickers} · 상장 {stats.certificates}
@@ -90,7 +93,7 @@ export default function Trophies() {
             )}
           </div>
           <ActionButton variant="ghost" size="small" onClick={() => navigate('/retro')}>
-            📬 회고
+            <RewardIcon name="retro_mail" className="w-x5 h-x5 mr-x1" /> 회고
           </ActionButton>
         </div>
       </header>
@@ -108,7 +111,7 @@ export default function Trophies() {
               <h2 className="text-t4 font-semibold text-fg-brand-contrast mb-1">트로피 선반</h2>
               {trophies.length === 0 ? (
                 <div className="text-center py-6">
-                  <p className="text-t12 opacity-40">🏆</p>
+                  <RewardIcon name="task_crusher" className="w-x16 h-x16 mx-auto opacity-40" />
                   <p className="text-t4 text-fg-neutral-muted mt-2">아직 비어 있어요</p>
                   <p className="text-t2 text-fg-neutral-muted">출근하고, 할 일을 체크하고, 집중하면 하나씩 채워져요</p>
                 </div>
@@ -147,7 +150,7 @@ export default function Trophies() {
                     <div className="flex items-center justify-between text-t4 gap-2">
                       <span className="text-fg-neutral-muted">{track.name} <b className="text-fg-neutral tabular-nums">{value}{track.unit}</b></span>
                       <span className="text-t2 text-fg-neutral-muted flex-shrink-0">
-                        {next ? <><RewardArt name={TROPHY_ART[`${track.key}:${next.at}`]} emoji={next.emoji} className="inline-block align-[-3px] w-x4 h-x4" /> {next.title}까지 <b className="text-fg-brand">{next.at - value}{track.unit}</b></> : '🎉 모두 달성!'}
+                        {next ? <><RewardArt name={TROPHY_ART[`${track.key}:${next.at}`]} emoji={next.emoji} className="inline-block align-[-6px] w-x6 h-x6" /> {next.title}까지 <b className="text-fg-brand">{next.at - value}{track.unit}</b></> : '모두 달성!'}
                       </span>
                     </div>
                     <div className="mt-1 h-2 rounded-full bg-bg-brand-weak overflow-hidden" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={`${track.name} 다음 트로피 진행률`}>
@@ -191,7 +194,7 @@ export default function Trophies() {
                 <div className="text-center py-4">
                   <p className="text-t4 text-fg-neutral-muted">아직 받은 상장이 없어요</p>
                   <ActionButton size="small" variant="neutralOutline" className="mt-2" onClick={() => navigate('/retro')}>
-                    📬 회고 열어보기
+                    <RewardIcon name="retro_mail" className="w-x5 h-x5 mr-x1" /> 회고 열어보기
                   </ActionButton>
                 </div>
               ) : (
@@ -199,7 +202,7 @@ export default function Trophies() {
                   {certificates.map(c => (
                     <li key={c.key}>
                       <button onClick={() => openCertificate(c)} className="w-full flex items-center gap-3 py-2.5 text-left hover:bg-bg-brand-weak rounded-lg px-1">
-                        <span className="text-t9">{c.award.emoji}</span>
+                        <RewardArt name={c.award.code} emoji={c.award.emoji} className="block w-x9 h-x9 text-t9 flex-shrink-0" />
                         <span className="flex-1 min-w-0">
                           <span className="block text-t4 font-medium text-fg-neutral">{c.award.title}</span>
                           <span className="block text-t2 text-fg-neutral-muted truncate">
@@ -220,7 +223,10 @@ export default function Trophies() {
       <Dialog open={!!openCert} onOpenChange={(o) => !o && setOpenCert(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-center">{openCert?.awardEmoji} {openCert?.awardTitle}</DialogTitle>
+            <DialogTitle className="text-center flex items-center justify-center gap-x1">
+              <RewardArt name={openCert?.awardCode} emoji={openCert?.awardEmoji || ''} className="block w-x7 h-x7 flex-shrink-0" />
+              {openCert?.awardTitle}
+            </DialogTitle>
             <DialogDescription className="text-center">{openCert?.periodLabel} · 캡처해서 자랑해 보세요 📸</DialogDescription>
           </DialogHeader>
           {openCert && <AwardCertificate data={openCert} />}

@@ -129,16 +129,27 @@ export const TROPHY_TRACKS: TrophyTrack[] = [
 ];
 
 /**
- * 트로피 티어 중 직접 그린 아이콘이 있는 것. 키는 reward-glyphs의 이름이다.
- * 아직 트랙별 첫 단계만 그렸고, 나머지는 이모지로 보인다.
+ * 트로피 티어마다 쓸 손그림 아이콘. 키는 `트랙:기준값`, 값은 reward-glyphs의 이름이다.
+ * 여기 없는 티어는 RewardArt가 이모지로 떨어뜨린다 — 티어를 새로 추가하면 그림도 같이 넣는다.
  */
 export const TROPHY_ART: Record<string, string> = {
-  'tasks:1': 'first_check',
-  'focus:1': 'first_focus',
-  'days:1': 'first_clockin',
-  'stickers:1': 'first_sticker',
-  'certs:1': 'first_award',
-  'streak:2': 'first_streak',
+  'tasks:1': 'first_check', 'tasks:10': 'tasks_10', 'tasks:50': 'tasks_50',
+  'tasks:100': 'tasks_100', 'tasks:300': 'tasks_300', 'tasks:1000': 'tasks_1000',
+
+  'focus:1': 'first_focus', 'focus:10': 'focus_10', 'focus:50': 'focus_50',
+  'focus:100': 'focus_100', 'focus:300': 'focus_300',
+
+  'days:1': 'first_clockin', 'days:7': 'days_7', 'days:30': 'days_30',
+  'days:100': 'days_100', 'days:365': 'days_365',
+
+  'stickers:1': 'first_sticker', 'stickers:10': 'stickers_10', 'stickers:30': 'stickers_30',
+  'stickers:60': 'stickers_60', 'stickers:100': 'stickers_100',
+
+  'certs:1': 'first_award', 'certs:4': 'certs_4', 'certs:12': 'certs_12',
+  'certs:26': 'certs_26', 'certs:52': 'certs_52',
+
+  'streak:2': 'first_streak', 'streak:4': 'streak_4', 'streak:8': 'streak_8',
+  'streak:12': 'streak_12',
 };
 
 export interface Trophy { id: string; emoji: string; title: string; track: string }
@@ -265,6 +276,8 @@ export interface CertificateData {
   template: CertTemplate;
   serial: string; // "제 2026-40 호"
   awardEmoji: string;
+  /** 스티커 코드. 손그림 아이콘을 고르는 데 쓴다. 포도판처럼 스티커가 아닌 상장은 비어 있다. */
+  awardCode?: string;
   awardTitle: string; // "개근상"
   recipient: string; // "민지"
   highlights: string[]; // ["5일 출근", "집중 12시간", "할 일 8개"]

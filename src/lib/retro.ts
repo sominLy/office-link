@@ -365,6 +365,7 @@ export function weeklyCertificate(d: RetroData, stickers: EarnedSticker[], recip
     template: templateForWeek(d.week),
     serial: `제 ${isoWeekYear(d.week)}-${String(weekNumber(d.week)).padStart(2, '0')} 호`,
     awardEmoji: award.emoji,
+    awardCode: award.code,
     awardTitle: award.title,
     recipient,
     highlights,
