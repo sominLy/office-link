@@ -23,6 +23,7 @@ import Trophies from './pages/Trophies';
 import { Privacy, Terms } from './pages/Legal';
 import TrophyWatcher from '@/components/awards/TrophyWatcher';
 import UsageTracker from '@/components/UsageTracker';
+import MultiOfficeSyncDialog from '@/components/MultiOfficeSyncDialog';
 
 // 운영 대시보드는 차트 라이브러리가 커서 열 때만 불러온다
 const Admin = lazy(() => import('./pages/Admin'));
@@ -63,6 +64,7 @@ const App = () => (
             <BrowserRouter>
             {/* 퍼널 이벤트 적재 (화면에 그리는 것 없음) */}
             <RouteTracker />
+            <MultiOfficeSyncDialog />
             {/* 할 일 완료·집중·출근 때 새 트로피가 열리면 축하 */}
             <TrophyWatcher />
             {/* 운영 대시보드용 이용 기록 (화면에 그리는 것 없음) */}

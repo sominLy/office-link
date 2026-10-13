@@ -332,7 +332,7 @@ export default function Home() {
                   출근하기
                 </ActionButton>
                 {onVacation ? (
-                  <ActionButton variant="neutralOutline" onClick={() => changeStatus('퇴근')} className="border-teal-200 text-teal-700 flex-1 sm:flex-none">
+                  <ActionButton variant="neutralOutline" onClick={() => changeStatus('퇴근', { ask: true })} className="border-teal-200 text-teal-700 flex-1 sm:flex-none">
                     <Palmtree className="w-4 h-4 mr-1" /> 복귀하기
                   </ActionButton>
                 ) : (
@@ -343,8 +343,8 @@ export default function Home() {
                       </ActionButton>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => changeStatus('연차')} className="cursor-pointer">🌴 오늘 연차예요</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => changeStatus('휴가 중')} className="cursor-pointer">✈️ 휴가 중이에요</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => changeStatus('연차', { ask: true })} className="cursor-pointer">🌴 오늘 연차예요</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => changeStatus('휴가 중', { ask: true })} className="cursor-pointer">✈️ 휴가 중이에요</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
@@ -359,7 +359,7 @@ export default function Home() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
                       {STATUS_OPTIONS.map((s) => (
-                        <DropdownMenuItem key={s} onClick={() => changeStatus(s)} className="cursor-pointer">
+                        <DropdownMenuItem key={s} onClick={() => changeStatus(s, { ask: true })} className="cursor-pointer">
                           <span className={`inline-block w-2 h-2 rounded-full mr-2 ${PRESENCE_META[s].dot}`} />
                           {s}
                         </DropdownMenuItem>
