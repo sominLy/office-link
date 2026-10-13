@@ -11,6 +11,7 @@ import { ArrowLeft, RefreshCw, Trash2 } from 'lucide-react';
 import { toast } from '@/lib/toast';
 import { BarList, ChartCard, ColumnChart, DataTable, TrendChart } from '@/components/admin/charts';
 import { BLUE_RAMP, fmt, longDay, Marker, shortDay } from '@/components/admin/format';
+import FeedbackInbox from '@/components/admin/FeedbackInbox';
 
 import { Icon } from '@seed-design/react';
 // ===== 서버(admin_dashboard)가 돌려주는 모양 =====
@@ -53,6 +54,8 @@ type Dashboard = {
 
 type Range = 'today' | '7' | '30' | '90' | 'all';
 type Cohort = 'all' | 'seed' | 'new';
+
+const TAB_KEYS = ['overview', 'features', 'retention', 'offices', 'notes', 'feedback'];
 
 const RANGES: { key: Range; label: string }[] = [
   { key: 'today', label: '오늘' }, { key: '7', label: '7일' }, { key: '30', label: '30일' }, { key: '90', label: '90일' }, { key: 'all', label: '전체' },
@@ -141,7 +144,11 @@ export default function Admin() {
   const navigate = useNavigate();
   const [range, setRange] = useState<Range>('30');
   const [cohort, setCohort] = useState<Cohort>('all');
-  const [tab, setTab] = useState('overview');
+  // 푸시(새 의견 도착)는 /admin?tab=feedback으로 연다
+  const [tab, setTab] = useState(() => {
+    const t = new URLSearchParams(window.location.search).get('tab');
+    return t && TAB_KEYS.includes(t) ? t : 'overview';
+  });
   const [data, setData] = useState<Dashboard | null>(null);
   const [loading, setLoading] = useState(false);
   const [problem, setProblem] = useState<Problem>(null);
@@ -360,8 +367,8 @@ export default function Admin() {
           </div>
         ) : (
           <Tabs value={tab} onValueChange={setTab}>
-            <TabsList className="w-full grid grid-cols-5 bg-black/[0.04] h-auto">
-              {[['overview', '개요'], ['features', '기능'], ['retention', '유지율'], ['offices', '오피스'], ['notes', '업데이트']].map(([v, l]) => (
+            <TabsList className="w-full grid grid-cols-6 bg-black/[0.04] h-auto">
+              {[['overview', '개요'], ['features', '기능'], ['retention', '유지율'], ['offices', '오피스'], ['notes', '업데이트'], ['feedback', '문의']].map(([v, l]) => (
                 <TabsTrigger key={v} value={v} className="text-t2 sm:text-t4 px-1">{l}</TabsTrigger>
               ))}
             </TabsList>
@@ -629,6 +636,11 @@ export default function Admin() {
                 <p>· 채팅은 7일 뒤 지워져서 개수만 따로 남겨요 ({data.chat_since ? `${longDay(data.chat_since)}부터` : '켠 뒤부터'}). 내용은 저장하지 않아요.</p>
                 <p>· 사람·오피스 수가 적을 때는 변화율이 크게 흔들려요. 몇 명이 바뀐 건지 숫자도 같이 보세요.</p>
               </section>
+            </TabsContent>
+
+            {/* ===== 의견·문의 ===== */}
+            <TabsContent value="feedback" className="space-y-4 mt-4">
+              <FeedbackInbox />
             </TabsContent>
           </Tabs>
         )}

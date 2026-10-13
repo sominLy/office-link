@@ -124,3 +124,47 @@ export interface MemberStatus {
   is_focusing: boolean;
   rank_index: number; // 오피스 가입 순서 (0 = 가장 먼저 = 사장)
 }
+
+// 스터디룸 (024) — 줌·구글밋 링크로 모여 같이 공부하는 방
+export interface StudyRoom {
+  id: string;
+  office_id: string;
+  host_id: string;
+  title: string;
+  subject: string | null; // 인적성 영역 (언어·수리·추리·시각·상식·인성·기타), 없으면 null
+  meeting_url: string;
+  note: string | null;
+  starts_at: string;
+  ended_at: string | null;
+  created_at: string;
+  host?: { nickname: string; avatar_url: string | null } | null;
+  study_room_members?: StudyRoomMember[];
+}
+
+export interface StudyRoomMember {
+  room_id: string;
+  user_id: string;
+  office_id: string;
+  joined_at: string;
+}
+
+// 의견·문의 (025) — 운영자에게 보내는 의견·문의·버그 제보와 그 답변
+export type FeedbackKind = 'idea' | 'question' | 'bug' | 'other';
+
+export interface Feedback {
+  id: string;
+  user_id: string;
+  kind: FeedbackKind;
+  message: string;
+  page: string | null; // 보낸 화면 경로
+  status: 'open' | 'done';
+  reply: string | null; // 운영자 답변
+  replied_at: string | null;
+  created_at: string;
+}
+
+/** 운영자 목록(admin_feedback_list)은 보낸 사람의 닉네임·이메일이 붙어 온다 */
+export interface AdminFeedback extends Feedback {
+  nickname: string | null;
+  email: string | null;
+}
