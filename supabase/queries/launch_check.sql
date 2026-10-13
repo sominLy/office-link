@@ -1,7 +1,7 @@
--- 공개 전 점검 — 019·022·023이 운영 DB에 의도대로 들어갔는지 한 표로 본다.
+-- 공개 전 점검 — 019·022·023·024가 운영 DB에 의도대로 들어갔는지 한 표로 본다.
 -- 실행: Supabase 대시보드 → SQL Editor에 붙여넣고 Run.
 -- 모든 줄이 ✅이어야 링크를 밖에 돌린다. ❌이면 '고칠 일' 칸대로 한 뒤 다시 Run.
--- 019·022·023을 적용한 DB에서 실행한다 (적용 전에는 없는 열·테이블 때문에 표 대신 오류가 난다).
+-- 019·022·023·024를 적용한 DB에서 실행한다 (적용 전에는 없는 열·테이블 때문에 표 대신 오류가 난다).
 
 select t.item as "항목",
        case when t.ok then '✅' else '❌' end as "상태",
@@ -70,6 +70,21 @@ from (values
   ('퍼널 이벤트 테이블',
     to_regclass('public.events') is not null,
     '021 실행'),
+  -- 024: 링크는 화상 회의 서비스 주소만. 이 제약이 없으면 공개 오피스에서 아무 주소나 올릴 수 있다.
+  ('스터디룸 링크 제한',
+    exists (select 1 from pg_constraint where conname = 'study_rooms_url_allowed'),
+    '024 실행'),
+  ('스터디룸 수정 범위',
+    has_column_privilege('authenticated', 'public.study_rooms', 'ended_at', 'UPDATE')
+      and not has_column_privilege('authenticated', 'public.study_rooms', 'host_id', 'UPDATE')
+      and not has_column_privilege('authenticated', 'public.study_rooms', 'office_id', 'UPDATE'),
+    '024 다시 실행 (방의 host_id·office_id를 바꿀 수 있는 상태다)'),
+  ('스터디룸 이벤트 허용',
+    exists (
+      select 1 from pg_constraint
+      where conname = 'events_name_allowed' and pg_get_constraintdef(oid) like '%study_room_created%'
+    ),
+    '024 다시 실행 (스터디룸 열기·참여가 퍼널에 적재되지 않는다)'),
   ('오피스 수정 정책',
     exists (
       select 1 from pg_policies
@@ -133,6 +148,8 @@ from (values
           'routines_delete','routines_insert','routines_select','routines_update','status_insert','status_select','status_update','status_update_admin',
           'reactions_delete','reactions_insert','reactions_select','tasks_delete','tasks_insert','tasks_select','tasks_update',
           'reflections_delete','reflections_insert','reflections_select','reflections_update',
+          'study_rooms_select','study_rooms_insert','study_rooms_update','study_rooms_delete',
+          'study_members_select','study_members_insert','study_members_delete',
           'work_insert','work_select','work_update','work_update_admin',
           'avatar_delete','avatar_insert','avatar_read','avatar_update'])
     ),

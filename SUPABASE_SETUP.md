@@ -5,6 +5,7 @@
 - [C. 자정 자동 퇴근이 안 될 때 (018)](#c-자정-자동-퇴근이-안-될-때-018)
 - [D. 크론(자동 실행)이 멈췄는지 확인하기](#d-크론자동-실행이-멈췄는지-확인하기)
 - [E. 운영 대시보드 켜기 (019)](#e-운영-대시보드-켜기-019)
+- [F. 스터디룸 켜기 (024)](#f-스터디룸-켜기-024)
 
 ## A. 처음 연결할 때 (딱 3단계)
 
@@ -458,3 +459,27 @@ select day, count(*) as people, sum(visits) as visits, round(sum(active_sec) / 6
 from public.app_usage_daily group by day order by day desc limit 7;
 ```
 
+
+## F. 스터디룸 켜기 (024)
+
+홈의 **같이 공부하기**에서 줌·구글밋 링크를 붙여 스터디룸을 열고, 멤버들이 들어와 실시간으로 같이 인적성을 풀 수 있어요. **DB 마이그레이션 1개 + 서버 함수(push-notify) 재배포**가 필요해요. 마이그레이션 전에는 홈에 섹션이 아예 보이지 않아요(앱이 테이블이 없으면 숨겨요).
+
+### 1단계. 024 실행
+[024_study_rooms.sql (raw)](https://raw.githubusercontent.com/sominLy/office-link/main/supabase/migrations/024_study_rooms.sql) 복사 → SQL Editor 새 스니펫 → Run → "Success" 확인. 여러 번 실행해도 안전해요. 022 다음에 실행하세요.
+
+이 SQL이 하는 일:
+- `study_rooms`(방)·`study_room_members`(참여자) 테이블 + 같은 오피스 멤버만 보는 RLS
+- 회의 링크는 **줌·구글밋·팀즈·디스코드·웹엑스·Whereby 주소만** 받는 제약 (공개 오피스에서 아무 주소나 올리는 걸 막아요)
+- 8시간 넘게 열린 방을 30분마다 닫는 크론(`study-rooms-autoclose`)
+- 퍼널 이벤트 허용 목록에 `study_room_created`·`study_room_joined` 추가
+
+### 2단계. push-notify 함수 다시 배포
+B의 4단계와 같은 방법으로 `supabase/functions/push-notify/index.ts`를 다시 배포하세요. 새 `study` 액션이 "○○님이 스터디룸을 열었어요 📚" 푸시를 보내요. 배포 전에는 푸시만 안 가고 나머지는 다 돼요.
+
+### 3단계. 확인
+```sql
+-- 표의 '스터디룸 …' 세 줄이 ✅이면 성공
+-- (supabase/queries/launch_check.sql 전체를 붙여 넣고 Run)
+select jobname, schedule, active from cron.job where jobname = 'study-rooms-autoclose';
+```
+앱 → 홈 → **스터디룸 열기** → 링크 칸에 `https://meet.google.com/abc-defg-hij`를 넣고 열어 보세요. 다른 멤버의 홈에 바로 떠야 해요.

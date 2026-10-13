@@ -21,6 +21,7 @@ import MenuPickDialog from '@/components/MenuPickDialog';
 import FocusCompanion, { WATCH_KEY, CLOCKOUT_KEY } from '@/components/FocusCompanion';
 import OverdueTasksDialog from '@/components/OverdueTasksDialog';
 import RetroBanner from '@/components/retro/RetroBanner';
+import StudyRooms from '@/components/study/StudyRooms';
 import BottomNav from '@/components/BottomNav';
 import { notificationsEnabled, requestNotificationPermission, notify, isMuted, setMuted } from '@/lib/notify';
 import { subscribePush, unsubscribePush } from '@/lib/push';
@@ -377,6 +378,9 @@ export default function Home() {
 
         {/* My Tasks Summary */}
         {isWorking && <MyTasks compact />}
+
+        {/* 같이 공부하기 — 줌·구글밋 링크로 모이는 스터디룸 (출근 전에도 보인다) */}
+        <StudyRooms />
 
         {/* Office Members */}
         <section aria-labelledby="office-members">

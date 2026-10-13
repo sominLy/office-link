@@ -3,6 +3,7 @@
 // - action "nudge": (pg_cron이 10분마다 호출) 근무 시작 시간이 지났는데 미출근인 사용자에게 하루 1회 푸시
 //                   + 각자 정한 주간 회고 시간이 지나면 "회고 도착" 푸시 (주 1회)
 // - action "announce" / "announce_poll": [공지] 커밋을 업데이트 공지로 게시 + 전원 푸시
+// - action "study": 스터디룸(024)을 연 사람을 제외한 오피스 멤버 전원에게 푸시
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import webpush from 'npm:web-push@3';
 
@@ -39,7 +40,7 @@ async function isMember(officeId: string, userId: string): Promise<boolean> {
   return !!data;
 }
 
-const USER_ACTIONS = new Set(['clock_in', 'cheer', 'feed']);
+const USER_ACTIONS = new Set(['clock_in', 'cheer', 'feed', 'study']);
 // 앱이 보낸 글자는 코드포인트 기준으로 자른다
 const clip = (v: unknown, n: number) => [...(typeof v === 'string' ? v : '')].slice(0, n).join('');
 
@@ -204,6 +205,41 @@ Deno.serve(async (req) => {
       recipients = (members || []).map((m) => m.user_id);
     }
     await sendTo(recipients, title, body, kind === 'wave' ? 'wave' : 'feed');
+    return new Response('ok', { headers: cors });
+  }
+
+  if (payload.action === 'study') {
+    // 스터디룸 열림 푸시. 제목·시작 시각은 앱이 보낸 값이 아니라 DB의 방 행에서 읽는다.
+    // 방이 없거나(024 미적용 포함) 다른 오피스·다른 사람의 방이면 보내지 않는다.
+    const { office_id, actor_id, room_id } = payload;
+    if (!office_id || !actor_id || !room_id) return new Response('bad request', { status: 400, headers: cors });
+    const { data: room } = await supabase
+      .from('study_rooms').select('title, office_id, host_id, starts_at, ended_at')
+      .eq('id', room_id).maybeSingle();
+    if (!room || room.office_id !== office_id || room.host_id !== actor_id || room.ended_at) {
+      return new Response('forbidden', { status: 403, headers: cors });
+    }
+    // 공개 오피스 푸시에는 남이 쓴 문구를 싣지 않는다 (feed와 같은 규칙)
+    const { data: off } = await supabase.from('offices').select('is_public').eq('id', office_id).maybeSingle();
+    const title = off?.is_public ? '' : clip(room.title, 40);
+    const { data: actor } = await supabase.from('profiles').select('nickname').eq('id', actor_id).single();
+    const name = actor?.nickname || '멤버';
+    // 예정 방이면 시작 시각을 KST로 적는다
+    const startsMs = new Date(room.starts_at as string).getTime();
+    const upcoming = startsMs - Date.now() > 60_000;
+    const when = upcoming
+      ? new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', hour: 'numeric', minute: '2-digit' }).format(new Date(startsMs)) + ' 시작 · '
+      : '';
+    const body = `${when}${title ? `"${title}" · ` : ''}홈에서 바로 들어갈 수 있어요`;
+    const { data: members } = await supabase
+      .from('office_members').select('user_id')
+      .eq('office_id', office_id).neq('user_id', actor_id);
+    await sendTo(
+      (members || []).map((m) => m.user_id),
+      `${name}님이 스터디룸을 열었어요 📚`,
+      body,
+      `study-${office_id}`,
+    );
     return new Response('ok', { headers: cors });
   }
 

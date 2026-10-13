@@ -124,3 +124,26 @@ export interface MemberStatus {
   is_focusing: boolean;
   rank_index: number; // 오피스 가입 순서 (0 = 가장 먼저 = 사장)
 }
+
+// 스터디룸 (024) — 줌·구글밋 링크로 모여 같이 공부하는 방
+export interface StudyRoom {
+  id: string;
+  office_id: string;
+  host_id: string;
+  title: string;
+  subject: string | null; // 인적성 영역 (언어·수리·추리·시각·상식·인성·기타), 없으면 null
+  meeting_url: string;
+  note: string | null;
+  starts_at: string;
+  ended_at: string | null;
+  created_at: string;
+  host?: { nickname: string; avatar_url: string | null } | null;
+  study_room_members?: StudyRoomMember[];
+}
+
+export interface StudyRoomMember {
+  room_id: string;
+  user_id: string;
+  office_id: string;
+  joined_at: string;
+}

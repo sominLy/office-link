@@ -19,7 +19,9 @@ export type EventName =
   | 'clock_in'
   | 'task_created'
   | 'focus_started'
-  | 'reaction_sent';
+  | 'reaction_sent'
+  | 'study_room_created'
+  | 'study_room_joined';
 
 const SOURCE_KEY = 'office-link:funnel-source';
 
