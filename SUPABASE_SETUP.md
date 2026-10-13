@@ -7,6 +7,7 @@
 - [E. 운영 대시보드 켜기 (019)](#e-운영-대시보드-켜기-019)
 - [F. 스터디룸 켜기 (024)](#f-스터디룸-켜기-024)
 - [G. 의견·문의 받기 (025)](#g-의견문의-받기-025)
+- [H. GitHub Actions로 배포하기](#h-github-actions로-배포하기)
 
 ## A. 처음 연결할 때 (딱 3단계)
 
@@ -509,3 +510,20 @@ B의 4단계와 같은 방법으로 다시 배포하세요. 새 `feedback`(운�
 -- launch_check.sql의 '의견·문의 …' 두 줄이 ✅이면 됐어요. 바로 세어 보려면:
 select status, count(*) from public.feedback group by status;
 ```
+
+## H. GitHub Actions로 배포하기
+
+SQL Editor에 붙여 넣는 대신, GitHub에서 버튼 한 번으로 마이그레이션 적용과 push-notify 재배포를 할 수 있어요. Claude에게 "배포해 줘"라고 하면 이 워크플로를 대신 실행해요.
+
+### 처음 한 번: 토큰 등록
+1. supabase.com → 오른쪽 위 계정 → **Account** → **Access Tokens** → **Generate new token** (이름은 아무거나, 예: github-actions)
+2. 저장소 → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**
+   - Name: `SUPABASE_ACCESS_TOKEN`
+   - Secret: 1번에서 만든 토큰
+3. 이 토큰은 Supabase 프로젝트 전체를 다룰 수 있어요. 채팅이나 코드에 절대 적지 마세요. DB 비밀번호는 필요 없어요.
+
+### 실행
+저장소 → **Actions** → **Deploy to Supabase** → **Run workflow**
+- `migrations`에 적용할 번호를 띄어쓰기로 (예: `024 025`). 이미 적용한 번호를 다시 넣어도 안전해요.
+- `deploy_function`을 켜 두면 push-notify도 다시 배포돼요 (Verify JWT 끔).
+- 끝나면 실행 요약에 `launch_check` 결과가 나와요. ❌ 줄이 있으면 그 줄의 안내대로 하세요.
