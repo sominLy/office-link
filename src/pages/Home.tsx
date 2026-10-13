@@ -381,7 +381,7 @@ export default function Home() {
         {/* My Tasks Summary */}
         {isWorking && <MyTasks compact />}
 
-        {/* 같이 공부하기 — 줌·구글밋 링크로 모이는 스터디룸 (출근 전에도 보인다) */}
+        {/* 얼굴 보며 같이 일해요 — 줌·구글밋 링크로 모이는 모임 (출근 전에도 보인다) */}
         <StudyRooms />
 
         {/* Office Members */}

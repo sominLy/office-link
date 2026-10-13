@@ -1,4 +1,4 @@
-// 스터디룸 — 줌·구글밋 링크로 모여 실시간으로 같이 공부한다.
+// 얼굴 보며 같이 일하기 — 줌·구글밋 링크로 모여 각자 할 일을 같이 한다.
 // 화면(홈 섹션·열기 다이얼로그)과 테스트가 같은 규칙을 쓰도록 링크 검사·상태 판단을 여기에 모은다.
 // DB 쪽 규칙은 supabase/migrations/024_study_rooms.sql의 CHECK와 같아야 한다.
 import type { StudyRoom } from '@/lib/types';
@@ -75,8 +75,8 @@ export const NEW_MEETING_LINKS: { provider: MeetingProvider; label: string; url:
   { provider: 'zoom', label: '줌 회의 시작하기', url: 'https://zoom.us/start/videomeeting' },
 ];
 
-/** 주제 칩. 고르지 않아도 된다. */
-export const STUDY_SUBJECTS = ['언어', '수리', '추리', '시각', '상식', '인성', '기타'] as const;
+/** 종류 칩. 고르지 않아도 된다. */
+export const STUDY_SUBJECTS = ['할 일', '자소서', '면접 준비', '자료 조사', '회의', '기타'] as const;
 
 export const TITLE_MAX = 40;
 export const NOTE_MAX = 120;
