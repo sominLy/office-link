@@ -28,11 +28,13 @@ import { kstToday } from '@/lib/dates';
 import { todayQuoteFrom, randomQuoteFrom } from '@/lib/quotes';
 import { checkQuote } from '@/lib/profanity';
 import { displayName, TITLE_MODES } from '@/lib/callsign';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/AppDialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/AppDialog';
 import { isSubmitEnter } from '@/lib/utils';
 import { PRESENCE_META } from '@/lib/presence';
 import { List, ListDivider } from '@/seed/ui/list';
 import { ListHeader } from '@/seed/ui/list-header';
+import { Checkbox } from '@/seed/ui/checkbox';
+import { Callout } from '@/seed/ui/callout';
 
 const STATUS_OPTIONS: StatusPreset[] = ['출근', '집중 중', '업무 중', '휴식 중', '자리 비움', '스터디/회의 중', '점심 먹는 중', '저녁 먹는 중', '야식 먹는 중'];
 
@@ -466,14 +468,19 @@ export default function Home() {
       <Dialog open={quoteDialogOpen} onOpenChange={setQuoteDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><MessageSquarePlus className="w-4 h-4 text-fg-brand" /> 응원 글귀 제보</DialogTitle>
+            <DialogTitle className="flex items-center gap-x2"><MessageSquarePlus className="w-5 h-5 text-fg-brand" /> 응원 글귀 제보</DialogTitle>
+            <DialogDescription>모두의 홈에 뜨는 "오늘의 한마디"를 함께 채워요. 따뜻한 응원 한마디를 남겨주세요 💛</DialogDescription>
           </DialogHeader>
-          <p className="text-t4 text-fg-neutral-muted -mt-1">모두의 홈에 뜨는 "오늘의 한마디"를 함께 채워요. 따뜻한 응원 한마디를 남겨주세요 💛</p>
-          <TextField value={quoteText} onValueChange={(d) => setQuoteText(d.value)}>
-<TextFieldInput onKeyDown={(e) => isSubmitEnter(e) && submitQuote()} placeholder="예: 오늘도 조용히 애쓰는 당신을 응원해요 🌱" maxLength={60} aria-label="예: 오늘도 조용히 애쓰는 당신을 응원해요 🌱" />
-</TextField>
-          <p className="text-t2 text-fg-neutral-muted">비속어·차별 표현은 자동으로 걸러져요. {quoteText.length}/60</p>
-          <ActionButton variant="brandSolid" onClick={submitQuote} disabled={!quoteText.trim()} className="w-full">등록하기</ActionButton>
+          {/* 안내·글자 수는 입력칸에 붙여 둔다. 따로 두면 본문 간격(16px)만큼 떨어진다 */}
+          <div className="flex flex-col gap-x2">
+            <TextField value={quoteText} onValueChange={(d) => setQuoteText(d.value)}>
+              <TextFieldInput onKeyDown={(e) => isSubmitEnter(e) && submitQuote()} placeholder="예: 오늘도 조용히 애쓰는 당신을 응원해요 🌱" maxLength={60} aria-label="예: 오늘도 조용히 애쓰는 당신을 응원해요 🌱" />
+            </TextField>
+            <p className="t3-regular text-fg-neutral-muted">비속어·차별 표현은 자동으로 걸러져요. {quoteText.length}/60</p>
+          </div>
+          <DialogFooter>
+            <ActionButton variant="brandSolid" size="large" onClick={submitQuote} disabled={!quoteText.trim()} className="w-full">등록하기</ActionButton>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -483,36 +490,43 @@ export default function Home() {
 
       {/* 출근 → 예상 퇴근 시간 설정 */}
       <Dialog open={clockInOpen} onOpenChange={setClockInOpen}>
-        <DialogContent className="max-w-xs">
+        <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>🟢 출근하기</DialogTitle>
+            <DialogDescription>예상 퇴근 시간을 정해두면, 그 시간에 <b>"아직 일하고 있나요?"</b> 알림을 보내드려요.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
-            <p className="text-t4 text-fg-neutral-muted">예상 퇴근 시간을 정해두면, 그 시간에 <b>"아직 일하고 있나요?"</b> 알림을 보내드려요.</p>
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-fg-brand flex-shrink-0" />
-              <input type="time" value={offTarget} onChange={(e) => setOffTarget(e.target.value)}
-                className="border border-stroke-neutral-subtle rounded-lg px-3 py-2 text-t4 flex-1" />
-            </div>
+          {/* 빠른 설정은 시간 입력칸을 채우는 버튼이라 입력칸에 붙여 한 묶음으로 둔다 */}
+          <div className="flex flex-col gap-x2">
+            <TextField value={offTarget} onValueChange={(d) => setOffTarget(d.value)} prefixIcon={<Clock />}>
+              <TextFieldInput type="time" aria-label="예상 퇴근 시간" />
+            </TextField>
             {/* 출근 시각 기준 빠른 설정 */}
-            <div className="grid grid-cols-4 gap-1.5">
+            <div className="grid grid-cols-4 gap-x2">
               {[1, 3, 5, 10].map(h => {
                 const [bh, bm] = (clockInBase || '09:00').split(':').map(Number);
                 const target = `${String((bh + h) % 24).padStart(2, '0')}:${String(bm).padStart(2, '0')}`;
+                const selected = offTarget === target;
                 return (
-                  <button key={h} onClick={() => setOffTarget(target)}
-                    className={`rounded-lg border py-1.5 text-t2 font-medium ${offTarget === target ? 'bg-bg-brand-solid text-white border-stroke-brand-solid' : 'bg-bg-layer-default text-fg-neutral-muted border-stroke-neutral-subtle'}`}>
+                  <button key={h} onClick={() => setOffTarget(target)} aria-pressed={selected}
+                    className={`h-x10 rounded-full border t4-medium transition-colors ${selected ? 'bg-bg-brand-solid text-fg-on-brand-solid border-stroke-brand-solid' : 'bg-bg-layer-default text-fg-neutral border-stroke-neutral-muted hover:bg-bg-neutral-weak'}`}>
                     +{h}시간
                   </button>
                 );
               })}
             </div>
-            <label className="flex items-center gap-2 text-t4 text-fg-neutral-muted cursor-pointer">
-              <input type="checkbox" checked={offTarget === ''} onChange={(e) => setOffTarget(e.target.checked ? '' : clockInBase)} className="accent-amber-500" />
-              일단 퇴근 시간 설정하지 않음
-            </label>
+          </div>
+          <Checkbox
+            size="large"
+            checked={offTarget === ''}
+            onCheckedChange={(checked) => setOffTarget(checked ? '' : clockInBase)}
+            label="일단 퇴근 시간 설정하지 않음"
+            // SEED large 체크박스 줄은 36px — 위아래 2px씩 더해 누르는 칸을 40px로 맞춘다
+            className="py-x0_5"
+          />
+          <DialogFooter>
             <ActionButton
               variant="brandSolid"
+              size="large"
               className="w-full"
               onClick={() => {
                 if (offTarget) {
@@ -531,7 +545,7 @@ export default function Home() {
             >
               출근하기
             </ActionButton>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -539,30 +553,34 @@ export default function Home() {
       <Dialog open={titleDialogOpen} onOpenChange={setTitleDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Tag className="w-4 h-4 text-fg-brand" /> 오피스 호칭 설정</DialogTitle>
+            <DialogTitle className="flex items-center gap-x2"><Tag className="w-5 h-5 text-fg-brand" /> 오피스 호칭 설정</DialogTitle>
+            <DialogDescription>멤버들을 어떻게 부를까요? 모든 화면에 적용돼요.</DialogDescription>
           </DialogHeader>
-          <p className="text-t4 text-fg-neutral-muted -mt-1">멤버들을 어떻게 부를까요? 모든 화면에 적용돼요.</p>
-          <div className="space-y-2">
-            {TITLE_MODES.map(m => (
-              <button
-                key={m.value}
-                onClick={() => { updateTitleMode(m.value); setTitleDialogOpen(false); }}
-                className={`w-full text-left rounded-lg border px-3.5 py-2.5 transition-colors ${
-                  office?.title_mode === m.value
-                    ? 'border-amber-400 bg-bg-brand-weak'
-                    : 'border-gray-150 hover:border-stroke-brand-weak'
-                }`}
-              >
-                <p className="text-t4 font-medium text-fg-neutral flex items-center">
-                  {m.label}
-                  {office?.title_mode === m.value && <Check className="w-4 h-4 ml-auto text-fg-brand" />}
-                </p>
-                <p className="text-t2 text-fg-neutral-muted mt-0.5">예: {m.example}</p>
-              </button>
-            ))}
+          <div className="flex flex-col gap-x2">
+            {TITLE_MODES.map(m => {
+              const selected = office?.title_mode === m.value;
+              return (
+                <button
+                  key={m.value}
+                  onClick={() => { updateTitleMode(m.value); setTitleDialogOpen(false); }}
+                  aria-pressed={selected}
+                  className={`w-full min-h-x14 flex items-center gap-x3 text-left rounded-r3 border px-x4 py-x3 transition-colors ${
+                    selected
+                      ? 'border-stroke-brand-solid bg-bg-brand-weak'
+                      : 'border-stroke-neutral-muted bg-bg-layer-default hover:border-stroke-brand-weak'
+                  }`}
+                >
+                  <span className="flex-1 min-w-0">
+                    <span className="block t5-medium text-fg-neutral">{m.label}</span>
+                    <span className="block t4-regular text-fg-neutral-muted">예: {m.example}</span>
+                  </span>
+                  {selected && <Check className="w-5 h-5 flex-shrink-0 text-fg-brand" />}
+                </button>
+              );
+            })}
           </div>
           {office?.title_mode === 'rank' && (
-            <p className="text-t2 text-fg-brand bg-bg-brand-weak rounded-lg p-2">💡 직급은 오피스에 먼저 들어온 순서대로! 1호 멤버가 사장이에요.</p>
+            <Callout description="💡 직급은 오피스에 먼저 들어온 순서대로! 1호 멤버가 사장이에요." />
           )}
         </DialogContent>
       </Dialog>

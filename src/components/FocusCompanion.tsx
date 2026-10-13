@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/AppDialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/AppDialog';
 import { ActionButton } from '@/seed/ui/action-button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Chip } from '@/seed/ui/chip';
+import { SegmentedControl, SegmentedControlItem } from '@/seed/ui/segmented-control';
 import { Play, Pause, RotateCcw, Eye, Clock } from 'lucide-react';
 import { notify } from '@/lib/notify';
 import { toast } from '@/lib/toast';
 
-import { Icon } from '@seed-design/react';
+import { Icon, PrefixIcon } from '@seed-design/react';
 // 감시 모드/퇴근 알림 설정은 localStorage에 저장 → Home의 백그라운드 타이머가 읽어 실행
 export const WATCH_KEY = 'watch_interval_min';   // 0=off
 export const CLOCKOUT_KEY = 'clockout_target';    // "HH:MM" (오늘 기준)
@@ -32,7 +33,22 @@ const PRESETS = [
   { label: '45 / 15', focus: 45, brk: 15 },
 ];
 
+type FocusTab = 'pomo' | 'watch' | 'off';
+
+// 감시 모드 시·분 선택칸. SEED TextField 모양(r3, 연한 테두리, t5)에 맞춘다.
+const PICKER_CLASS =
+  'h-x12 rounded-r3 border border-stroke-neutral-weak bg-bg-layer-default px-x4 t5-medium tabular-nums text-fg-neutral';
+
 export default function FocusCompanion({ open, onClose }: { open: boolean; onClose: () => void }) {
+  // ── 탭 ── 하단 버튼이 탭마다 달라서 시트 밖(여기)에서 들고 있는다.
+  // 예전 Tabs는 시트가 닫히면 같이 사라져 열 때마다 뽀모도로부터 보였다 → 열 때 되돌린다.
+  const [tab, setTab] = useState<FocusTab>('pomo');
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) setTab('pomo');
+  }
+
   // ── 뽀모도로 상태 ──
   const [preset, setPreset] = useState(PRESETS[0]);
   const [phase, setPhase] = useState<'focus' | 'break'>('focus');
@@ -97,120 +113,135 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
         <DialogHeader>
           <DialogTitle>🍅 집중 모드</DialogTitle>
         </DialogHeader>
-        <Tabs defaultValue="pomo">
-          <TabsList className="grid grid-cols-3 w-full">
-            <TabsTrigger value="pomo">뽀모도로</TabsTrigger>
-            <TabsTrigger value="watch">감시</TabsTrigger>
-            <TabsTrigger value="off">퇴근알림</TabsTrigger>
-          </TabsList>
 
-          {/* 뽀모도로 */}
-          <TabsContent value="pomo" className="pt-2">
-            <div className="flex flex-col items-center gap-3">
-              {/* 캐릭터 */}
-              <div className="relative">
-                <div className="text-6xl float-bob">{face}</div>
-              </div>
-              <div className="bg-bg-brand-weak text-fg-brand text-t2 rounded-full px-3 py-1">{speech}</div>
+        {/* SEED 기본 좌우 여백(24px)이면 360px 화면에서 '뽀모도로'·'퇴근알림' 칸이 시트 밖으로 넘친다 */}
+        <SegmentedControl aria-label="집중 모드 종류" value={tab} onValueChange={(v) => setTab(v as FocusTab)}>
+          <SegmentedControlItem value="pomo" className="px-x2">뽀모도로</SegmentedControlItem>
+          <SegmentedControlItem value="watch" className="px-x2">감시</SegmentedControlItem>
+          <SegmentedControlItem value="off" className="px-x2">퇴근알림</SegmentedControlItem>
+        </SegmentedControl>
 
-              {/* 진행 원형 */}
-              <div className="relative w-40 h-40">
-                <svg className="w-40 h-40 -rotate-90" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="45" fill="none" stroke="#fde8d0" strokeWidth="8" />
-                  <circle cx="50" cy="50" r="45" fill="none" stroke={phase === 'focus' ? '#ef4444' : '#22c55e'} strokeWidth="8"
-                    strokeDasharray={2 * Math.PI * 45} strokeDashoffset={2 * Math.PI * 45 * (1 - progress)}
-                    strokeLinecap="round" className="transition-all duration-1000 ease-linear" />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-t11 font-mono font-bold text-fg-neutral">{fmt(remaining)}</span>
-                  <span className={`text-t2 font-medium ${phase === 'focus' ? 'text-fg-critical-contrast' : 'text-fg-positive-contrast'}`}>
-                    {phase === 'focus' ? '집중' : '휴식'} · {rounds}세트
-                  </span>
-                </div>
-              </div>
+        {/* 뽀모도로 */}
+        {tab === 'pomo' && (
+          <div className="flex flex-col items-center gap-x3">
+            {/* 캐릭터 */}
+            <div className="text-t14 float-bob">{face}</div>
+            <div className="rounded-full bg-bg-brand-weak px-x3 py-x1 t4-medium text-fg-brand">{speech}</div>
 
-              {/* 프리셋 */}
-              <div className="flex gap-1.5">
-                {PRESETS.map(p => (
-                  <button key={p.label} onClick={() => applyPreset(p)}
-                    className={`text-t2 rounded-full px-3 py-1 border ${preset.label === p.label ? 'bg-bg-brand-solid text-white border-stroke-brand-solid' : 'bg-bg-layer-default text-fg-neutral-muted border-stroke-neutral-subtle'}`}>
-                    {p.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* 컨트롤 */}
-              <div className="flex gap-2 w-full">
-                <ActionButton variant="brandSolid" onClick={() => setRunning(r => !r)} className="flex-1">
-                  {running ? <><Pause className="w-4 h-4 mr-1" /> 일시정지</> : <><Play className="w-4 h-4 mr-1" /> 시작</>}
-                </ActionButton>
-                <ActionButton onClick={reset} variant="neutralOutline" layout="iconOnly" aria-label="타이머 처음으로" >
-              <Icon svg={<RotateCcw className="w-4 h-4" />} />
-            </ActionButton>
+            {/* 진행 원형 */}
+            <div className="relative w-40 h-40">
+              <svg className="w-40 h-40 -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="45" fill="none" strokeWidth="8" style={{ stroke: 'var(--seed-color-bg-neutral-weak)' }} />
+                <circle cx="50" cy="50" r="45" fill="none" strokeWidth="8"
+                  style={{ stroke: phase === 'focus' ? 'var(--seed-color-fg-critical)' : 'var(--seed-color-fg-positive)' }}
+                  strokeDasharray={2 * Math.PI * 45} strokeDashoffset={2 * Math.PI * 45 * (1 - progress)}
+                  strokeLinecap="round" className="transition-all duration-1000 ease-linear" />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="t11-bold tabular-nums text-fg-neutral">{fmt(remaining)}</span>
+                <span className={`t4-medium ${phase === 'focus' ? 'text-fg-critical-contrast' : 'text-fg-positive-contrast'}`}>
+                  {phase === 'focus' ? '집중' : '휴식'} · {rounds}세트
+                </span>
               </div>
             </div>
-          </TabsContent>
 
-          {/* 감시 모드 */}
-          <TabsContent value="watch" className="pt-2 space-y-3">
-            <div className="flex flex-col items-center gap-1 py-1">
+            {/* 프리셋 — 이미 고른 것을 다시 눌러도 타이머를 처음으로 돌린다(예전 버튼과 같게) */}
+            <div className="flex gap-x2">
+              {PRESETS.map(p => (
+                <Chip.Toggle key={p.label} size="large" checked={preset.label === p.label} onCheckedChange={() => applyPreset(p)}>
+                  <Chip.Label>{p.label}</Chip.Label>
+                </Chip.Toggle>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 감시 모드 */}
+        {tab === 'watch' && (
+          <div className="flex flex-col gap-x4">
+            <div className="flex flex-col items-center gap-x1 text-center">
               <div className="text-t14 float-bob">👁</div>
-              <p className="text-t4 font-semibold text-fg-neutral-muted">판옵티콘 감시 모드</p>
-              <p className="text-t2 text-fg-neutral-muted text-center">시간(0~6)과 분(5분 단위)을 정하면<br/>그 간격마다 "아직 집중 중?" 알림이 와요.</p>
+              <p className="t5-bold text-fg-neutral">판옵티콘 감시 모드</p>
+              <p className="t4-regular text-fg-neutral-muted">시간(0~6)과 분(5분 단위)을 정하면<br/>그 간격마다 "아직 집중 중?" 알림이 와요.</p>
             </div>
             {/* 시:분 선택 · 시간 0~6, 분 5분 단위 (최소 5분) */}
-            <div className="flex items-end justify-center gap-2">
-              <label className="flex flex-col items-center gap-1">
-                <span className="text-t1 text-fg-neutral-muted">시간</span>
-                <select value={Math.floor(draft / 60)}
-                  onChange={(e) => setWatchDraft(Math.max(5, Number(e.target.value) * 60 + (draft % 60)))}
-                  className="border border-stroke-neutral-subtle rounded-lg px-3 py-2 text-t6 font-bold text-fg-brand tabular-nums">
-                  {[0, 1, 2, 3, 4, 5, 6].map(h => <option key={h} value={h}>{String(h).padStart(2, '0')}</option>)}
-                </select>
-              </label>
-              <span className="text-t9 font-bold text-amber-400 pb-1.5">:</span>
-              <label className="flex flex-col items-center gap-1">
-                <span className="text-t1 text-fg-neutral-muted">분</span>
-                <select value={draft % 60}
-                  onChange={(e) => setWatchDraft(Math.max(5, Math.floor(draft / 60) * 60 + Number(e.target.value)))}
-                  className="border border-stroke-neutral-subtle rounded-lg px-3 py-2 text-t6 font-bold text-fg-brand tabular-nums">
-                  {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => <option key={m} value={m}>{String(m).padStart(2, '0')}</option>)}
-                </select>
-              </label>
+            <div className="flex flex-col items-center gap-x2">
+              <div className="flex items-end justify-center gap-x2">
+                <label className="flex flex-col items-center gap-x1">
+                  <span className="t4-medium text-fg-neutral-muted">시간</span>
+                  <select value={Math.floor(draft / 60)}
+                    onChange={(e) => setWatchDraft(Math.max(5, Number(e.target.value) * 60 + (draft % 60)))}
+                    className={PICKER_CLASS}>
+                    {[0, 1, 2, 3, 4, 5, 6].map(h => <option key={h} value={h}>{String(h).padStart(2, '0')}</option>)}
+                  </select>
+                </label>
+                <span aria-hidden="true" className="flex h-x12 items-center t5-bold text-fg-neutral-subtle">:</span>
+                <label className="flex flex-col items-center gap-x1">
+                  <span className="t4-medium text-fg-neutral-muted">분</span>
+                  <select value={draft % 60}
+                    onChange={(e) => setWatchDraft(Math.max(5, Math.floor(draft / 60) * 60 + Number(e.target.value)))}
+                    className={PICKER_CLASS}>
+                    {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => <option key={m} value={m}>{String(m).padStart(2, '0')}</option>)}
+                  </select>
+                </label>
+              </div>
+              <p className="t4-regular text-fg-neutral-muted">→ {humanMin(draft)}마다</p>
             </div>
-            <p className="text-center text-t2 text-fg-neutral-muted">→ {humanMin(draft)}마다</p>
-            <div className="flex gap-2">
-              <ActionButton variant="brandSolid" onClick={() => setWatchMode(draft)} className="flex-1">
-                {watch === draft && watch > 0 ? '이 간격으로 켜짐' : '이 간격으로 켜기'}
-              </ActionButton>
-              {watch > 0 && (
-                <ActionButton variant="neutralOutline" className="text-fg-neutral-muted" onClick={() => setWatchMode(0)}>끄기</ActionButton>
-              )}
-            </div>
-            <p className="text-t2 text-center text-fg-neutral-muted">
+            <p className="t4-medium text-center text-fg-neutral">
               {watch ? `🟢 켜짐 · ${humanMin(watch)}마다` : '⚪ 꺼짐'}
             </p>
-            <p className="text-t1 text-fg-brand bg-bg-brand-weak rounded-lg p-2 flex items-center gap-1">
-              <Eye className="w-3.5 h-3.5" /> 알림은 앱이 켜져 있을 때 와요. 푸시 알림이 켜져 있어야 백그라운드에서도 옵니다.
+            <p className="flex items-start gap-x2 rounded-r3 bg-bg-brand-weak p-x3 t4-regular text-fg-brand">
+              <Eye className="w-4 h-4 shrink-0 mt-0.5" /> 알림은 앱이 켜져 있을 때 와요. 푸시 알림이 켜져 있어야 백그라운드에서도 옵니다.
             </p>
-          </TabsContent>
+          </div>
+        )}
 
-          {/* 퇴근 알림 */}
-          <TabsContent value="off" className="pt-2 space-y-3">
-            <div className="flex flex-col items-center gap-1 py-1">
+        {/* 퇴근 알림 */}
+        {tab === 'off' && (
+          <div className="flex flex-col gap-x4">
+            <div className="flex flex-col items-center gap-x1 text-center">
               <div className="text-t14 float-bob">🏃</div>
-              <p className="text-t4 font-semibold text-fg-neutral-muted">예상 퇴근 시간 알림</p>
-              <p className="text-t2 text-fg-neutral-muted text-center">예상 퇴근 시간을 정해두면, 그 시간에<br/>"아직 일하고 있나요?" 알림이 와요.</p>
+              <p className="t5-bold text-fg-neutral">예상 퇴근 시간 알림</p>
+              <p className="t4-regular text-fg-neutral-muted">예상 퇴근 시간을 정해두면, 그 시간에<br/>"아직 일하고 있나요?" 알림이 와요.</p>
             </div>
-            <div className="flex items-center gap-2 justify-center">
-              <Clock className="w-4 h-4 text-fg-brand" />
-              <input type="time" value={clockout} onChange={(e) => saveClockout(e.target.value)}
-                className="border border-stroke-neutral-subtle rounded-lg px-3 py-2 text-t4" />
-              {clockout && <ActionButton variant="ghost" size="small" className="text-fg-neutral-muted" onClick={() => saveClockout('')}>끄기</ActionButton>}
+            {/* 바꿀 때마다 바로 저장된다. SEED TextField 모양(52px, r3, t5, 포커스 시 진한 테두리)에 맞춘 네이티브 입력 */}
+            <div className="flex items-center gap-x2">
+              <label className="flex h-x13 min-w-0 flex-1 items-center gap-x2 rounded-r3 border border-stroke-neutral-weak bg-bg-layer-default px-x4 focus-within:border-stroke-neutral-contrast">
+                <Clock className="w-5 h-5 shrink-0 text-fg-brand" />
+                <input type="time" value={clockout} onChange={(e) => saveClockout(e.target.value)} aria-label="예상 퇴근 시간"
+                  className="min-w-0 flex-1 bg-transparent t5-regular text-fg-neutral outline-none" />
+              </label>
+              {clockout && <ActionButton size="large" variant="neutralWeak" onClick={() => saveClockout('')}>끄기</ActionButton>}
             </div>
-            <p className="text-t2 text-center text-fg-neutral-muted">{clockout ? `🟢 ${clockout}에 알림 예정` : '⚪ 설정 안 됨'}</p>
-          </TabsContent>
-        </Tabs>
+            <p className="t4-medium text-center text-fg-neutral">{clockout ? `🟢 ${clockout}에 알림 예정` : '⚪ 설정 안 됨'}</p>
+          </div>
+        )}
+
+        {tab === 'pomo' && (
+          <DialogFooter>
+            <div className="flex gap-x2">
+              <ActionButton size="large" variant="neutralWeak" layout="iconOnly" onClick={reset} aria-label="타이머 처음으로">
+                <Icon svg={<RotateCcw />} />
+              </ActionButton>
+              <ActionButton size="large" variant="brandSolid" onClick={() => setRunning(r => !r)} className="flex-1">
+                <PrefixIcon svg={running ? <Pause /> : <Play />} />
+                {running ? '일시정지' : '시작'}
+              </ActionButton>
+            </div>
+          </DialogFooter>
+        )}
+        {tab === 'watch' && (
+          <DialogFooter>
+            <div className="flex gap-x2">
+              {watch > 0 && (
+                <ActionButton size="large" variant="neutralWeak" onClick={() => setWatchMode(0)}>끄기</ActionButton>
+              )}
+              <ActionButton size="large" variant="brandSolid" onClick={() => setWatchMode(draft)} className="flex-1">
+                {watch === draft && watch > 0 ? '이 간격으로 켜짐' : '이 간격으로 켜기'}
+              </ActionButton>
+            </div>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );

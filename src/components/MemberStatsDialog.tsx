@@ -3,13 +3,15 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { MemberStatus, Task } from '@/lib/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/AppDialog';
-import { Badge } from '@/components/ui/badge';
+import { ActionButton } from '@/seed/ui/action-button';
+import { ReactionButton } from '@/seed/ui/reaction-button';
+import { Count } from '@seed-design/react';
 import { kstStartOfTodayISO, kstStartOfWeekISO, getWeekStart } from '@/lib/dates';
 import { defaultAvatar } from '@/lib/avatar';
 import { AvatarIcon } from '@/components/illustrations/RewardIcon';
 import { displayName } from '@/lib/callsign';
 import { useOffice } from '@/contexts/OfficeContext';
-import { Clock, Target, CheckCircle2, Circle, CalendarDays } from 'lucide-react';
+import { Clock, Target, CheckCircle2, Circle, CalendarDays, type LucideIcon } from 'lucide-react';
 import { toast } from '@/lib/toast';
 import { track } from '@/lib/funnel';
 
@@ -46,6 +48,11 @@ function sumSeconds(rows: { started_at: string; ended_at: string | null }[]): nu
 
 const CHEER_EMOJIS = ['👍', '🔥', '💪'];
 const WAVE_EMOJIS = ['👋', '🙌', '☕', '💛'];
+
+// 블록 제목은 한 모양으로 통일한다. 예전에는 12px 라벨이 카드 라벨·값과 섞여 위계가 안 보였다.
+const SECTION_LABEL = 't4-bold text-fg-neutral-muted';
+// 작은 배지(분류·진행 중·완료 수). 시트 안 최소 크기 t3에 맞춘다.
+const TAG = 'inline-flex items-center rounded-r1_5 px-x2 py-x0_5 t3-medium';
 
 interface Reaction { task_id: string; user_id: string; emoji: string }
 
@@ -191,166 +198,195 @@ export default function MemberStatsDialog({ member, officeId, onClose }: Props) 
   const doneCount = stats?.weekTasks.filter(t => t.status === 'done').length ?? 0;
 
   return (
-    <Dialog open={!!member} onOpenChange={(open) => !open && onClose()}>
+    // 할 일 목록이 길어서 절반 높이로 열고 끌어올려 펼친다(하단 고정 버튼이 없는 시트라 가능)
+    <Dialog open={!!member} onOpenChange={(open) => !open && onClose()} expandable>
       <DialogContent className="max-w-sm">
+        {/* 제목은 DialogContent의 직계 자식이어야 한다. Fragment 안에 두면 AppDialog가 제목을
+            못 찾아 아바타와 이름이 본문에 따로 떨어져 그려졌다. */}
+        {member && (
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-x3">
+              <span className="w-x10 h-x10 shrink-0 rounded-full bg-bg-brand-weak flex items-center justify-center overflow-hidden">
+                {member.avatar_url ? (
+                  <img src={member.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <AvatarIcon name={defaultAvatar(member.nickname)} className="w-x9 h-x9" />
+                )}
+              </span>
+              <span className="min-w-0">
+                {displayName(member.nickname, office?.title_mode, member.rank_index)}의 기록
+              </span>
+            </DialogTitle>
+          </DialogHeader>
+        )}
+
         {member && (
           <>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <span className="w-9 h-9 rounded-full bg-bg-brand-weak flex items-center justify-center text-t6 overflow-hidden">
-                  {member.avatar_url ? (
-                    <img src={member.avatar_url} alt="" className="w-9 h-9 rounded-full object-cover" />
-                  ) : (
-                    <AvatarIcon name={defaultAvatar(member.nickname)} className="w-x8 h-x8" />
-                  )}
-                </span>
-                {displayName(member.nickname, office?.title_mode, member.rank_index)}의 기록
-              </DialogTitle>
-            </DialogHeader>
-
-            {/* 인사 보내기 (내 기록이 아닐 때만) */}
+            {/* 인사 보내기 (내 기록이 아닐 때만). 라벨을 이모지 줄 위에 두어야 방장의
+                퇴근시키기 버튼까지 360px 폭 한 줄에 들어간다. */}
             {user && member.user_id !== user.id && (
-              <div className="flex items-center gap-2 -mt-1">
-                <span className="text-t2 text-fg-neutral-muted">인사 보내기</span>
-                {WAVE_EMOJIS.map(e => (
-                  <button
-                    key={e}
-                    onClick={() => sendWave(e)}
-                    className="text-t6 hover:scale-125 transition-transform"
-                    title={`${e} 보내기`}
-                  >
-                    {e}
-                  </button>
-                ))}
-                {myRole === 'admin' && member.is_working && (
-                  <button
-                    onClick={forceClockOut}
-                    className="ml-auto text-t2 text-fg-critical-contrast border border-stroke-critical-weak rounded-full px-2 py-0.5 hover:bg-bg-critical-weak"
-                    title="깜빡한 멤버를 대신 퇴근시켜요"
-                  >
-                    퇴근시키기
-                  </button>
-                )}
-              </div>
+              <section className="flex flex-col gap-x2">
+                <h3 className={SECTION_LABEL}>인사 보내기</h3>
+                <div className="flex items-center gap-x2">
+                  {WAVE_EMOJIS.map(e => (
+                    <button
+                      key={e}
+                      onClick={() => sendWave(e)}
+                      className="w-x10 h-x10 shrink-0 rounded-full bg-bg-neutral-weak flex items-center justify-center text-t7 transition hover:bg-bg-neutral-weak-pressed active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stroke-focus-ring"
+                      title={`${e} 보내기`}
+                    >
+                      {e}
+                    </button>
+                  ))}
+                  {myRole === 'admin' && member.is_working && (
+                    <ActionButton
+                      variant="neutralOutline"
+                      size="medium"
+                      onClick={forceClockOut}
+                      className="ml-auto"
+                      title="깜빡한 멤버를 대신 퇴근시켜요"
+                    >
+                      퇴근시키기
+                    </ActionButton>
+                  )}
+                </div>
+              </section>
             )}
 
             {!stats ? (
-              <p className="text-t4 text-fg-neutral-muted text-center py-6">불러오는 중...</p>
+              <p className="t4-regular text-fg-neutral-muted text-center py-x6">불러오는 중...</p>
             ) : (
-              <div className="space-y-4">
+              <>
                 {/* 지금 집중 중 */}
                 {stats.isFocusingNow && (
-                  <div className="bg-bg-critical-weak border border-stroke-critical-weak rounded-lg p-3 flex items-center gap-2">
-                    <span className="relative flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                  <div className="flex items-center gap-x2 rounded-r3 border border-stroke-critical-weak bg-bg-critical-weak px-x4 py-x3">
+                    <span className="relative flex w-x2_5 h-x2_5 shrink-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-bg-critical-solid opacity-75" />
+                      <span className="relative inline-flex w-x2_5 h-x2_5 rounded-full bg-bg-critical-solid" />
                     </span>
-                    <p className="text-t4 text-fg-critical-contrast">
+                    <p className="t4-regular text-fg-critical-contrast">
                       지금 <b>{stats.focusingTaskTitle || '자유 집중'}</b>에 집중하고 있어요 🔥
                     </p>
                   </div>
                 )}
 
                 {/* 오늘 */}
-                <div>
-                  <p className="text-t2 font-medium text-fg-neutral-muted mb-2">오늘</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-bg-brand-weak rounded-lg p-3">
-                      <div className="flex items-center gap-1.5 text-fg-brand text-t2 mb-1">
-                        <Clock className="w-3.5 h-3.5" /> 근무
-                      </div>
-                      <p className="font-semibold text-fg-neutral text-t4">{fmt(stats.todayWorkSeconds)}</p>
-                    </div>
-                    <div className="bg-bg-critical-weak rounded-lg p-3">
-                      <div className="flex items-center gap-1.5 text-fg-critical-contrast text-t2 mb-1">
-                        <Target className="w-3.5 h-3.5" /> 집중
-                      </div>
-                      <p className="font-semibold text-fg-neutral text-t4">{fmt(stats.todayFocusSeconds)}</p>
-                    </div>
+                <section className="flex flex-col gap-x2">
+                  <h3 className={SECTION_LABEL}>오늘</h3>
+                  <div className="grid grid-cols-2 gap-x2">
+                    <StatCard tone="brand" icon={Clock} label="근무" value={fmt(stats.todayWorkSeconds)} />
+                    <StatCard tone="critical" icon={Target} label="집중" value={fmt(stats.todayFocusSeconds)} />
                   </div>
-                </div>
+                </section>
 
                 {/* 이번 주 */}
-                <div>
-                  <p className="text-t2 font-medium text-fg-neutral-muted mb-2">이번 주</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-bg-informative-weak rounded-lg p-3">
-                      <div className="flex items-center gap-1.5 text-fg-informative-contrast text-t2 mb-1">
-                        <CalendarDays className="w-3.5 h-3.5" /> 출근
-                      </div>
-                      <p className="font-semibold text-fg-neutral text-t4">{stats.weekWorkDays}일</p>
-                    </div>
-                    <div className="bg-bg-critical-weak rounded-lg p-3">
-                      <div className="flex items-center gap-1.5 text-fg-critical-contrast text-t2 mb-1">
-                        <Target className="w-3.5 h-3.5" /> 총 집중
-                      </div>
-                      <p className="font-semibold text-fg-neutral text-t4">{fmt(stats.weekFocusSeconds)}</p>
-                    </div>
+                <section className="flex flex-col gap-x2">
+                  <h3 className={SECTION_LABEL}>이번 주</h3>
+                  <div className="grid grid-cols-2 gap-x2">
+                    <StatCard tone="informative" icon={CalendarDays} label="출근" value={`${stats.weekWorkDays}일`} />
+                    <StatCard tone="critical" icon={Target} label="총 집중" value={fmt(stats.weekFocusSeconds)} />
                   </div>
-                </div>
+                </section>
 
                 {/* 이번 주 할 일 */}
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <p className="text-t2 font-medium text-fg-neutral-muted">이번 주 할 일</p>
-                    <Badge variant="secondary" className="text-t2 bg-bg-brand-weak text-fg-brand">
+                <section className="flex flex-col gap-x2">
+                  <div className="flex items-center gap-x2">
+                    <h3 className={SECTION_LABEL}>이번 주 할 일</h3>
+                    <span className={`${TAG} bg-bg-brand-weak text-fg-brand tabular-nums`}>
                       {doneCount}/{stats.weekTasks.length}
-                    </Badge>
+                    </span>
                   </div>
                   {stats.weekTasks.length === 0 ? (
-                    <p className="text-t4 text-fg-neutral-muted text-center py-2">등록된 할 일이 없어요</p>
+                    <p className="t4-regular text-fg-neutral-muted text-center py-x4">등록된 할 일이 없어요</p>
                   ) : (
-                    <ul className="space-y-1.5 max-h-52 overflow-y-auto">
+                    // 목록 안에 따로 스크롤을 두지 않는다. 시트를 끌어올려 본문째 스크롤한다.
+                    <ul className="flex flex-col">
                       {stats.weekTasks.map(task => (
-                        <li key={task.id} className="flex items-center gap-2 text-t4 flex-wrap">
+                        <li
+                          key={task.id}
+                          className="flex items-start gap-x3 py-x3 border-t border-stroke-neutral-subtle first:border-t-0 first:pt-0 last:pb-0"
+                        >
+                          {/* 22px 행간의 첫 줄 가운데에 맞춘다 */}
                           {task.status === 'done' ? (
-                            <CheckCircle2 className="w-4 h-4 text-fg-positive flex-shrink-0" />
+                            <CheckCircle2 className="w-5 h-5 mt-px text-fg-positive shrink-0" />
                           ) : (
-                            <Circle className="w-4 h-4 text-fg-neutral-subtle flex-shrink-0" />
+                            <Circle className="w-5 h-5 mt-px text-fg-neutral-subtle shrink-0" />
                           )}
-                          <span className={`truncate ${task.status === 'done' ? 'line-through text-fg-neutral-muted' : 'text-fg-neutral-muted'}`}>
-                            {task.title}
-                          </span>
-                          {task.category && (
-                            <Badge variant="outline" className="text-t1 bg-bg-brand-weak text-fg-brand border-stroke-brand-weak flex-shrink-0">
-                              {task.category}
-                            </Badge>
-                          )}
-                          {task.status === 'in_progress' && (
-                            <Badge variant="outline" className="text-t1 bg-bg-informative-weak text-fg-informative-contrast border-stroke-informative-weak flex-shrink-0">진행 중</Badge>
-                          )}
-                          {/* 이모지 응원 버튼 */}
-                          <span className="flex items-center gap-1 ml-auto">
-                            {CHEER_EMOJIS.map(emoji => {
-                              const all = reactions.filter(r => r.task_id === task.id && r.emoji === emoji);
-                              const mine = !!user && all.some(r => r.user_id === user.id);
-                              return (
-                                <button
-                                  key={emoji}
-                                  onClick={() => toggleReaction(task, emoji)}
-                                  className={`text-t2 rounded-full px-1.5 py-0.5 border transition-colors ${
-                                    mine
-                                      ? 'bg-bg-brand-weak border-stroke-brand-weak'
-                                      : all.length > 0
-                                        ? 'bg-bg-brand-weak border-stroke-brand-weak hover:bg-bg-brand-weak-pressed'
-                                        : 'bg-bg-layer-default border-gray-150 opacity-40 hover:opacity-100 hover:border-stroke-brand-weak'
-                                  }`}
-                                >
-                                  {emoji}{all.length > 0 && <span className="ml-0.5 text-t1 text-fg-neutral-muted">{all.length}</span>}
-                                </button>
-                              );
-                            })}
-                          </span>
+                          <div className="flex-1 min-w-0 flex flex-col gap-x2">
+                            <p
+                              className={
+                                task.status === 'done'
+                                  ? 't5-regular text-fg-neutral-muted line-through'
+                                  : 't5-regular text-fg-neutral'
+                              }
+                            >
+                              {task.title}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-x1_5">
+                              {task.category && (
+                                <span className={`${TAG} bg-bg-brand-weak text-fg-brand`}>{task.category}</span>
+                              )}
+                              {task.status === 'in_progress' && (
+                                <span className={`${TAG} bg-bg-informative-weak text-fg-informative-contrast`}>진행 중</span>
+                              )}
+                              {/* 이모지 응원 버튼. 내가 누른 것은 눌린 상태(브랜드 테두리), 남이 누른 것은 숫자로 보인다 */}
+                              <span className="flex items-center gap-x1 ml-auto">
+                                {CHEER_EMOJIS.map(emoji => {
+                                  const all = reactions.filter(r => r.task_id === task.id && r.emoji === emoji);
+                                  const mine = !!user && all.some(r => r.user_id === user.id);
+                                  return (
+                                    <ReactionButton
+                                      key={emoji}
+                                      size="small"
+                                      pressed={mine}
+                                      onClick={() => toggleReaction(task, emoji)}
+                                    >
+                                      {/* 버튼 기본 글자(t3)로는 이모지가 너무 작다 */}
+                                      <span className="text-t5">{emoji}</span>
+                                      {all.length > 0 && <Count>{all.length}</Count>}
+                                    </ReactionButton>
+                                  );
+                                })}
+                              </span>
+                            </div>
+                          </div>
                         </li>
                       ))}
                     </ul>
                   )}
-                </div>
-              </div>
+                </section>
+              </>
             )}
           </>
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+const STAT_TONES = {
+  brand: { bg: 'bg-bg-brand-weak', fg: 'text-fg-brand' },
+  critical: { bg: 'bg-bg-critical-weak', fg: 'text-fg-critical-contrast' },
+  informative: { bg: 'bg-bg-informative-weak', fg: 'text-fg-informative-contrast' },
+} as const;
+
+interface StatCardProps {
+  tone: keyof typeof STAT_TONES;
+  icon: LucideIcon;
+  label: string;
+  value: string;
+}
+
+/** 통계 카드 하나. 라벨은 카드 색, 값은 크게 — 네 카드가 같은 모양이어야 한눈에 비교된다. */
+function StatCard({ tone, icon: Icon, label, value }: StatCardProps) {
+  const { bg, fg } = STAT_TONES[tone];
+  return (
+    <div className={`flex flex-col gap-x1 rounded-r3 p-x4 ${bg}`}>
+      <p className={`flex items-center gap-x1_5 t4-medium ${fg}`}>
+        <Icon className="w-4 h-4 shrink-0" />
+        {label}
+      </p>
+      <p className="t7-bold tabular-nums text-fg-neutral">{value}</p>
+    </div>
   );
 }

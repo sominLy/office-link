@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/AppDialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/AppDialog';
 import { ActionButton } from '@/seed/ui/action-button';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { SegmentedControl, SegmentedControlItem } from '@/seed/ui/segmented-control';
+import { PrefixIcon } from '@seed-design/react';
 import { UtensilsCrossed, Dices } from 'lucide-react';
 
 const MENUS: Record<string, string[]> = {
@@ -43,30 +44,31 @@ export default function MenuPickDialog({ open, onClose }: { open: boolean; onClo
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-xs text-center">
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()} headerAlign="center">
+      <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-center gap-2">
-            <UtensilsCrossed className="w-4 h-4 text-fg-brand" /> 메뉴 추천
+          <DialogTitle className="flex items-center justify-center gap-x2 text-center">
+            <UtensilsCrossed className="w-5 h-5 text-fg-brand" /> 메뉴 추천
           </DialogTitle>
         </DialogHeader>
-        <Tabs value={tab} onValueChange={changeTab}>
-          <TabsList className="grid w-full grid-cols-3">
-            {Object.entries(TAB_LABELS).map(([k, v]) => (
-              <TabsTrigger key={k} value={k}>{v.label}</TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-        <div className="py-6">
-          <p className="text-t4 text-fg-neutral-muted mb-2">{TAB_LABELS[tab].title}</p>
-          <p className={`text-t11 font-bold ${rolling ? 'text-amber-400' : 'text-fg-neutral'}`}>
+        <SegmentedControl aria-label="끼니" value={tab} onValueChange={changeTab}>
+          {Object.entries(TAB_LABELS).map(([k, v]) => (
+            <SegmentedControlItem key={k} value={k}>{v.label}</SegmentedControlItem>
+          ))}
+        </SegmentedControl>
+        {/* 뽑기 결과 자리. 굴리는 동안은 브랜드색으로 바뀌며 돌아간다 */}
+        <div className="flex flex-col items-center gap-x2 rounded-r3 bg-bg-neutral-weak px-x4 py-x8 text-center">
+          <p className="t4-regular text-fg-neutral-muted">{TAB_LABELS[tab].title}</p>
+          <p className={`t11-bold ${rolling ? 'text-fg-brand' : 'text-fg-neutral'}`}>
             {pick || '🎲'}
           </p>
         </div>
-        <ActionButton variant="brandSolid" onClick={roll} disabled={rolling} className="w-full">
-          <Dices className="w-4 h-4 mr-1" />
-          {pick ? '다시 뽑기' : '뽑기'}
-        </ActionButton>
+        <DialogFooter>
+          <ActionButton size="large" variant="brandSolid" onClick={roll} disabled={rolling} className="w-full">
+            <PrefixIcon svg={<Dices />} />
+            {pick ? '다시 뽑기' : '뽑기'}
+          </ActionButton>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
