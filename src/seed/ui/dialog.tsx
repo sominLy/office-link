@@ -7,6 +7,7 @@ import IconXmarkLine from "@karrotmarket/react-monochrome-icon/IconXmarkLine";
 import { Dialog, Icon } from "@seed-design/react";
 import { forwardRef } from "react";
 import { ActionButton, type ActionButtonProps } from "./action-button";
+import { overlayLayerStyle } from "./overlay-layer";
 import type * as React from "react";
 
 export interface DialogRootProps extends Dialog.RootProps {
@@ -57,7 +58,7 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
     const shouldRenderHeader = title || description || showCloseButton;
 
     return (
-      <Dialog.Positioner style={{ "--layer-index": layerIndex } as React.CSSProperties}>
+      <Dialog.Positioner style={overlayLayerStyle(layerIndex)}>
         <Dialog.Backdrop />
         <Dialog.Content ref={ref} {...otherProps}>
           {shouldRenderHeader && (

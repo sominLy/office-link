@@ -7,6 +7,7 @@ import IconXmarkLine from "@karrotmarket/react-monochrome-icon/IconXmarkLine";
 import { Icon, BottomSheet as SeedBottomSheet, VisuallyHidden } from "@seed-design/react";
 import type * as React from "react";
 import { forwardRef } from "react";
+import { overlayLayerStyle } from "./overlay-layer";
 
 export interface BottomSheetRootProps extends SeedBottomSheet.RootProps {}
 
@@ -68,7 +69,7 @@ export const BottomSheetContent = forwardRef<HTMLDivElement, BottomSheetContentP
     const shouldRenderHeader = title || description;
 
     return (
-      <SeedBottomSheet.Positioner style={{ "--layer-index": layerIndex } as React.CSSProperties}>
+      <SeedBottomSheet.Positioner style={overlayLayerStyle(layerIndex)}>
         <SeedBottomSheet.Backdrop />
         <SeedBottomSheet.Content ref={ref} {...otherProps}>
           {showHandle && <SeedBottomSheet.Handle />}

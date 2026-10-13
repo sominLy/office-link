@@ -6,7 +6,7 @@
 import { AlertDialog } from "@seed-design/react";
 import { forwardRef } from "react";
 import { ActionButton, type ActionButtonProps } from "./action-button";
-import type * as React from "react";
+import { overlayLayerStyle } from "./overlay-layer";
 
 export interface AlertDialogRootProps extends AlertDialog.RootProps {}
 
@@ -22,7 +22,7 @@ export interface AlertDialogContentProps extends AlertDialog.ContentProps {
 export const AlertDialogContent = forwardRef<HTMLDivElement, AlertDialogContentProps>(
   ({ children, layerIndex, ...otherProps }, ref) => {
     return (
-      <AlertDialog.Positioner style={{ "--layer-index": layerIndex } as React.CSSProperties}>
+      <AlertDialog.Positioner style={overlayLayerStyle(layerIndex)}>
         <AlertDialog.Backdrop />
         <AlertDialog.Content ref={ref} {...otherProps}>
           {children}

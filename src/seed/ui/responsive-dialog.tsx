@@ -13,6 +13,7 @@ import {
 import type * as React from "react";
 import { forwardRef } from "react";
 import { ActionButton, type ActionButtonProps } from "./action-button";
+import { overlayLayerStyle } from "./overlay-layer";
 
 export interface ResponsiveDialogRootProps extends SeedResponsiveDialog.RootProps {}
 
@@ -53,6 +54,15 @@ export interface ResponsiveDialogContentProps
    * @default false
    */
   showHandle?: boolean;
+
+  /** 바텀시트 손잡이에 넘길 prop. 끌어올리는 시트가 손잡이 탭으로 높이를 바꿀 때 쓴다. */
+  handleProps?: SeedResponsiveDialog.HandleProps;
+
+  /** 제목(h2)에 더할 className. 아이콘·아바타를 제목 글자와 한 줄에 놓을 때 쓴다. */
+  titleClassName?: string;
+
+  /** 설명(p)에 더할 className. sr-only로 화면에서 숨기는 설명도 있다. */
+  descriptionClassName?: string;
 }
 
 export const ResponsiveDialogContent = forwardRef<HTMLDivElement, ResponsiveDialogContentProps>(
@@ -64,6 +74,9 @@ export const ResponsiveDialogContent = forwardRef<HTMLDivElement, ResponsiveDial
       layerIndex,
       showCloseButton = true,
       showHandle = false,
+      handleProps,
+      titleClassName,
+      descriptionClassName,
       ...otherProps
     },
     ref,
@@ -86,15 +99,17 @@ export const ResponsiveDialogContent = forwardRef<HTMLDivElement, ResponsiveDial
 
       return (
         <SeedResponsiveDialog.Positioner
-          style={{ "--layer-index": layerIndex } as React.CSSProperties}
+          style={overlayLayerStyle(layerIndex)}
         >
           <SeedResponsiveDialog.Backdrop />
           <SeedResponsiveDialog.Content ref={ref} {...otherProps}>
-            {showHandle && <SeedResponsiveDialog.Handle />}
+            {showHandle && <SeedResponsiveDialog.Handle {...handleProps} />}
             {shouldRenderHeader && (
               <SeedResponsiveDialog.Header>
                 {title ? (
-                  <SeedResponsiveDialog.Title>{title}</SeedResponsiveDialog.Title>
+                  <SeedResponsiveDialog.Title className={titleClassName}>
+                    {title}
+                  </SeedResponsiveDialog.Title>
                 ) : (
                   <VisuallyHidden asChild>
                     <SeedResponsiveDialog.Title>
@@ -103,7 +118,9 @@ export const ResponsiveDialogContent = forwardRef<HTMLDivElement, ResponsiveDial
                   </VisuallyHidden>
                 )}
                 {description && (
-                  <SeedResponsiveDialog.Description>{description}</SeedResponsiveDialog.Description>
+                  <SeedResponsiveDialog.Description className={descriptionClassName}>
+                    {description}
+                  </SeedResponsiveDialog.Description>
                 )}
               </SeedResponsiveDialog.Header>
             )}
@@ -122,15 +139,19 @@ export const ResponsiveDialogContent = forwardRef<HTMLDivElement, ResponsiveDial
 
     return (
       <SeedResponsiveDialog.Positioner
-        style={{ "--layer-index": layerIndex } as React.CSSProperties}
+        style={overlayLayerStyle(layerIndex)}
       >
         <SeedResponsiveDialog.Backdrop />
         <SeedResponsiveDialog.Content ref={ref} {...otherProps}>
           {shouldRenderHeader && (
             <SeedResponsiveDialog.Header>
-              {title && <SeedResponsiveDialog.Title>{title}</SeedResponsiveDialog.Title>}
+              {title && (
+                <SeedResponsiveDialog.Title className={titleClassName}>{title}</SeedResponsiveDialog.Title>
+              )}
               {description && (
-                <SeedResponsiveDialog.Description>{description}</SeedResponsiveDialog.Description>
+                <SeedResponsiveDialog.Description className={descriptionClassName}>
+                  {description}
+                </SeedResponsiveDialog.Description>
               )}
               {showCloseButton && (
                 <SeedResponsiveDialog.CloseButton aria-label="닫기">
