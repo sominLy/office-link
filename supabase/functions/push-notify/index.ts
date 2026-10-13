@@ -275,11 +275,23 @@ Deno.serve(async (req) => {
       .from('app_admins').select('user_id').eq('user_id', actor_id).maybeSingle();
     if (!admin) return new Response('forbidden', { status: 403, headers: cors });
     const { data: fb } = await supabase
-      .from('feedback').select('user_id, reply, status')
+      .from('feedback').select('user_id, reply, status, notify_on_done')
       .eq('id', feedback_id).maybeSingle();
     if (!fb) return new Response('not found', { status: 404, headers: cors });
     if (fb.user_id === actor_id) return new Response('ok', { headers: cors });
     const reply = clip(fb.reply, 80);
+    if (fb.status === 'applied') {
+      // 바란 것이 앱에 들어갔다. 알려 달라고 한 사람에게만, 홈을 열게.
+      if (fb.notify_on_done === false) return new Response('ok', { headers: cors });
+      await sendTo(
+        [fb.user_id],
+        '문의하신 내용이 업데이트됐어요 🎉',
+        reply ? `${reply} · 바로 확인해 보세요` : '바로 확인해 보시겠어요?',
+        'feedback-reply',
+        '/',
+      );
+      return new Response('ok', { headers: cors });
+    }
     await sendTo(
       [fb.user_id],
       '보낸 의견에 답변이 왔어요 💌',

@@ -13,9 +13,14 @@ export function kindMeta(kind: string) {
 }
 
 export const STATUS_META: Record<Feedback['status'], { label: string; chip: string }> = {
-  open: { label: '답변 기다리는 중', chip: 'bg-bg-brand-weak text-fg-brand border-stroke-brand-weak' },
+  open: { label: '접수됨 · 답변 기다리는 중', chip: 'bg-bg-brand-weak text-fg-brand border-stroke-brand-weak' },
   done: { label: '답변 완료', chip: 'bg-bg-positive-weak text-fg-positive-contrast border-stroke-positive-weak' },
+  applied: { label: '업데이트 완료 🎉', chip: 'bg-bg-positive-weak text-fg-positive-contrast border-stroke-positive-weak' },
 };
+
+/** 보내는 즉시 보이는 자동 답변. 운영자가 쓴 것이 아니라서 DB에 저장하지 않고 화면에서만 보여준다. */
+export const AUTO_REPLY = '의견 남겨주셔서 감사해요! 운영자가 읽고 답해 드릴게요.';
+export const AUTO_REPLY_NOTIFY = ' 업데이트되면 바로 알려드릴게요 🔔';
 
 /** 025의 feedback_message_len과 같은 값 */
 export const FEEDBACK_MIN = 2;

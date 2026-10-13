@@ -5,6 +5,8 @@
 --
 -- 어떻게: feedback 한 테이블. 본인 글과 그 답변은 본인이, 전체는 운영자(019의 app_admins)만 본다.
 --   답변·완료 처리는 운영자 함수로만 한다 (019의 admin_add_marker와 같은 방식).
+--   상태는 접수(open) → 답변 완료(done) 또는 업데이트 완료(applied). '업데이트 완료'는 바란 것이
+--   실제로 앱에 들어갔다는 뜻이라, 보낸 사람이 원했으면(notify_on_done) 그때 푸시로 알린다.
 --   한 사람이 한 시간에 10개까지 보낸다.
 --
 -- 실행: Supabase 대시보드 → SQL Editor에 붙여넣고 Run (여러 번 실행해도 안전)
@@ -20,7 +22,8 @@ create table if not exists public.feedback (
   kind text not null check (kind in ('idea', 'question', 'bug', 'other')),
   message text not null,
   page text,                 -- 보낸 화면 경로. 버그 제보에서 어디였는지 알 수 있게
-  status text not null default 'open' check (status in ('open', 'done')),
+  status text not null default 'open' check (status in ('open', 'done', 'applied')),
+  notify_on_done boolean not null default true, -- 업데이트되면 알려 달라고 했는지
   reply text,                -- 운영자 답변
   replied_at timestamptz,
   created_at timestamptz not null default now(),
@@ -76,7 +79,7 @@ create policy feedback_delete on public.feedback for delete to authenticated
 -- 앱이 넣는 열만 연다. status·reply·replied_at은 정의자 함수(아래)만 바꾼다.
 revoke insert on public.feedback from anon, authenticated;
 revoke update on public.feedback from anon, authenticated;
-grant insert (user_id, kind, message, page) on public.feedback to authenticated;
+grant insert (user_id, kind, message, page, notify_on_done) on public.feedback to authenticated;
 
 -- ========== ④ 운영자 함수 ==========
 -- 목록: 닉네임·이메일을 붙여 준다. profiles는 같은 오피스 사람만 보이므로(022) 정의자 권한으로 읽는다.
@@ -84,14 +87,14 @@ grant insert (user_id, kind, message, page) on public.feedback to authenticated;
 create or replace function public.admin_feedback_list()
 returns table (
   id uuid, user_id uuid, nickname text, email text, kind text, message text, page text,
-  status text, reply text, replied_at timestamptz, created_at timestamptz
+  status text, reply text, replied_at timestamptz, created_at timestamptz, notify_on_done boolean
 )
 language plpgsql stable security definer set search_path = public, pg_temp as $$
 begin
   if not public.is_app_admin() then raise exception 'forbidden' using errcode = '42501'; end if;
   return query
     select f.id, f.user_id, p.nickname, u.email::text, f.kind, f.message, f.page,
-           f.status, f.reply, f.replied_at, f.created_at
+           f.status, f.reply, f.replied_at, f.created_at, f.notify_on_done
     from public.feedback f
     left join public.profiles p on p.id = f.user_id
     left join auth.users u on u.id = f.user_id
@@ -100,18 +103,26 @@ begin
 end;
 $$;
 
--- 답변·상태. 답변을 비우면 null로 둔다. 답변을 쓰거나 완료로 바꾸면 replied_at을 찍는다.
+-- 답변·상태. 답변을 비우면 null로 둔다.
+-- replied_at은 답변이 바뀌었거나 새로 닫혔을(done·applied) 때만 찍는다. 그대로 둔 답변으로 상태만
+-- 오갈 때(다시 열기 등) 시각이 갱신되면 "방금 답변이 왔다"처럼 보인다.
 create or replace function public.admin_reply_feedback(p_id uuid, p_reply text, p_status text)
 returns void
 language plpgsql security definer set search_path = public, pg_temp as $$
 declare v_reply text := nullif(left(btrim(coalesce(p_reply, '')), 1000), '');
 begin
   if not public.is_app_admin() then raise exception 'forbidden' using errcode = '42501'; end if;
-  if p_status not in ('open', 'done') then raise exception 'bad status' using errcode = '22023'; end if;
+  if p_status not in ('open', 'done', 'applied') then raise exception 'bad status' using errcode = '22023'; end if;
+  -- SET의 오른쪽에 있는 열 이름은 바꾸기 전 값이다
   update public.feedback
-     set reply = v_reply,
-         status = p_status,
-         replied_at = case when v_reply is not null or p_status = 'done' then now() else null end
+     set replied_at = case
+           when v_reply is not null and v_reply is distinct from reply then now()
+           when p_status <> status and p_status in ('done', 'applied') then now()
+           when p_status = 'open' and v_reply is null then null
+           else replied_at
+         end,
+         reply = v_reply,
+         status = p_status
    where id = p_id;
   if not found then raise exception 'not found' using errcode = 'P0002'; end if;
 end;

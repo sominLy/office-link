@@ -495,6 +495,7 @@ select jobname, schedule, active from cron.job where jobname = 'study-rooms-auto
 이 SQL이 하는 일:
 - `feedback` 테이블. 본인 글과 답변은 본인이, 전체는 운영자(`app_admins`)만 봐요
 - 앱은 글만 넣을 수 있고, 답변·완료 처리는 `admin_reply_feedback` 함수(운영자만)로만 해요
+- 상태는 접수 → 답변 완료 / **업데이트 완료**. 업데이트 완료를 누르면 알림을 원한 사람에게 "바로 확인해 보시겠어요?" 푸시가 가요
 - 한 사람이 한 시간에 10개까지
 - 퍼널 이벤트 허용 목록에 `feedback_sent` 추가 (024의 스터디룸 이벤트 포함)
 
