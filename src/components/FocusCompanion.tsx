@@ -123,6 +123,14 @@ export default function FocusCompanion({ open, onClose }: { open: boolean; onClo
     else toast.success('퇴근 알림을 껐어요');
   };
   const clockoutArmed = isUpcomingHM(clockout);
+  // 퇴근알림 탭을 열어 둔 채로 고른 시각이 지나면 '알림 예정'이 남지 않게 다시 그린다.
+  // 뽀모도로가 멈춰 있으면 시트를 다시 그릴 일이 없다.
+  const [, setNowTick] = useState(0);
+  useEffect(() => {
+    if (!open || tab !== 'off' || !clockoutArmed) return;
+    const t = setInterval(() => setNowTick((n) => n + 1), 15000);
+    return () => clearInterval(t);
+  }, [open, tab, clockoutArmed]);
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
