@@ -117,7 +117,7 @@ export default function FeedbackDialog({ open, onClose, onSent }: Props) {
   };
 
   return (
-    {/* 보내는 동안(사진 올리는 중)에는 닫지 못한다. 닫히면 올린 사진이 글 없이 남는다. */}
+    // 보내는 동안(사진 올리는 중)에는 닫지 못한다. 닫히면 올린 사진이 글 없이 남는다.
     <Dialog open={open} onOpenChange={(o) => !o && !sending && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
