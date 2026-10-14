@@ -269,11 +269,20 @@ export default function Report() {
                     <li key={d.date} className="bg-gray-50/70 rounded-lg">
                       <button type="button" onClick={() => toggle(d.date)} aria-expanded={isOpen}
                         className="w-full flex items-center gap-2 text-t4 px-3 py-2 text-left">
-                        <span className="text-fg-neutral-muted">{label}</span>
-                        <span className="text-fg-neutral font-medium">{formatSpan(d.totalSeconds)}</span>
-                        {d.open && <span className="text-t1 rounded-full bg-bg-positive-weak text-fg-positive-contrast px-1.5 py-px">근무 중</span>}
-                        {d.breakSeconds > 0 && <span className="text-t2 text-fg-neutral-muted">· 쉬는 시간 {formatSpan(d.breakSeconds)}</span>}
-                        <ChevronDown className={`w-4 h-4 ml-auto text-fg-neutral-subtle transition-transform ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+                        <span className="flex-1 min-w-0">
+                          <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                            <span className="text-fg-neutral-muted">{label}</span>
+                            <span className="text-fg-neutral font-medium">{formatSpan(d.totalSeconds)}</span>
+                            {d.open && <span className="text-t1 rounded-full bg-bg-positive-weak text-fg-positive-contrast px-1.5 py-px">근무 중</span>}
+                          </span>
+                          {/* 첫 출근 ~ 마지막 퇴근. 아직 퇴근 전이면 퇴근 자리는 비워 둔다.
+                              쉬는 시간도 이 줄에 둔다 — 윗줄에 두면 좁은 화면에서 가운뎃점만 줄 앞에 걸린다 */}
+                          <span className="flex flex-wrap gap-x-2 text-t2 text-fg-neutral-muted mt-0.5">
+                            <span>{hm(d.firstStart)}{' ~ '}{d.lastEnd ? hm(d.lastEnd) : ''}</span>
+                            {d.breakSeconds > 0 && <span>쉬는 시간 {formatSpan(d.breakSeconds)}</span>}
+                          </span>
+                        </span>
+                        <ChevronDown className={`w-4 h-4 flex-shrink-0 text-fg-neutral-subtle transition-transform ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
                       </button>
                       {isOpen && (
                         <ul className="px-3 pb-2 space-y-1">

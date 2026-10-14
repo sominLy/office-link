@@ -19,6 +19,19 @@ describe('groupWorkDays', () => {
     expect(d.totalSeconds).toBe((4 * 60 + 23) * 60 + 19 * 60 + 7 * 60);
     expect(d.breakSeconds).toBe(2 * 60 + 2 * 60);
     expect(d.segments.map(s => s.kind)).toEqual(['work', 'break', 'work', 'break', 'work']);
+    // 첫 출근은 가장 이른 세션의 시작, 아직 퇴근 전이라 마지막 퇴근은 비어 있다
+    expect(d.firstStart).toBe(t('06:27'));
+    expect(d.lastEnd).toBeNull();
+  });
+  it('첫 출근과 마지막 퇴근 — 입력 순서와 무관하고, 마지막 퇴근은 가장 늦게 끝난 세션', () => {
+    const days = groupWorkDays([
+      { id: 'c', started_at: t('12:00'), ended_at: t('13:00') },
+      { id: 'a', started_at: t('09:00'), ended_at: t('18:00') },
+      { id: 'b', started_at: t('10:00'), ended_at: t('11:00') },
+    ], NOW);
+    expect(days[0].firstStart).toBe(t('09:00'));
+    expect(new Date(days[0].lastEnd as string).getTime()).toBe(new Date(t('18:00')).getTime());
+    expect(days[0].open).toBe(false);
   });
   it('안에 포함된 세션 뒤에는 가짜 쉬는 시간이 생기지 않는다', () => {
     const days = groupWorkDays([
