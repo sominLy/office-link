@@ -1,42 +1,50 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
-import { countUnread, fetchAlerts, getSeenAt, SEEN_KEY } from '@/lib/alerts';
+import { ALERTS_SEEN_EVENT, countUnread, fetchAlerts, getSeenAt, seenKey } from '@/lib/alerts';
 
 /**
  * 홈 헤더의 종. 여러 오피스에서 나와 관련된 새 소식(응원·인사·모임·답변)이 몇 개인지 배지로 보여 주고,
- * 누르면 /alerts로 간다. 숫자는 열 때·탭이 다시 보일 때·2분마다 다시 센다.
+ * 누르면 /alerts로 간다. 숫자는 열 때·탭이 다시 보일 때·2분마다·알림 화면에서 본 뒤에 다시 센다.
  */
 export default function AlertsBell() {
   const { user } = useAuth();
   const { offices } = useOffice();
   const navigate = useNavigate();
   const [unread, setUnread] = useState(0);
+  const userId = user?.id ?? null;
+  // offices는 provider가 그릴 때마다 새 배열이라 의존성에 넣으면 탭을 켤 때마다 여러 번 센다
+  const officesRef = useRef(offices);
+  useEffect(() => { officesRef.current = offices; }, [offices]);
 
   const refresh = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     try {
-      const items = await fetchAlerts(user.id, offices);
-      setUnread(countUnread(items, getSeenAt()));
-    } catch { /* 못 세면 배지만 비운다 */ }
-  }, [user, offices]);
+      const { items, failed } = await fetchAlerts(userId, officesRef.current);
+      if (failed) return; // 못 읽었으면 직전 숫자를 둔다 (0으로 지우면 새 소식이 있어도 사라진 것처럼 보인다)
+      setUnread(countUnread(items, getSeenAt(userId)));
+    } catch { /* 네트워크 오류 — 다음 주기에 다시 */ }
+  }, [userId]);
 
   useEffect(() => {
     refresh();
     const onVisible = () => { if (document.visibilityState === 'visible') refresh(); };
-    // 알림 화면에서 '본 시각'을 저장하면 같은 탭에서도 배지를 바로 지운다
-    const onStorage = (e: StorageEvent) => { if (e.key === SEEN_KEY) refresh(); };
+    const onSeen = () => refresh();
+    // 다른 탭의 알림 화면에서 '본 시각'을 저장했을 때
+    const onStorage = (e: StorageEvent) => { if (userId && e.key === seenKey(userId)) refresh(); };
     document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener(ALERTS_SEEN_EVENT, onSeen);
     window.addEventListener('storage', onStorage);
     const t = setInterval(refresh, 120_000);
     return () => {
       document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener(ALERTS_SEEN_EVENT, onSeen);
       window.removeEventListener('storage', onStorage);
       clearInterval(t);
     };
-  }, [refresh]);
+  }, [refresh, userId]);
 
   const label = unread > 0 ? `알림 ${unread > 9 ? '9개 넘게' : `${unread}개`} 새로 왔어요` : '알림';
   return (
@@ -49,7 +57,7 @@ export default function AlertsBell() {
     >
       <Bell className="w-5 h-5" aria-hidden="true" />
       {unread > 0 && (
-        <span className="absolute top-1 right-1 min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-bg-critical text-fg-critical-contrast text-[0.65rem] font-bold leading-[1.1rem] text-center" aria-hidden="true">
+        <span className="absolute top-1 right-1 min-w-[1.1rem] h-[1.1rem] px-1 rounded-full bg-bg-critical-solid text-white text-[0.65rem] font-bold leading-[1.1rem] text-center" aria-hidden="true">
           {unread > 9 ? '9+' : unread}
         </span>
       )}
