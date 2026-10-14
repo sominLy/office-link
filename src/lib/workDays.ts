@@ -13,6 +13,8 @@ export interface WorkDay {
   totalSeconds: number; // 근무(세션 길이 합). 쉬는 시간은 빼고
   breakSeconds: number; // 세션 사이 빈 시간의 합
   open: boolean;        // 아직 퇴근 안 한 세션이 있다
+  firstStart: string;   // 그날 첫 출근 시각 (ISO)
+  lastEnd: string | null; // 그날 마지막 퇴근 시각 (ISO). 아직 퇴근 전이면 null — 화면에서는 비워 둔다
   segments: DaySegment[]; // 시간순. work, break, work …
 }
 
@@ -54,7 +56,9 @@ export function groupWorkDays(sessions: WorkSessionLite[], now: number = Date.no
       latestEnd = latestEnd === null ? end : Math.max(latestEnd, end);
       segments.push({ kind: 'work', session: s, seconds });
     }
-    days.push({ date, totalSeconds, breakSeconds, open, segments });
+    // 마지막 퇴근은 가장 늦게 끝난 세션의 끝이다. 열린 세션이 하나라도 있으면 그날은 아직 퇴근 전이다.
+    const lastEnd = open || latestEnd === null ? null : new Date(latestEnd).toISOString();
+    days.push({ date, totalSeconds, breakSeconds, open, firstStart: sorted[0].started_at, lastEnd, segments });
   }
   return days.sort((a, b) => b.date.localeCompare(a.date));
 }
