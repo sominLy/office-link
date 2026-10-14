@@ -7,15 +7,15 @@ import MyTasks from '@/components/MyTasks';
 import { ActionButton } from '@/seed/ui/action-button';
 import { Badge } from '@/components/ui/badge';
 import { TextField, TextFieldInput } from '@/seed/ui/text-field';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { LogOut, ChevronDown, Clock, Copy, Bell, Building2, Plus, Tag, Check, UtensilsCrossed, Palmtree, BellOff, BookOpenText, NotebookPen, Sparkles, MessageSquarePlus, MessageSquareText, RotateCw } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { LogOut, ChevronDown, Clock, Copy, Bell, Building2, Plus, Tag, Check, UtensilsCrossed, Palmtree, BellOff, BookOpenText, NotebookPen, Sparkles, MessageSquarePlus, MessageSquareText, RotateCw, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/lib/toast';
 import { supabase } from '@/lib/supabase';
 import { defaultAvatar } from '@/lib/avatar';
 import { AvatarIcon } from '@/components/illustrations/RewardIcon';
 import { Fragment, useState, useEffect } from 'react';
-import { MemberStatus } from '@/lib/types';
+import { MemberStatus, Office } from '@/lib/types';
 import MemberStatsDialog from '@/components/MemberStatsDialog';
 import MenuPickDialog from '@/components/MenuPickDialog';
 import FocusCompanion, { WATCH_KEY, CLOCKOUT_KEY } from '@/components/FocusCompanion';
@@ -23,6 +23,7 @@ import OverdueTasksDialog from '@/components/OverdueTasksDialog';
 import RetroBanner from '@/components/retro/RetroBanner';
 import StudyRooms from '@/components/study/StudyRooms';
 import FeedbackDialog from '@/components/feedback/FeedbackDialog';
+import OfficeLeaveDialog from '@/components/OfficeLeaveDialog';
 import BottomNav from '@/components/BottomNav';
 import AlertsBell from '@/components/AlertsBell';
 import { notificationsEnabled, requestNotificationPermission, notify, isMuted, setMuted } from '@/lib/notify';
@@ -46,6 +47,9 @@ export default function Home() {
   const [selectedMember, setSelectedMember] = useState<MemberStatus | null>(null);
   const [notifOn, setNotifOn] = useState(notificationsEnabled() && !isMuted());
   const [titleDialogOpen, setTitleDialogOpen] = useState(false);
+  const [exitTarget, setExitTarget] = useState<Office | null>(null); // 나가기·삭제를 묻는 오피스
+  // 만든 사람은 삭제, 나머지는 나가기. 공개 오피스는 만든 사람이 없어(null) 누구나 나가기만 보인다.
+  const isOfficeCreator = !!office?.created_by && office.created_by === user?.id;
   const [menuOpen, setMenuOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [focusOpen, setFocusOpen] = useState(false);
@@ -230,6 +234,16 @@ export default function Home() {
                   <DropdownMenuItem onClick={() => setTitleDialogOpen(true)} className="cursor-pointer">
                     <Tag className="w-4 h-4 mr-2 text-fg-neutral-muted" /> 호칭 설정
                   </DropdownMenuItem>
+                )}
+                {office && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setExitTarget(office)} className="cursor-pointer text-fg-critical-contrast">
+                      {isOfficeCreator
+                        ? <><Trash2 className="w-4 h-4 mr-2" /> 이 오피스 삭제</>
+                        : <><LogOut className="w-4 h-4 mr-2" /> 이 오피스 나가기</>}
+                    </DropdownMenuItem>
+                  </>
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
@@ -579,6 +593,12 @@ export default function Home() {
           )}
         </DialogContent>
       </Dialog>
+
+      <OfficeLeaveDialog
+        target={exitTarget}
+        mode={exitTarget?.created_by && exitTarget.created_by === user?.id ? 'delete' : 'leave'}
+        onClose={() => setExitTarget(null)}
+      />
 
       {office && (
         <MemberStatsDialog
