@@ -48,6 +48,10 @@ interface OfficeContextType {
   joinOffice: (inviteCode: string, nickname?: string | null) => Promise<{ error: string | null }>;
   joinPublicOffice: (officeId: string, nickname?: string | null) => Promise<{ error: string | null }>;
   createOffice: (name: string, nickname?: string | null) => Promise<{ error: string | null }>;
+  /** 남이 만든 오피스에서 나간다. 내 출퇴근·할 일 기록은 지우지 않고, 다시 들어오면 그대로 보인다. */
+  leaveOffice: (officeId: string) => Promise<{ error: string | null }>;
+  /** 내가 만든 오피스를 지운다. 멤버 전원의 그 오피스 기록이 같이 지워진다. */
+  deleteOffice: (officeId: string) => Promise<{ error: string | null }>;
 }
 
 const OfficeContext = createContext<OfficeContextType | undefined>(undefined);
@@ -68,6 +72,10 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
   useEffect(() => { membersRef.current = members; }, [members]);
   const userIdRef = useRef<string | null>(null);
   useEffect(() => { userIdRef.current = user?.id ?? null; }, [user]);
+  // 오피스를 옮긴 뒤 늦게 도착한 이전 오피스 조회가 새 화면을 덮지 않게 한다.
+  // 나가기 직전의 세션 종료가 realtime으로 이전 오피스 조회를 부르므로 나가기 직후에 특히 생긴다.
+  const officeIdRef = useRef<string | null>(null);
+  useEffect(() => { officeIdRef.current = office?.id ?? null; }, [office]);
 
   const fetchOffice = useCallback(async () => {
     // 로그아웃 상태에서도 로딩을 끝내야 로그인 화면이 뜬다
@@ -149,7 +157,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       memberError = retry.error;
     }
 
-    if (memberError || !memberList) return;
+    if (memberError || !memberList || officeIdRef.current !== office.id) return;
     setMyRole((memberList.find(m => m.user_id === userIdRef.current)?.role as 'admin' | 'member') || null);
 
     // 멤버별 반복 쿼리 대신 오피스 단위로 한 번에 조회 (N+1 제거)
@@ -179,6 +187,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
     (openFocuses || []).forEach(f => {
       focusMap.set(f.user_id, (f.tasks as unknown as { title: string } | null)?.title || null);
     });
+    if (officeIdRef.current !== office.id) return;
 
     const memberStatuses: MemberStatus[] = memberList.map((member, idx) => {
       const profile = member.profiles as unknown as { id: string; nickname: string; avatar_url: string | null };
@@ -232,6 +241,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       }
       workData = null;
     }
+    if (officeIdRef.current !== office.id) return;
     setMyWorkSession(workData);
 
     const { data: statusData } = await supabase
@@ -243,12 +253,41 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       .order('started_at', { ascending: false })
       .limit(1)
       .single();
+    if (officeIdRef.current !== office.id) return;
     setMyStatusSession(statusData);
   }, [user, office]);
 
   useEffect(() => {
     fetchOffice();
   }, [fetchOffice]);
+
+  // 다른 사람이 오피스를 지우거나 다른 기기에서 나가면 이 화면에는 신호가 오지 않는다
+  // (멤버 행 삭제 이벤트는 office_id 필터에 걸리지 않는다). 내 멤버십을 다시 읽어 사라진 오피스가 있으면 목록을 새로 받는다.
+  // 화면으로 돌아올 때와 출근·퇴근·상태 변경이 그 오피스에서 거부될 때 부른다.
+  // 보던 오피스가 사라졌으면 true (호출부는 원래 오류 안내 대신 이 안내로 끝낸다).
+  const recheckMemberships = useCallback(async (): Promise<boolean> => {
+    if (!user || offices.length === 0) return false;
+    const { data, error } = await supabase.from('office_members').select('office_id').eq('user_id', user.id);
+    if (error || !data) return false;
+    const mine = new Set(data.map(m => m.office_id as string));
+    if (offices.every(o => mine.has(o.id))) return false;
+    const currentGone = !!office && !mine.has(office.id);
+    if (currentGone) {
+      setMembers([]);
+      setMyRole(null);
+      setMyWorkSession(null);
+      setMyStatusSession(null);
+      toast('보던 오피스가 삭제됐거나 더 이상 멤버가 아니에요');
+    }
+    await fetchOffice();
+    return currentGone;
+  }, [user, office, offices, fetchOffice]);
+
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') void recheckMemberships(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [recheckMemberships]);
 
   useEffect(() => {
     if (office) {
@@ -314,6 +353,8 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       user_id: user.id,
     });
     if (error) {
+      // 42501(정책 거부)·23503(오피스 없음) = 그 사이 오피스가 지워졌거나 내보내졌을 수 있다
+      if ((error.code === '42501' || error.code === '23503') && (await recheckMemberships())) return;
       toast.error(error.code === '23505' ? '이미 출근했어요' : '출근하지 못했어요. 잠시 후 다시 시도해 주세요');
       await fetchMySession();
       return;
@@ -355,15 +396,18 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       // 반면 여기서 막으면 사용자가 퇴근 자체를 못 하게 된다.
       console.error('집중 세션 종료 실패, 퇴근은 계속 진행', focusError);
     }
-    const { error } = await supabase
+    const { data: closed, error } = await supabase
       .from('work_sessions')
       .update({ ended_at: now })
       .eq('id', myWorkSession.id)
-      .is('ended_at', null);
+      .is('ended_at', null)
+      .select('id');
     if (error) {
       toast.error('퇴근하지 못했어요. 잠시 후 다시 시도해 주세요');
       return false;
     }
+    // 0행: 다른 탭에서 먼저 퇴근했거나, 오피스가 지워져 세션도 같이 사라졌다. 뒤의 경우만 여기서 멈춘다.
+    if (closed?.length === 0 && (await recheckMemberships())) return false;
     // 여기부터 퇴근은 DB에 반영됐다. 상태 표시 갱신이 실패해도 퇴근 자체는 유효하므로
     // changeStatus의 결과로 퇴근 성공을 뒤집지 않는다 (실패는 changeStatus가 직접 알린다).
     await changeStatus('퇴근');
@@ -401,6 +445,8 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       user_id: user.id,
       status,
     });
+    // 42501·23503 = 그 사이 오피스가 지워졌거나 내보내졌을 수 있다
+    if (error && (error.code === '42501' || error.code === '23503') && (await recheckMemberships())) return false;
     if (error) toast.error(error.code === '23505' ? '다른 탭에서 방금 상태를 바꿨어요' : '상태를 바꾸지 못했어요. 잠시 후 다시 시도해 주세요');
     await fetchMySession();
     await fetchMembers();
@@ -661,13 +707,97 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
     return { error: '오피스를 만들지 못했어요. 다시 시도해 주세요' };
   };
 
+  // 나가거나 지운 오피스가 지금 보던 곳이면 남은 오피스 중 첫 번째로 옮긴다. 남은 곳이 없으면 오피스 설정 화면이 뜬다.
+  const afterOfficeGone = async (officeId: string) => {
+    if (!user) return;
+    if (office?.id === officeId) {
+      const next = offices.find(o => o.id !== officeId);
+      setMembers([]);
+      setMyRole(null);
+      setMyWorkSession(null);
+      setMyStatusSession(null);
+      // 지운 오피스는 FK(on delete set null)가 비워 준다. 나간 오피스는 그대로 남아 있어 직접 바꾼다.
+      // 저장이 안 돼도 fetchOffice가 목록에 없는 오피스를 건너뛰고 첫 번째를 고른다.
+      await supabase.from('profiles').update({ current_office_id: next?.id ?? null }).eq('id', user.id);
+    }
+    await fetchOffice();
+  };
+
+  // 지금도 그 오피스 멤버인가. 다른 탭·기기에서 이미 나갔거나 지운 오피스면 false, 조회 실패는 null.
+  const isMemberOf = async (officeId: string): Promise<boolean | null> => {
+    if (!user) return null;
+    const { data, error } = await supabase.from('office_members').select('office_id')
+      .eq('office_id', officeId).eq('user_id', user.id).limit(1);
+    return error ? null : (data?.length ?? 0) > 0;
+  };
+
+  const leaveOffice = async (officeId: string) => {
+    if (!user) return { error: '로그인하고 다시 시도해 주세요' };
+    // 공개 오피스 방장(운영자)은 나가면 멤버로만 다시 들어와 방장 권한을 되찾을 수 없다. 화면의 myRole은
+    // 늦게 오거나 이전 오피스 값일 수 있어 DB에서 다시 읽고 막는다.
+    if (offices.find(o => o.id === officeId)?.is_public) {
+      const { data: me, error: roleError } = await supabase.from('office_members').select('role')
+        .eq('office_id', officeId).eq('user_id', user.id).maybeSingle();
+      if (roleError) return { error: '오피스에서 나가지 못했어요. 잠시 후 다시 시도해 주세요' };
+      if (me?.role === 'admin') return { error: '공개 오피스 운영자는 나갈 수 없어요' };
+    }
+    // 나간 뒤에는 그 오피스의 내 세션을 고칠 수 없다(026 update 정책의 is_office_member). 열린 것을 먼저 닫는다.
+    // 근무·집중은 오늘 연 것만 지금 시각으로 닫는다. 자정 전 것은 크론이 그날 자정으로 닫는다 (applyToOffice의 퇴근과 같다).
+    // 내가 연 모임은 닫고 들어가 있던 모임에서는 빠진다. 나간 뒤에는 그 오피스 방장만 정리할 수 있다.
+    // 닫기가 실패해도 나가기는 막지 않는다. 남은 세션은 멤버 목록에 없는 사람 것이라 멤버 카드에 뜨지 않는다.
+    const now = new Date().toISOString();
+    const todayStart = kstStartOfTodayISO();
+    const [focusClose, workClose, ...rest] = await Promise.all([
+      supabase.from('focus_sessions').update({ ended_at: now })
+        .eq('user_id', user.id).eq('office_id', officeId).is('ended_at', null).gte('started_at', todayStart),
+      supabase.from('work_sessions').update({ ended_at: now })
+        .eq('user_id', user.id).eq('office_id', officeId).is('ended_at', null).gte('started_at', todayStart).select('id'),
+      supabase.from('status_sessions').update({ ended_at: now })
+        .eq('user_id', user.id).eq('office_id', officeId).is('ended_at', null),
+      supabase.from('study_rooms').update({ ended_at: now })
+        .eq('host_id', user.id).eq('office_id', officeId).is('ended_at', null),
+      supabase.from('study_room_members').delete().eq('user_id', user.id).eq('office_id', officeId),
+    ]);
+    [focusClose, workClose, ...rest].forEach(({ error }) => { if (error) console.error('나가기 전 정리 실패, 나가기는 계속', error); });
+    // 출근 기록만 있고 퇴근이 없는 소식이 되지 않게, 오늘 근무를 닫았으면 퇴근도 적는다 (멤버일 때만 쓸 수 있다)
+    if (workClose.data && workClose.data.length > 0) {
+      await supabase.from('office_feed').insert({ office_id: officeId, user_id: user.id, type: 'clock_out' });
+    }
+    // members_delete 정책은 내 행만 지우게 한다. 거부돼도 오류 없이 0행이 오므로 돌려받은 행으로 확인한다.
+    const { data, error } = await supabase.from('office_members').delete()
+      .eq('office_id', officeId).eq('user_id', user.id).select('office_id');
+    // 0행인데 이미 멤버가 아니면 다른 탭·기기에서 먼저 나간 것이다. 결과는 같으니 성공으로 본다.
+    if (error || !data || (data.length === 0 && (await isMemberOf(officeId)) !== false)) {
+      return { error: '오피스에서 나가지 못했어요. 잠시 후 다시 시도해 주세요' };
+    }
+    await afterOfficeGone(officeId);
+    return { error: null };
+  };
+
+  const deleteOffice = async (officeId: string) => {
+    if (!user) return { error: '로그인하고 다시 시도해 주세요' };
+    // offices_delete 정책이 만든 사람(created_by)만 통과시킨다. 거부되면 0행이라 돌려받은 행으로 확인한다.
+    // 멤버·세션·할 일·반복 할 일·소식·채팅·회고·진열장·모임은 office_id의 on delete cascade로 같이 지워진다.
+    const { data, error } = await supabase.from('offices').delete().eq('id', officeId).select('id');
+    if (error) return { error: '오피스를 지우지 못했어요. 잠시 후 다시 시도해 주세요' };
+    if (!data || data.length === 0) {
+      // 이미 멤버가 아니면 다른 탭·기기에서 먼저 지운 것이다
+      const member = await isMemberOf(officeId);
+      if (member !== false) {
+        return { error: member ? '오피스를 만든 사람만 지울 수 있어요' : '오피스를 지우지 못했어요. 잠시 후 다시 시도해 주세요' };
+      }
+    }
+    await afterOfficeGone(officeId);
+    return { error: null };
+  };
+
   return (
     <OfficeContext.Provider value={{
       office, offices, myRole, switchOffice, updateTitleMode,
       members, myWorkSession, myStatusSession, loading,
       clockIn, clockOut, changeStatus, setMyOfficeNickname,
       pendingSync, dismissSync, applyPendingSync,
-      joinOffice, joinPublicOffice, createOffice,
+      joinOffice, joinPublicOffice, createOffice, leaveOffice, deleteOffice,
     }}>
       {children}
     </OfficeContext.Provider>

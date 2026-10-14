@@ -28,6 +28,7 @@ export interface Office {
   invite_code: string;
   title_mode: 'nim' | 'pro' | 'rank' | 'english';
   is_public?: boolean; // 초대 코드 없이 들어오는 오피스 (022 마이그레이션 전엔 없음)
+  created_by?: string | null; // 만든 사람. 이 사람만 오피스를 지울 수 있다(offices_delete). 공개 오피스는 null
   created_at: string;
 }
 
