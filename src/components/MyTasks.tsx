@@ -137,7 +137,7 @@ export default function MyTasks({ compact = false }: { compact?: boolean }) {
         <p className="text-t4 text-fg-neutral-muted text-center py-3">이번 주 할 일을 아래에 적어보세요</p>
       ) : (
         <ul className="space-y-1">
-          {openTasks.length === 0 && (
+          {compact && openTasks.length === 0 && (
             <li className="text-t4 text-fg-neutral-muted text-center py-2">이번 주 할 일을 모두 끝냈어요 🎉</li>
           )}
           {displayTasks.map((task, i) => {
