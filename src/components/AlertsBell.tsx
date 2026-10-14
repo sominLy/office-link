@@ -18,6 +18,8 @@ export default function AlertsBell() {
   // offices는 provider가 그릴 때마다 새 배열이라 의존성에 넣으면 탭을 켤 때마다 여러 번 센다
   const officesRef = useRef(offices);
   useEffect(() => { officesRef.current = offices; }, [offices]);
+  // 오피스 목록이 도착하면 한 번 더 센다 (모임 알림은 오피스 목록으로 거른다)
+  const officeKey = offices.map(o => o.id).join(',');
 
   const refresh = useCallback(async () => {
     if (!userId) return;
@@ -26,7 +28,8 @@ export default function AlertsBell() {
       if (failed) return; // 못 읽었으면 직전 숫자를 둔다 (0으로 지우면 새 소식이 있어도 사라진 것처럼 보인다)
       setUnread(countUnread(items, getSeenAt(userId)));
     } catch { /* 네트워크 오류 — 다음 주기에 다시 */ }
-  }, [userId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- officeKey는 officesRef를 갱신한 뒤 다시 세게 하는 신호다
+  }, [userId, officeKey]);
 
   useEffect(() => {
     refresh();
