@@ -268,8 +268,10 @@ export default function Report() {
                   return (
                     <li key={d.date} className="bg-gray-50/70 rounded-lg">
                       <button type="button" onClick={() => toggle(d.date)} aria-expanded={isOpen}
-                        className="w-full flex items-center gap-2 text-t4 px-3 py-2 text-left">
+                        className="w-full flex flex-wrap items-center gap-x-2 gap-y-0.5 text-t4 px-3 py-2 text-left">
                         <span className="text-fg-neutral-muted">{label}</span>
+                        {/* 첫 출근 ~ 마지막 퇴근. 아직 퇴근 전이면 뒤를 비운다 */}
+                        <span className="text-fg-neutral">{hm(d.firstStart)} ~ {d.lastEnd ? hm(d.lastEnd) : ''}</span>
                         <span className="text-fg-neutral font-medium">{formatSpan(d.totalSeconds)}</span>
                         {d.open && <span className="text-t1 rounded-full bg-bg-positive-weak text-fg-positive-contrast px-1.5 py-px">근무 중</span>}
                         {d.breakSeconds > 0 && <span className="text-t2 text-fg-neutral-muted">· 쉬는 시간 {formatSpan(d.breakSeconds)}</span>}

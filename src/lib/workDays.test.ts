@@ -19,6 +19,16 @@ describe('groupWorkDays', () => {
     expect(d.totalSeconds).toBe((4 * 60 + 23) * 60 + 19 * 60 + 7 * 60);
     expect(d.breakSeconds).toBe(2 * 60 + 2 * 60);
     expect(d.segments.map(s => s.kind)).toEqual(['work', 'break', 'work', 'break', 'work']);
+    expect(d.firstStart).toBe(t('06:27'));
+    expect(d.lastEnd).toBeNull(); // 아직 퇴근 전
+  });
+  it('퇴근을 마친 날은 첫 출근과 마지막 퇴근을 준다', () => {
+    const days = groupWorkDays([
+      { id: 'a', started_at: t('07:14', '13'), ended_at: t('16:07', '13') },
+      { id: 'b', started_at: t('16:07', '13'), ended_at: t('22:28', '13') },
+    ], NOW);
+    expect(days[0].firstStart).toBe(t('07:14', '13'));
+    expect(new Date(days[0].lastEnd!).getTime()).toBe(new Date(t('22:28', '13')).getTime());
   });
   it('안에 포함된 세션 뒤에는 가짜 쉬는 시간이 생기지 않는다', () => {
     const days = groupWorkDays([
