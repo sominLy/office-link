@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useOffice } from '@/contexts/OfficeContext';
 import { ActionButton } from '@/seed/ui/action-button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Calendar, Target, CheckCircle2, Clock, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Calendar, Target, CheckCircle2, Clock, Pencil, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/AppDialog';
 import { TextField, TextFieldInput } from '@/seed/ui/text-field';
 import { Label } from '@/components/ui/label';
@@ -12,6 +12,7 @@ import { toast } from '@/lib/toast';
 import { useNavigate } from 'react-router-dom';
 import { addDays, getWeekStart, kstStartOfWeekISO } from '@/lib/dates';
 import BottomNav from '@/components/BottomNav';
+import { formatSpan, groupWorkDays } from '@/lib/workDays';
 
 import { Icon } from '@seed-design/react';
 function formatDuration(seconds: number): string {
@@ -42,6 +43,8 @@ export default function Report() {
   interface WS { id: string; started_at: string; ended_at: string | null }
   const [sessions, setSessions] = useState<WS[]>([]);
   const [editSession, setEditSession] = useState<WS | null>(null);
+  // 펼친 날짜. 처음엔 오늘(가장 최근 날)만 펼친다.
+  const [openDays, setOpenDays] = useState<Set<string> | null>(null);
   const [editStart, setEditStart] = useState('');
   const [editEnd, setEditEnd] = useState('');
 
@@ -242,28 +245,55 @@ export default function Report() {
         {/* 출퇴근 기록 (수정 가능) */}
         <Card className="p-5 border-stroke-neutral-subtle">
           <h3 className="font-semibold text-fg-neutral text-t4 mb-1">{stats.rangeLabel} 출퇴근 기록</h3>
-          <p className="text-t2 text-fg-neutral-muted mb-3">잘못 찍은 기록은 연필 버튼으로 고칠 수 있어요</p>
+          <p className="text-t2 text-fg-neutral-muted mb-3">날짜를 누르면 출근·퇴근 구간이 보여요. 잘못 찍은 기록은 연필 버튼으로 고칠 수 있어요</p>
           {sessions.length === 0 ? (
             <p className="text-t4 text-fg-neutral-muted text-center py-3">기록이 없어요</p>
           ) : (
             <ul className="space-y-1.5">
-              {sessions.map(s => (
-                <li key={s.id} className="flex items-center gap-2 text-t4 bg-gray-50/70 rounded-lg px-3 py-2">
-                  <span className="text-fg-neutral-muted">
-                    {new Date(s.started_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', weekday: 'short' })}
-                  </span>
-                  <span className="text-fg-neutral font-medium">
-                    {new Date(s.started_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
-                    {' ~ '}
-                    {s.ended_at
-                      ? new Date(s.ended_at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
-                      : '근무 중'}
-                  </span>
-                  <button onClick={() => openEditSession(s)} className="ml-auto text-fg-neutral-subtle hover:text-fg-brand">
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
-                </li>
-              ))}
+              {(() => {
+                // 하루 한 줄(누적 근무). 퇴근했다가 다시 출근한 사이는 쉬는 시간으로 보인다.
+                const days = groupWorkDays(sessions);
+                const expanded = openDays ?? new Set(days.length > 0 ? [days[0].date] : []);
+                const hm = (iso: string) => new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+                const toggle = (date: string) => setOpenDays(prev => {
+                  const next = new Set(prev ?? expanded);
+                  if (next.has(date)) next.delete(date); else next.add(date);
+                  return next;
+                });
+                return days.map(d => {
+                  const isOpen = expanded.has(d.date);
+                  const label = new Date(`${d.date}T12:00:00+09:00`).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', weekday: 'short' });
+                  return (
+                    <li key={d.date} className="bg-gray-50/70 rounded-lg">
+                      <button type="button" onClick={() => toggle(d.date)} aria-expanded={isOpen}
+                        className="w-full flex items-center gap-2 text-t4 px-3 py-2 text-left">
+                        <span className="text-fg-neutral-muted">{label}</span>
+                        <span className="text-fg-neutral font-medium">{formatSpan(d.totalSeconds)}</span>
+                        {d.open && <span className="text-t1 rounded-full bg-bg-positive-weak text-fg-positive-contrast px-1.5 py-px">근무 중</span>}
+                        {d.breakSeconds > 0 && <span className="text-t2 text-fg-neutral-muted">· 쉬는 시간 {formatSpan(d.breakSeconds)}</span>}
+                        <ChevronDown className={`w-4 h-4 ml-auto text-fg-neutral-subtle transition-transform ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+                      </button>
+                      {isOpen && (
+                        <ul className="px-3 pb-2 space-y-1">
+                          {d.segments.map((seg, i) => seg.kind === 'break' ? (
+                            <li key={`b-${i}`} className="text-t2 text-fg-neutral-muted pl-1">☕ 쉬는 시간 {formatSpan(seg.seconds)}</li>
+                          ) : (
+                            <li key={seg.session.id} className="flex items-center gap-2 text-t4 rounded-md bg-bg-layer-default px-2.5 py-1.5">
+                              <span className="text-fg-neutral">
+                                {hm(seg.session.started_at)}{' ~ '}{seg.session.ended_at ? hm(seg.session.ended_at) : '근무 중'}
+                              </span>
+                              <span className="text-t2 text-fg-neutral-muted">{formatSpan(seg.seconds)}</span>
+                              <button onClick={() => openEditSession(seg.session)} className="ml-auto text-fg-neutral-subtle hover:text-fg-brand" aria-label="기록 고치기">
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                  );
+                });
+              })()}
             </ul>
           )}
         </Card>
