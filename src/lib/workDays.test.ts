@@ -20,6 +20,15 @@ describe('groupWorkDays', () => {
     expect(d.breakSeconds).toBe(2 * 60 + 2 * 60);
     expect(d.segments.map(s => s.kind)).toEqual(['work', 'break', 'work', 'break', 'work']);
   });
+  it('안에 포함된 세션 뒤에는 가짜 쉬는 시간이 생기지 않는다', () => {
+    const days = groupWorkDays([
+      { id: 'a', started_at: t('09:00'), ended_at: t('18:00') },
+      { id: 'b', started_at: t('10:00'), ended_at: t('11:00') },
+      { id: 'c', started_at: t('12:00'), ended_at: t('13:00') },
+    ], NOW);
+    expect(days[0].segments.map(s => s.kind)).toEqual(['work', 'work', 'work']);
+    expect(days[0].breakSeconds).toBe(0);
+  });
   it('날짜는 최신이 먼저, 겹치는 세션은 쉬는 시간이 없다', () => {
     const days = groupWorkDays([
       { id: 'a', started_at: t('07:14', '13'), ended_at: t('16:07', '13') },

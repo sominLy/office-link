@@ -45,6 +45,7 @@ export default function Report() {
   const [editSession, setEditSession] = useState<WS | null>(null);
   // 펼친 날짜. 처음엔 오늘(가장 최근 날)만 펼친다.
   const [openDays, setOpenDays] = useState<Set<string> | null>(null);
+  useEffect(() => { setOpenDays(null); }, [weeksAgo]); // 다른 주로 넘어가면 다시 최근 날만 펼친다
   const [editStart, setEditStart] = useState('');
   const [editEnd, setEditEnd] = useState('');
 
@@ -254,7 +255,8 @@ export default function Report() {
                 // 하루 한 줄(누적 근무). 퇴근했다가 다시 출근한 사이는 쉬는 시간으로 보인다.
                 const days = groupWorkDays(sessions);
                 const expanded = openDays ?? new Set(days.length > 0 ? [days[0].date] : []);
-                const hm = (iso: string) => new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+                // 날짜 묶음이 KST라 시각도 KST로 (기기 시간대가 달라도 같은 날로 보이게)
+                const hm = (iso: string) => new Date(iso).toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit' });
                 const toggle = (date: string) => setOpenDays(prev => {
                   const next = new Set(prev ?? expanded);
                   if (next.has(date)) next.delete(date); else next.add(date);
@@ -262,7 +264,7 @@ export default function Report() {
                 });
                 return days.map(d => {
                   const isOpen = expanded.has(d.date);
-                  const label = new Date(`${d.date}T12:00:00+09:00`).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', weekday: 'short' });
+                  const label = new Date(`${d.date}T12:00:00+09:00`).toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul', month: 'short', day: 'numeric', weekday: 'short' });
                   return (
                     <li key={d.date} className="bg-gray-50/70 rounded-lg">
                       <button type="button" onClick={() => toggle(d.date)} aria-expanded={isOpen}

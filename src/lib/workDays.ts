@@ -34,22 +34,26 @@ export function groupWorkDays(sessions: WorkSessionLite[], now: number = Date.no
   }
   const days: WorkDay[] = [];
   for (const [date, list] of byDay) {
-    const sorted = [...list].sort((a, b) => a.started_at.localeCompare(b.started_at));
+    const sorted = [...list].sort((a, b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime());
     const segments: DaySegment[] = [];
     let totalSeconds = 0;
     let breakSeconds = 0;
     let open = false;
-    sorted.forEach((s, i) => {
-      const prev = sorted[i - 1];
-      if (prev?.ended_at) {
-        const gap = Math.floor((new Date(s.started_at).getTime() - new Date(prev.ended_at).getTime()) / 1000);
+    // 쉬는 시간은 "그때까지 가장 늦게 끝난 세션" 뒤부터 센다. 직전 세션만 보면 겹치는 세션(수정으로 생긴) 사이에 가짜 쉬는 시간이 생긴다.
+    let latestEnd: number | null = null;
+    for (const s of sorted) {
+      const start = new Date(s.started_at).getTime();
+      if (latestEnd !== null) {
+        const gap = Math.floor((start - latestEnd) / 1000);
         if (gap > 0) { segments.push({ kind: 'break', seconds: gap }); breakSeconds += gap; }
       }
       const seconds = secondsOf(s, now);
       totalSeconds += seconds;
       if (!s.ended_at) open = true;
+      const end = s.ended_at ? new Date(s.ended_at).getTime() : now;
+      latestEnd = latestEnd === null ? end : Math.max(latestEnd, end);
       segments.push({ kind: 'work', session: s, seconds });
-    });
+    }
     days.push({ date, totalSeconds, breakSeconds, open, segments });
   }
   return days.sort((a, b) => b.date.localeCompare(a.date));
