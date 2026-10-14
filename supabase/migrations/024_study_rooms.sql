@@ -94,9 +94,10 @@ drop policy if exists study_rooms_update on public.study_rooms;
 create policy study_rooms_update on public.study_rooms for update to authenticated
   using (host_id = auth.uid() or public.is_office_admin(office_id))
   with check (host_id = auth.uid() or public.is_office_admin(office_id));
+-- 지우기는 오피스 방장만 (028에서 바꿈. 연 사람은 종료까지만, 들어온 사람은 나가기만).
 drop policy if exists study_rooms_delete on public.study_rooms;
 create policy study_rooms_delete on public.study_rooms for delete to authenticated
-  using (host_id = auth.uid());
+  using (public.is_office_admin(office_id));
 
 -- 앱이 고치는 열만 연다. office_id·host_id를 바꿔 방을 다른 오피스로 옮기거나 남의 이름으로 두는 길을 막는다.
 revoke update on public.study_rooms from anon, authenticated;

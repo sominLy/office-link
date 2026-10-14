@@ -120,7 +120,7 @@ export default function StudyRooms() {
         const gone = old?.id ? roomsRef.current.find(r => r.id === old.id) : undefined;
         if (!gone) return;
         const me = userIdRef.current;
-        if (me && gone.host_id !== me) {
+        if (me && deletingRef.current !== gone.id) {
           const wasIn = (gone.study_room_members ?? []).some(p => p.user_id === me);
           const elsewhere = roomsRef.current.some(r => r.id !== gone.id && !r.ended_at && (r.study_room_members ?? []).some(p => p.user_id === me));
           if (wasIn && !elsewhere && statusRef.current === '스터디/회의 중') void changeStatusRef.current('출근');
@@ -215,7 +215,8 @@ export default function StudyRooms() {
     toast.success(`"${room.title}" 모임을 닫았어요. 모두 수고했어요 👏`);
   };
 
-  // 방을 지운다 (연 사람만, 024의 study_rooms_delete). 참여 기록도 같이 지워지고(cascade) 소식에는 남지 않는다.
+  // 방을 지운다 (오피스 방장만, 028의 study_rooms_delete). 참여 기록도 같이 지워지고(cascade) 소식에는 남지 않는다.
+  const deletingRef = useRef<string | null>(null); // 내가 지운 방은 realtime 삭제 이벤트에서 다시 처리하지 않는다
   const remove = async (room: StudyRoom) => {
     if (!user || busyId) return;
     if (confirmDeleteId !== room.id) {
@@ -227,6 +228,7 @@ export default function StudyRooms() {
     if (Date.now() - armedAtRef.current < 500) return;
     setConfirmDeleteId(null);
     setBusyId(room.id);
+    deletingRef.current = room.id;
     const { data, error } = await supabase
       .from('study_rooms')
       .delete()
@@ -348,7 +350,7 @@ export default function StudyRooms() {
                       종료
                     </ActionButton>
                   )}
-                  {user?.id === room.host_id && (
+                  {myRole === 'admin' && (
                     <ActionButton variant="ghost" size="small" onClick={() => remove(room)} disabled={busy}
                       aria-label={confirmDeleteId === room.id ? '한 번 더 누르면 모임을 지워요' : '모임 삭제'}
                       className={confirmDeleteId === room.id ? 'text-fg-critical' : 'text-fg-neutral-muted'}>
