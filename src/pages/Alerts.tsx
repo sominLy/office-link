@@ -26,6 +26,8 @@ export default function Alerts() {
   const [seenAt] = useState<string | null>(() => (userId ? getSeenAt(userId) : null));
   const officesRef = useRef(offices);
   useEffect(() => { officesRef.current = offices; }, [offices]);
+  // 오피스 목록이 나중에 도착하면 다시 읽는다 (처음엔 비어 있어 오피스 이름이 '오피스'로 보였다). 배열 자체는 렌더마다 새것이라 id로 비교.
+  const officeKey = offices.map(o => o.id).join(',');
   const leaving = useRef(false);
 
   useEffect(() => {
@@ -41,7 +43,7 @@ export default function Alerts() {
       })
       .catch(() => { if (alive) { setFailed(true); setItems([]); } });
     return () => { alive = false; };
-  }, [userId]);
+  }, [userId, officeKey]);
 
   const open = (item: AlertItem) => {
     if (leaving.current) return; // 두 번 눌러도 한 번만 이동
