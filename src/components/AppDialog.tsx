@@ -118,7 +118,8 @@ export const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps
         className={className}
         {...props}
       >
-        <ResponsiveDialogBody>{rest}</ResponsiveDialogBody>
+        {/* 본문 아래 여백. SEED Body는 발 없는 모달에서 마지막 요소가 바닥에 붙는다 (소민: 출근하기 모달). */}
+        <ResponsiveDialogBody><div className="pb-x4">{rest}</div></ResponsiveDialogBody>
         {footer}
       </ResponsiveDialogContent>
     );

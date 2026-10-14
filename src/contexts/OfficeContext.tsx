@@ -42,7 +42,7 @@ interface OfficeContextType {
   pendingSync: PendingSync | null;
   dismissSync: () => void;
   /** 묻던 내용을 나머지 오피스 전부에 적용한다. 결과 안내는 여기서 띄운다. */
-  applyPendingSync: () => Promise<void>;
+  applyPendingSync: (officeIds?: string[]) => Promise<void>;
   /** 이 오피스에서 쓰는 내 이름. null이면 프로필 이름으로 되돌아간다. */
   setMyOfficeNickname: (nickname: string | null) => Promise<{ error: string | null }>;
   joinOffice: (inviteCode: string, nickname?: string | null) => Promise<{ error: string | null }>;
@@ -494,14 +494,16 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
     return statusOk;
   };
 
-  const applyPendingSync = async () => {
+  // officeIds를 주면 그 오피스에만 (시트에서 고른 것), 없으면 전부
+  const applyPendingSync = async (officeIds?: string[]) => {
     const p = pendingSync;
     if (!p || !user) return;
+    const targets = officeIds ? p.targets.filter(o => officeIds.includes(o.id)) : p.targets;
     // 적용이 끝날 때까지 시트를 둔다 (버튼의 로딩 표시와 닫기 막기가 pendingSync에 기댄다)
     try {
       let ok = 0;
       let failed = 0;
-      for (const target of p.targets) {
+      for (const target of targets) {
         if (await applyToOffice(target, p)) ok += 1; else failed += 1;
       }
       if (ok > 0) toast.success(`다른 오피스 ${ok}곳에도 적용했어요`);
