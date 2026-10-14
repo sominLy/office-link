@@ -20,6 +20,7 @@ import Guide from './pages/Guide';
 import LoginRoute from './pages/LoginRoute';
 import Retro from './pages/Retro';
 import Trophies from './pages/Trophies';
+import Alerts from './pages/Alerts';
 import { Privacy, Terms } from './pages/Legal';
 import TrophyWatcher from '@/components/awards/TrophyWatcher';
 import UsageTracker from '@/components/UsageTracker';
@@ -81,6 +82,7 @@ const App = () => (
               <Route path="/login" element={<LoginRoute />} />
               <Route path="/retro" element={<Retro />} />
               <Route path="/trophies" element={<Trophies />} />
+              <Route path="/alerts" element={<Alerts />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/admin" element={<Suspense fallback={null}><Admin /></Suspense>} />
