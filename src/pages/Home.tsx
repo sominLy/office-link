@@ -47,9 +47,15 @@ export default function Home() {
   const [selectedMember, setSelectedMember] = useState<MemberStatus | null>(null);
   const [notifOn, setNotifOn] = useState(notificationsEnabled() && !isMuted());
   const [titleDialogOpen, setTitleDialogOpen] = useState(false);
-  const [exitTarget, setExitTarget] = useState<Office | null>(null); // 나가기·삭제를 묻는 오피스
-  // 만든 사람은 삭제, 나머지는 나가기. 공개 오피스는 만든 사람이 없어(null) 누구나 나가기만 보인다.
-  const isOfficeCreator = !!office?.created_by && office.created_by === user?.id;
+  // 나가기·삭제를 묻는 오피스. 닫히는 동안 내용이 바뀌지 않게 닫을 때는 exitOpen만 끈다.
+  const [exit, setExit] = useState<{ office: Office; mode: 'leave' | 'delete' } | null>(null);
+  const [exitOpen, setExitOpen] = useState(false);
+  // 만든 사람은 삭제, 나머지는 나가기. 공개 오피스는 만든 사람이 없어(null) 누구도 지울 수 없다.
+  // 공개 오피스 운영자(방장)는 나가면 다시 들어와도 멤버로만 들어와 방장 권한을 되찾을 길이 없어서 메뉴를 숨긴다.
+  const exitMode: 'leave' | 'delete' | null = !office ? null
+    : office.created_by && office.created_by === user?.id ? 'delete'
+    : office.is_public && myRole === 'admin' ? null
+    : 'leave';
   const [menuOpen, setMenuOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [focusOpen, setFocusOpen] = useState(false);
@@ -235,11 +241,14 @@ export default function Home() {
                     <Tag className="w-4 h-4 mr-2 text-fg-neutral-muted" /> 호칭 설정
                   </DropdownMenuItem>
                 )}
-                {office && (
+                {office && exitMode && (
                   <>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setExitTarget(office)} className="cursor-pointer text-fg-critical-contrast">
-                      {isOfficeCreator
+                    <DropdownMenuItem
+                      onClick={() => { setExit({ office, mode: exitMode }); setExitOpen(true); }}
+                      className="cursor-pointer text-fg-critical-contrast"
+                    >
+                      {exitMode === 'delete'
                         ? <><Trash2 className="w-4 h-4 mr-2" /> 이 오피스 삭제</>
                         : <><LogOut className="w-4 h-4 mr-2" /> 이 오피스 나가기</>}
                     </DropdownMenuItem>
@@ -595,9 +604,10 @@ export default function Home() {
       </Dialog>
 
       <OfficeLeaveDialog
-        target={exitTarget}
-        mode={exitTarget?.created_by && exitTarget.created_by === user?.id ? 'delete' : 'leave'}
-        onClose={() => setExitTarget(null)}
+        open={exitOpen}
+        target={exit?.office ?? null}
+        mode={exit?.mode ?? 'leave'}
+        onClose={() => setExitOpen(false)}
       />
 
       {office && (
