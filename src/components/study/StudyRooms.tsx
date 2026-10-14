@@ -35,6 +35,7 @@ export default function StudyRooms() {
   // 삭제는 두 번 눌러 확정한다. 첫 번째 누름 뒤 4초 안에 다시 누르지 않으면 되돌린다.
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const armedAtRef = useRef(0); // 더블클릭으로 확정까지 한 번에 지나가지 않게
+  const deletingRef = useRef<string | null>(null); // 내가 지운 방은 realtime 삭제 이벤트에서 다시 처리하지 않는다
   useEffect(() => {
     if (!confirmDeleteId) return;
     const t = setTimeout(() => setConfirmDeleteId(null), 4000);
@@ -216,7 +217,6 @@ export default function StudyRooms() {
   };
 
   // 방을 지운다 (오피스 방장만, 028의 study_rooms_delete). 참여 기록도 같이 지워지고(cascade) 소식에는 남지 않는다.
-  const deletingRef = useRef<string | null>(null); // 내가 지운 방은 realtime 삭제 이벤트에서 다시 처리하지 않는다
   const remove = async (room: StudyRoom) => {
     if (!user || busyId) return;
     if (confirmDeleteId !== room.id) {
@@ -236,6 +236,7 @@ export default function StudyRooms() {
       .select('id');
     setBusyId(null);
     if (error || !data || data.length === 0) {
+      deletingRef.current = null;
       toast.error('모임을 지우지 못했어요. 잠시 후 다시 시도해 주세요');
       await fetchRooms();
       return;

@@ -27,8 +27,9 @@ export default function MultiOfficeSyncDialog() {
   const [busy, setBusy] = useState(false);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const targets = useMemo(() => pendingSync?.targets ?? [], [pendingSync]);
-  // 새로 물을 때마다 전부 고른 상태로 시작한다
-  useEffect(() => { setPicked(new Set(targets.map(o => o.id))); }, [targets]);
+  // 새로 물을 때마다 전부 고른 상태로 시작한다 (같은 오피스 묶음이 다시 그려져도 고른 것을 지우지 않게 id 문자열로 비교)
+  const targetKey = targets.map(o => o.id).join(',');
+  useEffect(() => { setPicked(new Set(targetKey ? targetKey.split(',') : [])); }, [targetKey]);
 
   const allPicked = targets.length > 0 && picked.size === targets.length;
   const toggle = (id: string) => setPicked(prev => {
