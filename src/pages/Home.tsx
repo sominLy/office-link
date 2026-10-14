@@ -24,6 +24,7 @@ import RetroBanner from '@/components/retro/RetroBanner';
 import StudyRooms from '@/components/study/StudyRooms';
 import FeedbackDialog from '@/components/feedback/FeedbackDialog';
 import BottomNav from '@/components/BottomNav';
+import AlertsBell from '@/components/AlertsBell';
 import { notificationsEnabled, requestNotificationPermission, notify, isMuted, setMuted } from '@/lib/notify';
 import { subscribePush, unsubscribePush } from '@/lib/push';
 import { kstToday } from '@/lib/dates';
@@ -260,7 +261,8 @@ export default function Home() {
               </button>
             )}
           </div>
-          {/* 헤더 우측은 비워 방 제목이 넉넉하게. 부가 기능은 우측 하단 ✨ 더보기로 이동 */}
+          {/* 우측은 알림 종 하나만. 나머지 부가 기능은 우측 하단 ✨ 더보기에 있다 */}
+          <AlertsBell />
         </div>
       </header>
 
