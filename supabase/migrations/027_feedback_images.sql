@@ -41,7 +41,7 @@ declare p text;
 begin
   if auth.uid() is null then return new; end if;
   foreach p in array coalesce(new.images, '{}') loop
-    if p !~ ('^' || auth.uid()::text || '/[A-Za-z0-9._-]+$') then
+    if p !~ ('^' || auth.uid()::text || '/[A-Za-z0-9_-][A-Za-z0-9._-]*$') then
       raise exception 'image path must be in own folder' using errcode = '23514';
     end if;
   end loop;

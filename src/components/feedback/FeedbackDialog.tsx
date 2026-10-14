@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useRef, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -38,13 +38,9 @@ export default function FeedbackDialog({ open, onClose, onSent }: Props) {
   const [sending, setSending] = useState(false);
   const [files, setFiles] = useState<File[]>([]); // 첨부 사진 (최대 3장)
   const fileInput = useRef<HTMLInputElement>(null);
-  // 미리보기 주소는 파일이 바뀔 때마다 새로 만들고 이전 것은 돌려준다
-  const [previews, setPreviews] = useState<string[]>([]);
-  useEffect(() => {
-    const urls = files.map(f => URL.createObjectURL(f));
-    setPreviews(urls);
-    return () => { urls.forEach(u => URL.revokeObjectURL(u)); };
-  }, [files]);
+  // 미리보기 주소는 파일 목록과 같은 렌더에서 만들고(한 프레임 비지 않게), 바뀌면 이전 것을 돌려준다
+  const previews = useMemo(() => files.map(f => URL.createObjectURL(f)), [files]);
+  useEffect(() => () => { previews.forEach(u => URL.revokeObjectURL(u)); }, [previews]);
   const pickFiles = (list: FileList | null) => {
     if (!list) return;
     const next = [...files];
@@ -121,7 +117,8 @@ export default function FeedbackDialog({ open, onClose, onSent }: Props) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+    {/* 보내는 동안(사진 올리는 중)에는 닫지 못한다. 닫히면 올린 사진이 글 없이 남는다. */}
+    <Dialog open={open} onOpenChange={(o) => !o && !sending && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>📮 의견·문의 보내기</DialogTitle>
