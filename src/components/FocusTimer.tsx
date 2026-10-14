@@ -193,7 +193,7 @@ export default function FocusTimer() {
           <div>
             <p className="text-t11 font-mono font-bold text-fg-critical-contrast">{formatDuration(elapsed)}</p>
             {activeFocus.task_id && (
-              <p className="text-t2 text-fg-neutral-muted mt-1">
+              <p className="text-t5 font-semibold text-fg-neutral mt-1 break-keep">
                 {tasks.find(t => t.id === activeFocus.task_id)?.title || '업무'}
               </p>
             )}

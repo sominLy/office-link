@@ -26,6 +26,8 @@ const dueTextColor: Record<DueTone, string> = {
 };
 
 const COMPACT_LIMIT = 4;
+// 홈 카드에 남기는 끝낸 일 개수 (최근에 끝낸 순). 체크를 다시 누르면 한 번에 되돌린다.
+const DONE_LIMIT = 3;
 
 /** 홈의 "이번 주 할 일" 카드 — 급한 것부터 몇 개만, 바로 체크하고 바로 추가 */
 export default function MyTasks({ compact = false }: { compact?: boolean }) {
@@ -83,8 +85,16 @@ export default function MyTasks({ compact = false }: { compact?: boolean }) {
 
   const sorted = sortTasks(tasks);
   const openTasks = sorted.filter(t => t.status !== 'done');
-  const displayTasks = compact ? openTasks.slice(0, COMPACT_LIMIT) : sorted;
-  const hiddenCount = compact ? openTasks.length - displayTasks.length : 0;
+  // 끝낸 일은 바로 치우지 않고 아래에 취소선으로 남긴다(처리한 일 보는 재미, 체크를 다시 누르면 한 번에 되돌림).
+  // 홈 카드에서는 최근에 끝낸 순으로 몇 개만.
+  const doneTasks = tasks
+    .filter(t => t.status === 'done')
+    .sort((a, b) => (b.completed_at ?? '').localeCompare(a.completed_at ?? ''));
+  const shownOpen = compact ? openTasks.slice(0, COMPACT_LIMIT) : openTasks;
+  const shownDone = compact ? doneTasks.slice(0, DONE_LIMIT) : [];
+  const displayTasks = compact ? [...shownOpen, ...shownDone] : sorted;
+  const hiddenCount = compact ? openTasks.length - shownOpen.length : 0;
+  const hiddenDone = compact ? doneTasks.length - shownDone.length : 0;
   const doneCount = tasks.length - openTasks.length;
   const progress = tasks.length > 0 ? Math.round((doneCount / tasks.length) * 100) : 0;
 
@@ -123,16 +133,19 @@ export default function MyTasks({ compact = false }: { compact?: boolean }) {
         <div className="space-y-2.5 py-1">
           {[0, 1, 2].map(i => <div key={i} className="h-5 rounded bg-bg-brand-weak animate-pulse" />)}
         </div>
-      ) : displayTasks.length === 0 ? (
-        <p className="text-t4 text-fg-neutral-muted text-center py-3">
-          {tasks.length === 0 ? '이번 주 할 일을 아래에 적어보세요' : '이번 주 할 일을 모두 끝냈어요 🎉'}
-        </p>
+      ) : tasks.length === 0 ? (
+        <p className="text-t4 text-fg-neutral-muted text-center py-3">이번 주 할 일을 아래에 적어보세요</p>
       ) : (
         <ul className="space-y-1">
-          {displayTasks.map((task) => {
+          {compact && openTasks.length === 0 && (
+            <li className="text-t4 text-fg-neutral-muted text-center py-2">이번 주 할 일을 모두 끝냈어요 🎉</li>
+          )}
+          {displayTasks.map((task, i) => {
             const due = task.status === 'done' ? null : dueInfo(task, today, nowHM);
+            // 홈 카드에서 끝낸 일 묶음이 시작되는 자리에 얇은 구분선
+            const startsDone = compact && task.status === 'done' && (i === 0 || displayTasks[i - 1].status !== 'done');
             return (
-              <li key={task.id} className="flex items-center gap-2 py-1">
+              <li key={task.id} className={cn('flex items-center gap-2 py-1', startsDone && 'mt-1.5 pt-2 border-t border-dashed border-stroke-neutral-subtle')}>
                 <button
                   onClick={() => toggleComplete(task)}
                   className="flex-shrink-0 rounded-full"
@@ -161,9 +174,11 @@ export default function MyTasks({ compact = false }: { compact?: boolean }) {
         </ul>
       )}
 
-      {hiddenCount > 0 && (
+      {(hiddenCount > 0 || hiddenDone > 0) && (
         <button onClick={() => navigate('/tasks')} className="mt-1 text-t2 text-fg-neutral-muted hover:text-fg-brand">
-          + {hiddenCount}개 더 있어요
+          {hiddenCount > 0 ? `+ ${hiddenCount}개 더 있어요` : ''}
+          {hiddenCount > 0 && hiddenDone > 0 ? ' · ' : ''}
+          {hiddenDone > 0 ? `끝낸 일 ${hiddenDone}개 더` : ''}
         </button>
       )}
 
