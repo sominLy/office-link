@@ -9,6 +9,7 @@ import { ActionButton } from '@/seed/ui/action-button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageSquareText, Trash2 } from 'lucide-react';
 import FeedbackDialog from './FeedbackDialog';
+import FeedbackImages from './FeedbackImages';
 
 /**
  * 내 계정의 "의견·문의" 카드 — 보내기 버튼과 내가 보낸 글·운영자 답변.
@@ -82,6 +83,7 @@ export default function MyFeedback() {
                     </button>
                   </div>
                   <p className="text-t4 text-fg-neutral whitespace-pre-wrap break-keep [overflow-wrap:anywhere]">{f.message}</p>
+                  <FeedbackImages paths={f.images} />
                   {/* 자동 답변 — 운영자 답변이 오기 전까지 접수됐다는 걸 보여준다 */}
                   {f.status === 'open' && !f.reply && (
                     <p className="rounded-lg bg-bg-neutral-muted px-3 py-2 text-t2 text-fg-neutral-muted">
