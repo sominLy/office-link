@@ -54,7 +54,8 @@ export default function Home() {
   // 공개 오피스 운영자(방장)는 나가면 다시 들어와도 멤버로만 들어와 방장 권한을 되찾을 길이 없어서 메뉴를 숨긴다.
   const exitMode: 'leave' | 'delete' | null = !office ? null
     : office.created_by && office.created_by === user?.id ? 'delete'
-    : office.is_public && myRole === 'admin' ? null
+    // myRole이 아직 안 왔으면(null) 공개 오피스에서는 일단 숨긴다. leaveOffice도 DB 값으로 한 번 더 막는다.
+    : office.is_public && myRole !== 'member' ? null
     : 'leave';
   const [menuOpen, setMenuOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);

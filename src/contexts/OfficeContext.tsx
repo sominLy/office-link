@@ -263,14 +263,16 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
 
   // 다른 사람이 오피스를 지우거나 다른 기기에서 나가면 이 화면에는 신호가 오지 않는다
   // (멤버 행 삭제 이벤트는 office_id 필터에 걸리지 않는다). 내 멤버십을 다시 읽어 사라진 오피스가 있으면 목록을 새로 받는다.
-  // 화면으로 돌아올 때와 출근이 권한 오류로 거부될 때 부른다. 목록이 바뀌었으면 true.
+  // 화면으로 돌아올 때와 출근·퇴근·상태 변경이 그 오피스에서 거부될 때 부른다.
+  // 보던 오피스가 사라졌으면 true (호출부는 원래 오류 안내 대신 이 안내로 끝낸다).
   const recheckMemberships = useCallback(async (): Promise<boolean> => {
     if (!user || offices.length === 0) return false;
     const { data, error } = await supabase.from('office_members').select('office_id').eq('user_id', user.id);
     if (error || !data) return false;
     const mine = new Set(data.map(m => m.office_id as string));
     if (offices.every(o => mine.has(o.id))) return false;
-    if (office && !mine.has(office.id)) {
+    const currentGone = !!office && !mine.has(office.id);
+    if (currentGone) {
       setMembers([]);
       setMyRole(null);
       setMyWorkSession(null);
@@ -278,7 +280,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       toast('보던 오피스가 삭제됐거나 더 이상 멤버가 아니에요');
     }
     await fetchOffice();
-    return true;
+    return currentGone;
   }, [user, office, offices, fetchOffice]);
 
   useEffect(() => {
@@ -394,15 +396,18 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       // 반면 여기서 막으면 사용자가 퇴근 자체를 못 하게 된다.
       console.error('집중 세션 종료 실패, 퇴근은 계속 진행', focusError);
     }
-    const { error } = await supabase
+    const { data: closed, error } = await supabase
       .from('work_sessions')
       .update({ ended_at: now })
       .eq('id', myWorkSession.id)
-      .is('ended_at', null);
+      .is('ended_at', null)
+      .select('id');
     if (error) {
       toast.error('퇴근하지 못했어요. 잠시 후 다시 시도해 주세요');
       return false;
     }
+    // 0행: 다른 탭에서 먼저 퇴근했거나, 오피스가 지워져 세션도 같이 사라졌다. 뒤의 경우만 여기서 멈춘다.
+    if (closed?.length === 0 && (await recheckMemberships())) return false;
     // 여기부터 퇴근은 DB에 반영됐다. 상태 표시 갱신이 실패해도 퇴근 자체는 유효하므로
     // changeStatus의 결과로 퇴근 성공을 뒤집지 않는다 (실패는 changeStatus가 직접 알린다).
     await changeStatus('퇴근');
@@ -440,6 +445,8 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       user_id: user.id,
       status,
     });
+    // 42501·23503 = 그 사이 오피스가 지워졌거나 내보내졌을 수 있다
+    if (error && (error.code === '42501' || error.code === '23503') && (await recheckMemberships())) return false;
     if (error) toast.error(error.code === '23505' ? '다른 탭에서 방금 상태를 바꿨어요' : '상태를 바꾸지 못했어요. 잠시 후 다시 시도해 주세요');
     await fetchMySession();
     await fetchMembers();
@@ -726,6 +733,13 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
 
   const leaveOffice = async (officeId: string) => {
     if (!user) return { error: '로그인하고 다시 시도해 주세요' };
+    // 공개 오피스 방장(운영자)은 나가면 멤버로만 다시 들어와 방장 권한을 되찾을 수 없다. 화면의 myRole은
+    // 늦게 오거나 이전 오피스 값일 수 있어 DB에서 다시 읽고 막는다.
+    if (offices.find(o => o.id === officeId)?.is_public) {
+      const { data: me } = await supabase.from('office_members').select('role')
+        .eq('office_id', officeId).eq('user_id', user.id).maybeSingle();
+      if (me?.role === 'admin') return { error: '공개 오피스 운영자는 나갈 수 없어요' };
+    }
     // 나간 뒤에는 그 오피스의 내 세션을 고칠 수 없다(026 update 정책의 is_office_member). 열린 것을 먼저 닫는다.
     // 근무·집중은 오늘 연 것만 지금 시각으로 닫는다. 자정 전 것은 크론이 그날 자정으로 닫는다 (applyToOffice의 퇴근과 같다).
     // 내가 연 모임은 닫고 들어가 있던 모임에서는 빠진다. 나간 뒤에는 그 오피스 방장만 정리할 수 있다.

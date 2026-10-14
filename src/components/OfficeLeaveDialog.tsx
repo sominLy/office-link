@@ -51,7 +51,7 @@ export default function OfficeLeaveDialog({ open, target, mode, onClose }: {
     ? `${memberCount && memberCount > 1 ? `나를 포함한 멤버 ${memberCount}명의 ` : ''}출퇴근·집중 기록, 할 일과 반복 할 일, 소식, 채팅, 회고, 진열장 스티커와 상장, 모임이 모두 지워지고 되돌릴 수 없어요.`
     : [
       '멤버 목록에서 빠지고, 출근해 있었다면 지금 퇴근 처리돼요.',
-      '이 오피스의 내 기록은 지워지지 않지만, 다시 들어올 때까지 리포트와 진열장에서도 보이지 않아요.',
+      '출퇴근·집중 기록과 할 일은 지워지지 않지만 다시 들어올 때까지 나도 볼 수 없어서 리포트와 트로피 집계에서 빠져요. 받은 스티커와 상장은 진열장에 그대로 보여요.',
       target?.is_public ? '내가 쓴 소식은 멤버들에게 계속 보여요. 언제든 다시 들어올 수 있어요.'
         : '내가 쓴 소식과 채팅은 멤버들에게 계속 보여요. 다시 들어오려면 초대 코드가 필요해요.',
     ].join(' ');
@@ -65,7 +65,7 @@ export default function OfficeLeaveDialog({ open, target, mode, onClose }: {
       if (n !== 1) {
         setMemberCount(n);
         setBusy(false);
-        toast('그 사이 멤버가 들어왔어요. 오피스 이름을 입력해 주세요');
+        toast(n === null ? '멤버 수를 확인하지 못했어요. 오피스 이름을 입력해 주세요' : '그 사이 멤버가 들어왔어요. 오피스 이름을 입력해 주세요');
         return;
       }
     }
