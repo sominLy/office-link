@@ -162,6 +162,7 @@ export interface Feedback {
   replied_at: string | null;
   created_at: string;
   notify_on_done: boolean; // 업데이트되면 알려 달라고 했는지
+  images?: string[]; // 첨부 사진 경로 (feedback-images 버킷, 027 전 DB에는 없다)
 }
 
 /** 운영자 목록(admin_feedback_list)은 보낸 사람의 닉네임·이메일이 붙어 온다 */

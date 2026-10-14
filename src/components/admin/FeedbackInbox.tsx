@@ -8,6 +8,7 @@ import { FEEDBACK_KINDS, formatSentAt, kindMeta, statusLabel } from '@/lib/feedb
 import { ActionButton } from '@/seed/ui/action-button';
 import { TextField, TextFieldTextarea } from '@/seed/ui/text-field';
 import { RefreshCw } from 'lucide-react';
+import FeedbackImages from '@/components/feedback/FeedbackImages';
 
 type Filter = 'open' | 'closed' | 'all';
 // 운영자가 누르는 버튼. 답변 보내기와 업데이트 완료만 푸시가 간다.
@@ -140,6 +141,7 @@ export default function FeedbackInbox() {
                   </span>
                 </div>
                 <p className="text-t4 text-[#0b0b0b] whitespace-pre-wrap break-keep [overflow-wrap:anywhere]">{f.message}</p>
+                <FeedbackImages paths={f.images} />
                 {f.replied_at && f.reply && (
                   <p className="text-t1 text-[#898781]">마지막 답변 {formatSentAt(f.replied_at)}</p>
                 )}

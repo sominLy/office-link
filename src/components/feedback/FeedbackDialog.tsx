@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -6,13 +6,13 @@ import { toast } from '@/lib/toast';
 import { track } from '@/lib/funnel';
 import { cn } from '@/lib/utils';
 import type { FeedbackKind } from '@/lib/types';
-import { AUTO_REPLY, AUTO_REPLY_NOTIFY, FEEDBACK_KINDS, FEEDBACK_MAX, checkFeedback } from '@/lib/feedback';
+import { AUTO_REPLY, AUTO_REPLY_NOTIFY, FEEDBACK_BUCKET, FEEDBACK_IMAGE_MAX, FEEDBACK_KINDS, FEEDBACK_MAX, checkFeedback, checkFeedbackImage, uploadFeedbackImages } from '@/lib/feedback';
 import { isMuted, notificationsEnabled } from '@/lib/notify';
 import { ActionButton } from '@/seed/ui/action-button';
 import { TextField, TextFieldTextarea } from '@/seed/ui/text-field';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/AppDialog';
-import { Send } from 'lucide-react';
+import { Camera, Send, X } from 'lucide-react';
 
 interface Props {
   open: boolean;
@@ -36,6 +36,23 @@ export default function FeedbackDialog({ open, onClose, onSent }: Props) {
   const [message, setMessage] = useState('');
   const [notifyOnDone, setNotifyOnDone] = useState(true); // 업데이트되면 알려 달라
   const [sending, setSending] = useState(false);
+  const [files, setFiles] = useState<File[]>([]); // 첨부 사진 (최대 3장)
+  const fileInput = useRef<HTMLInputElement>(null);
+  // 미리보기 주소는 파일 목록과 같은 렌더에서 만들고(한 프레임 비지 않게), 바뀌면 이전 것을 돌려준다
+  const previews = useMemo(() => files.map(f => URL.createObjectURL(f)), [files]);
+  useEffect(() => () => { previews.forEach(u => URL.revokeObjectURL(u)); }, [previews]);
+  const pickFiles = (list: FileList | null) => {
+    if (!list) return;
+    const next = [...files];
+    for (const file of Array.from(list)) {
+      if (next.length >= FEEDBACK_IMAGE_MAX) { toast.error(`사진은 ${FEEDBACK_IMAGE_MAX}장까지 붙일 수 있어요`); break; }
+      const check = checkFeedbackImage(file);
+      if (!check.ok) { toast.error(check.reason ?? '붙일 수 없는 파일이에요'); continue; }
+      next.push(file);
+    }
+    setFiles(next);
+    if (fileInput.current) fileInput.current.value = '';
+  };
   // 푸시는 알림을 켠 기기에만 간다. 켜지 않은 사람에게 "알려드릴게요"라고 하면 거짓말이 된다.
   const pushOn = notificationsEnabled() && !isMuted();
 
@@ -48,11 +65,28 @@ export default function FeedbackDialog({ open, onClose, onSent }: Props) {
       return;
     }
     setSending(true);
-    const { data, error } = await supabase
+    // 사진을 먼저 올리고 경로를 글에 붙인다. 글이 안 들어가면 올린 사진은 지운다.
+    const uploaded = files.length > 0 ? await uploadFeedbackImages(user.id, files) : { paths: [], error: null };
+    if (uploaded.error) {
+      setSending(false);
+      toast.error(uploaded.error);
+      return;
+    }
+    const row: Record<string, unknown> = { user_id: user.id, kind, message: message.trim(), page: pathname.slice(0, 100), notify_on_done: notifyOnDone };
+    const withImages: Record<string, unknown> = uploaded.paths.length > 0 ? { ...row, images: uploaded.paths } : row;
+    let { data, error } = await supabase
       .from('feedback')
-      .insert({ user_id: user.id, kind, message: message.trim(), page: pathname.slice(0, 100), notify_on_done: notifyOnDone })
+      .insert(withImages)
       .select('id')
       .single();
+    // images 열이 없는 DB(027 미적용)면 사진 없이 다시 넣는다
+    if (error && (error.code === 'PGRST204' || error.code === '42703') && uploaded.paths.length > 0) {
+      await supabase.storage.from(FEEDBACK_BUCKET).remove(uploaded.paths);
+      toast.error('사진 첨부는 아직 켜지지 않았어요. 글만 보낼게요');
+      ({ data, error } = await supabase.from('feedback').insert(row).select('id').single());
+    } else if (error && uploaded.paths.length > 0) {
+      await supabase.storage.from(FEEDBACK_BUCKET).remove(uploaded.paths);
+    }
     setSending(false);
     if (error || !data) {
       if (error?.code === '42P01' || error?.code === 'PGRST205') {
@@ -68,13 +102,14 @@ export default function FeedbackDialog({ open, onClose, onSent }: Props) {
       }
       return;
     }
-    track('feedback_sent', { kind, notify: notifyOnDone });
+    track('feedback_sent', { kind, notify: notifyOnDone, images: uploaded.paths.length });
     // 운영자에게 푸시. 실패해도 글은 들어갔으므로 결과를 버린다.
     supabase.functions.invoke('push-notify', {
       body: { action: 'feedback', actor_id: user.id, feedback_id: data.id },
     }).catch(() => {});
     setMessage('');
     setKind('idea');
+    setFiles([]);
     onSent?.();
     onClose();
     // 자동 답변 — 보낸 사람이 바로 받는 첫 응답
@@ -82,7 +117,8 @@ export default function FeedbackDialog({ open, onClose, onSent }: Props) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+    // 보내는 동안(사진 올리는 중)에는 닫지 못한다. 닫히면 올린 사진이 글 없이 남는다.
+    <Dialog open={open} onOpenChange={(o) => !o && !sending && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>📮 의견·문의 보내기</DialogTitle>
@@ -107,6 +143,30 @@ export default function FeedbackDialog({ open, onClose, onSent }: Props) {
             <TextFieldTextarea autoFocus maxLength={FEEDBACK_MAX}
               placeholder={kind === 'bug' ? '무엇을 했을 때, 어떻게 안 됐는지 적어 주시면 빨리 고칠 수 있어요' : '편하게 적어 주세요'} />
           </TextField>
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <ActionButton type="button" variant="neutralOutline" size="small" onClick={() => fileInput.current?.click()}
+                disabled={sending || files.length >= FEEDBACK_IMAGE_MAX}>
+                <Camera className="w-4 h-4 mr-1" aria-hidden="true" /> 사진 붙이기
+              </ActionButton>
+              <span className="text-t2 text-fg-neutral-muted">{files.length}/{FEEDBACK_IMAGE_MAX}장 · 5MB 이하</span>
+              <input ref={fileInput} type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple className="hidden"
+                onChange={(e) => pickFiles(e.target.files)} aria-label="사진 고르기" />
+            </div>
+            {files.length > 0 && (
+              <ul className="flex flex-wrap gap-2" aria-label="붙인 사진">
+                {files.map((f, i) => (
+                  <li key={`${f.name}-${i}`} className="relative">
+                    <img src={previews[i]} alt={f.name} className="w-20 h-20 rounded-lg object-cover border border-stroke-neutral-subtle" />
+                    <button type="button" onClick={() => setFiles(files.filter((_, j) => j !== i))} aria-label={`${f.name} 빼기`}
+                      className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-bg-neutral-solid text-white grid place-items-center shadow">
+                      <X className="w-3.5 h-3.5" aria-hidden="true" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
           <label className="flex items-start gap-2 text-t4 text-fg-neutral cursor-pointer">
             <input type="checkbox" checked={notifyOnDone} onChange={(e) => setNotifyOnDone(e.target.checked)} className="accent-amber-500 mt-1" />
             <span>

@@ -1,4 +1,5 @@
 // 의견·문의 — 보내기 다이얼로그·내 계정 목록·운영자 받은편지함이 같은 이름표를 쓰도록 모아둔다.
+import { supabase } from '@/lib/supabase';
 import type { Feedback, FeedbackKind } from '@/lib/types';
 
 export const FEEDBACK_KINDS: { value: FeedbackKind; emoji: string; label: string; hint: string }[] = [
@@ -46,4 +47,43 @@ export function formatSentAt(iso: string): string {
   return new Date(iso).toLocaleString('ko-KR', {
     timeZone: 'Asia/Seoul', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit',
   });
+}
+
+// ===== 사진 첨부 (027) =====
+export const FEEDBACK_BUCKET = 'feedback-images';
+export const FEEDBACK_IMAGE_MAX = 3;
+export const FEEDBACK_IMAGE_BYTES = 5 * 1024 * 1024; // 버킷의 file_size_limit과 같은 값
+const IMAGE_EXT: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' };
+
+/** 붙일 수 있는 파일인지. 버킷의 allowed_mime_types·크기와 같은 기준이다. */
+export function checkFeedbackImage(file: File): { ok: boolean; reason?: string } {
+  if (!IMAGE_EXT[file.type]) return { ok: false, reason: 'JPG·PNG·WebP·GIF 사진만 붙일 수 있어요' };
+  if (file.size > FEEDBACK_IMAGE_BYTES) return { ok: false, reason: '사진은 5MB 이하로 붙여 주세요' };
+  return { ok: true };
+}
+
+/** 내 폴더({userId}/{uuid}.{ext})에 올리고 경로 목록을 돌려준다. 하나라도 실패하면 올린 것을 지우고 실패로. */
+export async function uploadFeedbackImages(userId: string, files: File[]): Promise<{ paths: string[]; error: string | null }> {
+  const paths: string[] = [];
+  for (const file of files) {
+    const path = `${userId}/${crypto.randomUUID()}.${IMAGE_EXT[file.type] ?? 'jpg'}`;
+    const { error } = await supabase.storage.from(FEEDBACK_BUCKET).upload(path, file, { contentType: file.type, upsert: false });
+    if (error) {
+      if (paths.length > 0) await supabase.storage.from(FEEDBACK_BUCKET).remove(paths);
+      // 버킷이 없는 DB(027 미적용)는 "Bucket not found"로 온다
+      const missing = /bucket not found/i.test(error.message);
+      return { paths: [], error: missing ? '사진 첨부는 아직 켜지지 않았어요. 글만 보내 주세요' : '사진을 올리지 못했어요. 잠시 후 다시 시도해 주세요' };
+    }
+    paths.push(path);
+  }
+  return { paths, error: null };
+}
+
+/** 경로 → 1시간짜리 서명 URL. 비공개 버킷이라 주소만으로는 열리지 않는다. 못 만든 경로는 빠진다. */
+export async function signFeedbackImages(paths: string[]): Promise<Record<string, string>> {
+  if (paths.length === 0) return {};
+  const { data } = await supabase.storage.from(FEEDBACK_BUCKET).createSignedUrls(paths, 3600);
+  const out: Record<string, string> = {};
+  for (const d of data ?? []) if (d.path && d.signedUrl) out[d.path] = d.signedUrl;
+  return out;
 }
