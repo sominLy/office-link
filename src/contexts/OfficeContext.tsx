@@ -334,7 +334,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
     supabase.functions.invoke('push-notify', {
       body: { action: 'clock_in', office_id: office.id, actor_id: user.id },
     }).catch(() => {});
-    askSync('clock_in');
+    void askSync('clock_in');
   };
 
   // 반환값은 "퇴근이 DB에 반영됐는가". 호출부가 성공 안내를 띄울지 판단하는 데 쓴다.
@@ -371,7 +371,7 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
     await fetchMembers();
     // 퇴근 기록. 실패해도 퇴근 자체는 유효하므로 의도적으로 결과를 버린다
     supabase.from('office_feed').insert({ office_id: office.id, user_id: user.id, type: 'clock_out' }).then(() => {});
-    askSync('clock_out');
+    void askSync('clock_out');
     return true;
   };
 
@@ -404,20 +404,44 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
     if (error) toast.error(error.code === '23505' ? '다른 탭에서 방금 상태를 바꿨어요' : '상태를 바꾸지 못했어요. 잠시 후 다시 시도해 주세요');
     await fetchMySession();
     await fetchMembers();
-    if (!error && opts?.ask) askSync('status', status);
+    if (!error && opts?.ask) void askSync('status', status);
     return !error;
   };
 
   // ===== 여러 오피스에 한 번에 적용 =====
   // 오피스가 둘 이상이면 출근·퇴근·상태 변경 뒤에 "다른 오피스에도 적용할까요?"를 띄운다.
   // 세션 표는 오피스별이라 오피스마다 같은 행을 하나씩 넣는다. 지금 오피스는 이미 반영된 뒤다.
-  const askSync = (kind: SyncKind, status?: StatusPreset) => {
-    if (!office) return;
-    const targets = offices.filter(o => o.id !== office.id);
+  // 출근 여부와 무관한 상태. 나머지(점심·집중·업무 중…)는 출근한 오피스에만 뜻이 있다.
+  const OFF_STATUSES: StatusPreset[] = ['연차', '휴가 중', '퇴근'];
+  const askSync = async (kind: SyncKind, status?: StatusPreset) => {
+    if (!office || !user) return;
+    const others = offices.filter(o => o.id !== office.id);
+    if (others.length === 0) return;
+    // 오늘 출근해 있는 오피스. 출근하지 않은 오피스에 근무 상태를 넣으면 거기 있는 것처럼 보인다.
+    const { data } = await supabase.from('work_sessions').select('office_id')
+      .eq('user_id', user.id).is('ended_at', null).gte('started_at', kstStartOfTodayISO());
+    const working = new Set((data ?? []).map(r => r.office_id as string));
+    let targets: Office[];
+    if (kind === 'clock_in') targets = others.filter(o => !working.has(o.id));
+    else if (kind === 'clock_out') targets = others.filter(o => working.has(o.id));
+    else targets = status && OFF_STATUSES.includes(status) ? others : others.filter(o => working.has(o.id));
     if (targets.length === 0) return;
     setPendingSync({ kind, status, from: office, targets });
   };
   const dismissSync = () => setPendingSync(null);
+  // 오피스나 계정이 바뀌면 묻던 내용은 버린다 (from이 더는 지금 오피스가 아니다)
+  useEffect(() => { setPendingSync(null); }, [office?.id, user?.id]);
+
+  // 자정 전에 열어 둔 근무 세션이 남아 있으면 그날 자정으로 닫는다 (fetchMySession과 같은 처리). 닫았으면 true.
+  const closeStaleWork = async (officeId: string): Promise<boolean> => {
+    if (!user) return false;
+    const { data: open } = await supabase.from('work_sessions').select('id, started_at')
+      .eq('user_id', user.id).eq('office_id', officeId).is('ended_at', null).limit(1).maybeSingle();
+    if (!open || !isStaleSession(open.started_at)) return false;
+    const { error } = await supabase.from('work_sessions').update({ ended_at: midnightAfter(open.started_at) })
+      .eq('id', open.id).is('ended_at', null);
+    return !error;
+  };
 
   // 그 오피스의 열린 상태를 닫고 새 상태를 넣는다 (changeStatus와 같은 순서, 대상 오피스만 다르다)
   const setStatusIn = async (officeId: string, status: StatusPreset): Promise<boolean> => {
@@ -437,8 +461,11 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
     if (!user) return false;
     if (p.kind === 'status') return setStatusIn(target.id, p.status ?? '출근');
     if (p.kind === 'clock_in') {
-      // 이미 출근해 있으면(23505) 상태만 맞춘다
-      const { error } = await supabase.from('work_sessions').insert({ office_id: target.id, user_id: user.id });
+      // 23505 = 이미 열린 세션. 자정 전 것이 남은 거면 닫고 한 번 더 넣고, 오늘 것이면 상태만 맞춘다.
+      let { error } = await supabase.from('work_sessions').insert({ office_id: target.id, user_id: user.id });
+      if (error?.code === '23505' && (await closeStaleWork(target.id))) {
+        ({ error } = await supabase.from('work_sessions').insert({ office_id: target.id, user_id: user.id }));
+      }
       if (error && error.code !== '23505') return false;
       const statusOk = await setStatusIn(target.id, '출근');
       if (!error && statusOk) {
@@ -450,15 +477,19 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
       return statusOk;
     }
     // clock_out: 집중·근무 세션을 닫고 상태를 퇴근으로. 거기서 출근한 적이 없으면 상태만 맞춘다.
+    // 오늘 연 세션만 지금 시각으로 닫는다. 자정 전 것은 fetchMySession·크론이 그날 자정으로 닫는다.
     const now = new Date().toISOString();
-    await supabase.from('focus_sessions').update({ ended_at: now })
-      .eq('user_id', user.id).eq('office_id', target.id).is('ended_at', null);
+    const todayStart = kstStartOfTodayISO();
+    const { error: focusError } = await supabase.from('focus_sessions').update({ ended_at: now })
+      .eq('user_id', user.id).eq('office_id', target.id).is('ended_at', null).gte('started_at', todayStart);
+    if (focusError) console.error('다른 오피스 집중 세션 종료 실패, 퇴근은 계속', focusError);
     const { data: closed, error } = await supabase.from('work_sessions').update({ ended_at: now })
-      .eq('user_id', user.id).eq('office_id', target.id).is('ended_at', null).select('id');
+      .eq('user_id', user.id).eq('office_id', target.id).is('ended_at', null).gte('started_at', todayStart).select('id');
     if (error) return false;
     const statusOk = await setStatusIn(target.id, '퇴근');
     if (closed && closed.length > 0) {
       supabase.from('office_feed').insert({ office_id: target.id, user_id: user.id, type: 'clock_out' }).then(() => {});
+      return true; // 퇴근은 반영됐다. 상태 표시 실패로 퇴근 성공을 뒤집지 않는다 (clockOut과 같다)
     }
     return statusOk;
   };
@@ -466,14 +497,18 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
   const applyPendingSync = async () => {
     const p = pendingSync;
     if (!p || !user) return;
-    setPendingSync(null);
-    let ok = 0;
-    let failed = 0;
-    for (const target of p.targets) {
-      if (await applyToOffice(target, p)) ok += 1; else failed += 1;
+    // 적용이 끝날 때까지 시트를 둔다 (버튼의 로딩 표시와 닫기 막기가 pendingSync에 기댄다)
+    try {
+      let ok = 0;
+      let failed = 0;
+      for (const target of p.targets) {
+        if (await applyToOffice(target, p)) ok += 1; else failed += 1;
+      }
+      if (ok > 0) toast.success(`다른 오피스 ${ok}곳에도 적용했어요`);
+      if (failed > 0) toast.error(`${failed}곳은 적용하지 못했어요. 그 오피스로 옮겨서 직접 눌러 주세요`);
+    } finally {
+      setPendingSync(null);
     }
-    if (ok > 0) toast.success(`다른 오피스 ${ok}곳에도 적용했어요`);
-    if (failed > 0) toast.error(`${failed}곳은 적용하지 못했어요. 그 오피스로 옮겨서 직접 눌러 주세요`);
   };
 
   // 가입 뒤 공통 처리. 가입 자체는 성공했으므로 실패를 반환하지 않는다. 다만 저장이 안 되면
