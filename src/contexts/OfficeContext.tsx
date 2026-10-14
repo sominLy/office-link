@@ -736,8 +736,9 @@ export function OfficeProvider({ children }: { children: ReactNode }) {
     // 공개 오피스 방장(운영자)은 나가면 멤버로만 다시 들어와 방장 권한을 되찾을 수 없다. 화면의 myRole은
     // 늦게 오거나 이전 오피스 값일 수 있어 DB에서 다시 읽고 막는다.
     if (offices.find(o => o.id === officeId)?.is_public) {
-      const { data: me } = await supabase.from('office_members').select('role')
+      const { data: me, error: roleError } = await supabase.from('office_members').select('role')
         .eq('office_id', officeId).eq('user_id', user.id).maybeSingle();
+      if (roleError) return { error: '오피스에서 나가지 못했어요. 잠시 후 다시 시도해 주세요' };
       if (me?.role === 'admin') return { error: '공개 오피스 운영자는 나갈 수 없어요' };
     }
     // 나간 뒤에는 그 오피스의 내 세션을 고칠 수 없다(026 update 정책의 is_office_member). 열린 것을 먼저 닫는다.
