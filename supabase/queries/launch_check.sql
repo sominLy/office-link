@@ -74,6 +74,13 @@ from (values
   ('스터디룸 링크 제한',
     exists (select 1 from pg_constraint where conname = 'study_rooms_url_allowed'),
     '024 실행'),
+  ('모임 삭제는 방장만',
+    exists (
+      select 1 from pg_policies
+      where schemaname = 'public' and tablename = 'study_rooms'
+        and policyname = 'study_rooms_delete' and qual like '%is_office_admin%'
+    ),
+    '028 실행 (모임을 연 사람이 지울 수 있는 상태다)'),
   ('스터디룸 수정 범위',
     has_column_privilege('authenticated', 'public.study_rooms', 'ended_at', 'UPDATE')
       and not has_column_privilege('authenticated', 'public.study_rooms', 'host_id', 'UPDATE')
